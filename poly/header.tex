@@ -1,0 +1,215 @@
+\documentclass{book}
+
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amsthm,amssymb}
+%\usepackage{arabtex}
+%\usepackage{epigraph}
+\usepackage{manfnt}
+\usepackage{parskip}
+\usepackage{minted}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{cellspace}
+%\usepackage{textcomp}
+\usepackage{MnSymbol}
+\usepackage[unicode]{hyperref}
+\usepackage{epigraph}
+\usepackage{multirow}
+\usepackage[]{xcolor}
+
+\hypersetup{pdftitle={Introduction au Calcul Haute Performance}}
+\hypersetup{pdfauthor={Charles Bouillaguet}}
+
+\usepackage[a4paper,vmargin=2cm,hmargin=2cm]{geometry}
+\usepackage{textcomp}
+\usepackage{url}
+\usepackage{framed}
+\usepackage{enumerate}
+\usepackage{xspace}
+\usepackage{algpseudocode}
+\usepackage{parskip}
+\usepackage{eurosym}
+\usepackage{fancyhdr}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{decorations.pathreplacing}
+\usetikzlibrary{patterns}
+\usetikzlibrary{automata}
+\usetikzlibrary{calc}
+
+\newcommand{\important}[1]{\emph{#1}}
+\newcommand{\anglais}[1]{\emph{#1}}
+\newcommand{\marque}[1]{\textsf{#1}}
+\newcommand{\Read}{\textsc{Read}\xspace}
+\newcommand{\Write}{\textsc{Write}\xspace}
+
+
+\pagestyle{empty}
+\renewcommand{\chaptermark}[1]{}
+
+
+\newtheorem{theorem}{Théorème}
+\newtheorem{lemma}{Lemme}
+\newtheorem{property}{Propriété}
+\newtheorem{corollary}{Corollaire}
+
+
+
+% probas
+\newcommand{\esp}[1]{\mathbb{E} \left[ #1 \right] }
+\newcommand{\prob}[2][]{\mathbb{P}_{#1} \left[ #2 \right] }
+\newcommand{\condprob}[3][]{\mathbb{P}_{#1} \bigl[\bigl. #2 ~\bigr|~ #3 \bigr] }
+\newcommand{\condesp}[2]{\mathbb{E} \bigl[\bigl. #1 ~\bigr|~ #2 \bigr] }
+
+\newcommand{\Esp}[1]{\mathbb{E} \biggl[ #1 \biggr] }
+\newcommand{\Prob}[1]{\mathbb{P} \biggl[ #1 \biggr] }
+\newcommand{\card}[1]{ \bigl| #1 \bigr| }
+
+\newcommand{\bits}{\{0, 1\}}
+
+\newcommand{\bigO}[1]{\ensuremath{\mathcal{O}\left( #1 \right)} }
+\newcommand{\bigOmega}[1]{\ensuremath{\Omega\left( #1 \right)} }
+
+
+\newcounter{defno}
+\newcounter{gameno}
+\makeatletter
+
+\newenvironment{definition}[1]{\stepcounter{defno}\textbf{Définition \arabic{defno} : #1}%
+  \let\emph\textbf\def\@currentlabel{\arabic{defno}}%
+ \def\FrameCommand{\hspace{10pt}\vrule\hspace{10pt}}%
+  \MakeFramed {\advance\hsize-\width \FrameRestore}}%
+ {\endMakeFramed}
+
+\newenvironment{game}[1]{\stepcounter{gameno}\textbf{Jeu \arabic{gameno} (#1)}%
+  \let\emph\textbf\def\@currentlabel{\arabic{gameno}}%
+ \def\FrameCommand{\hspace{10pt}\vrule\hspace{10pt}}%
+  \MakeFramed {\advance\hsize-\width \FrameRestore}}%
+ {\endMakeFramed}
+
+
+ \newenvironment{myproof}{\goodbreak\textbf{Démonstration}%
+ \def\FrameCommand{\hspace{10pt}\vrule\hspace{10pt}}%
+  \MakeFramed {\advance\hsize-\width \FrameRestore}}%
+ {\endMakeFramed}
+
+ \newenvironment{myexample}{\goodbreak\textbf{Exemple}%
+ \def\FrameCommand{\hspace{10pt}\vrule\hspace{10pt}}%
+  \MakeFramed {\advance\hsize-\width \FrameRestore}}%
+ {\endMakeFramed}
+
+ \newenvironment{myfilet}{\goodbreak%
+ \def\FrameCommand{\hspace{10pt}\vrule\hspace{10pt}}%
+  \MakeFramed {\advance\hsize-\width \FrameRestore}}%
+ {\endMakeFramed}
+
+
+ \makeatother
+
+ 
+\newcommand{\concat}{\, \| \,}
+\newcommand{\encrypt}[2]{\left\{#2\right\}_{#1}}
+\newcommand{\Adv}{\mathbf{Adv}}
+\newcommand{\BC}{\textsf{Block Cipher}\xspace}
+\newcommand{\KS}{\textsf{Key-Schedule}\xspace}
+\newcommand{\PRNG}{\textsf{PRNG}\xspace}
+\newcommand{\md}{Merkle-Damg{\aa}rd\xspace}
+\newcommand{\CDH}{\textsf{CDH}\xspace}
+\newcommand{\DDH}{\textsf{DDH}\xspace}
+\newcommand{\INDCPA}{\textsf{IND-CPA}\xspace}
+\newcommand{\INDCCA}{\textsf{IND-CCA2}\xspace}
+\newcommand{\OWCPA}{\textsf{OW-CPA}\xspace}
+
+\renewcommand{\epsilon}{\varepsilon}
+\newcommand{\iC}{\ensuremath{\mathcal{C}}\xspace}
+\newcommand{\A}{\ensuremath{\mathcal{A}}\xspace}
+\newcommand{\B}{\ensuremath{\mathcal{B}}\xspace}
+\newcommand{\D}{\ensuremath{\mathcal{D}}\xspace}
+%\newcommand{\Salgo}{\ensuremath{\mathcal{S}}\xspace}
+\newcommand{\poly}{\ensuremath{\mathrm{poly}}}
+\newcommand{\E}{\ensuremath{\mathcal{E}}\xspace}
+%\newcommand{\G}{\mathcal{G}}
+
+
+\newcommand{\NN}{\ensuremath{\mathbb{N}}\xspace}
+\newcommand{\ZZ}{\ensuremath{\mathbb{Z}}\xspace}
+\newcommand{\ZZx}[1]{\ensuremath{\ZZ_{#1}}\xspace}
+\newcommand{\ZZnZ}{\ZZx{n}}
+
+\usepackage[unicode]{hyperref}
+
+
+%%%% gestion des questions/réponses
+\usepackage{answers}
+
+\Newassociation{solution}{Solution}{ans}
+%\Newassociation{TDsolution}{Solution}{anssecret}
+
+
+\newcounter{exno}[chapter]
+\makeatletter
+\newenvironment{TDEx}{\medbreak \stepcounter{exno} \protected@edef\@currentlabel{\thechapter.\arabic{exno}} \noindent \llap{$\triangleright$\rm\kern.15em}{\bfseries Question \arabic{exno} :}}{}
+
+\newenvironment{Ex}{\medbreak \stepcounter{exno} \def\@currentlabel{\thechapter.\arabic{exno}} \noindent {\bfseries Question \arabic{exno} :}}{}
+\makeatother
+
+
+
+% Danger, Will Robinson!
+\newenvironment{danger}{\medbreak\noindent\hangindent=2pc\hangafter=-2%
+  \clubpenalty=10000%
+  \hbox to0pt{\hskip-\hangindent\dbend\hfill}\small\ignorespaces}%
+  {\medbreak\par}
+
+% Danger! Danger!
+\newenvironment{ddanger}{\medbreak\noindent\hangindent=3pc\hangafter=-2%
+  \clubpenalty=10000%
+  \hbox to0pt{\hskip-\hangindent\dbend\kern2pt\dbend\hfill}\footnotesize\ignorespaces}%
+  {\medbreak\par}
+
+% knuth-style algos
+\newcommand{\slug}{\hbox{\kern1.5pt\vrule width2.5pt height6pt depth1.5pt\kern1.5pt}}
+\def\xskip{\hskip 7pt plus 3pt minus 4pt}
+\newdimen\algindent
+\newif\ifitempar \itempartrue % normally true unless briefly set false
+\def\algindentset#1{\setbox0\hbox{{\bf #1.\kern.25em}}\algindent=\wd0\relax}
+\def\algbegin #1 #2{\algindentset{#21}\alg #1 #2} % when steps all have 1 digit
+\def\aalgbegin #1 #2{\algindentset{#211}\alg #1 #2} % when 10 or more steps
+\def\aaalgbegin #1 #2{\algindentset{#2111}\alg #1 #2} % when 100 or more steps
+\def\alg#1(#2). {\medbreak % Usage: \algbegin Algorithm A (algname). This...
+  \noindent{\bf#1}({\it#2\/}).\xskip\ignorespaces}
+\def\algstep#1.{\ifitempar\smallskip\noindent\else\itempartrue
+  \hskip-\parindent\fi
+  \hbox to\algindent{\bf\hfil #1.\kern.25em}%
+  \hangindent=\algindent\hangafter=1\ignorespaces}
+% end of borrowed macros
+
+
+\setlength{\headheight}{12.2pt}%
+\newcommand{\bigconcat}{\, \Bigl\|\Bigr. \,}
+
+%\let\internalBegin\begin%
+%\let\internalEnd\end%
+
+%\usepackage{CJKutf8}
+%\protected\gdef\zh#1{\internalBegin{CJK}{UTF8}{gbsn}#1\internalEnd{CJK}}%
+%\AtBeginDvi{\input{zhwinfonts}} % MUST have! for \usepackage{CJKutf8}
+
+\definecolor{red}{rgb}{1, 0, 0}
+\definecolor{Green}{rgb}{0, 0.6, 0}
+\definecolor{Purple}{rgb}{0.75, 0, 0.25}
+
+\newcommand{\red}{\color{red}}
+\newcommand{\po}{\xrightarrow{po}}
+\newcommand{\net}{\xrightarrow{net}}
+\newcommand{\hb}{{\color{blue}\xrightarrow{\texttt{hb}}}}
+\newcommand{\rf}{{\color{Green}\xrightarrow{\texttt{rf}}}}
+\newcommand{\mo}{{\color{orange}\xrightarrow{\texttt{mo}}}}
+\newcommand{\rb}{{\color{Purple}\xrightarrow{\texttt{rb}}}}
+\newcommand{\co}{\mo}
+\newcommand{\fr}{\rb}
+\newcommand{\rmw}{{\color{gray}\xrightarrow{\texttt{rmw}}}}
+\newcommand{\eco}{{\color{red}\xrightarrow{\texttt{eco}}}}

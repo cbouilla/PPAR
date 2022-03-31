@@ -1,0 +1,395 @@
+\documentclass[xcolor={x11names,svgnames}]{beamer}
+
+%\includeonlyframes{tri_3D}
+
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{cellspace}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{tikz}
+\usepackage{xspace}
+%\usepackage[absolute,overlay]{textpos}
+%\usepackage[normalem]{ulem}
+\usepackage{minted}
+
+%\usepackage{eurosym}
+%\usepackage{marvosym}
+%\usepackage{pifont}
+\usepackage{xcolor}
+
+\newcommand{\bigO}[1]{\ensuremath{\mathcal{O}\left( #1 \right)} }
+
+\newcommand{\red}{\alert}
+\newcommand{\green}{\color{LimeGreen}}
+\newcommand{\blue}{\color{cyan}}
+
+% FORTIN
+\newcommand{\mynote}[1]{\note<1>[item]{#1}}
+\newcommand{\euro}{\EUR\xspace}
+
+\usetikzlibrary{patterns}
+% \usetikzlibrary{snakes}
+%  \usetikzlibrary{arrows}
+% \usetikzlibrary{backgrounds}
+% \usetikzlibrary{shapes}
+% \usetikzlibrary{shadows}
+\usetikzlibrary{calc}
+\usetikzlibrary{math}
+% \usetikzlibrary{decorations}
+% \usetikzlibrary{decorations.pathmorphing}
+% \usetikzlibrary{decorations.shapes}
+% \usetikzlibrary{decorations.markings}
+% \usetikzlibrary{positioning}
+
+%\definecolor{amethyst}{rgb}{0.6, 0.4, 0.8}
+\definecolor{cyan}{rgb}{0,0.6796875,1}
+
+\usecolortheme{rose}
+\setbeamertemplate{footline}{}
+\setbeamertemplate{navigation symbols}{}
+
+\usepackage{fontspec}
+
+\setsansfont{PalatinoSansLTPro}[
+   Path = /home/charles/charles_work/fonts/PalatinoSans/, 
+   Extension      = .otf,
+   UprightFont    = *-Regular,
+   BoldFont= *-Bold ,
+   ItalicFont = *-Italic,
+   BoldItalicFont = *-BoldIta
+]
+
+\author[C.~Bouillaguet]{Charles Bouillaguet \newline
+  {\small (\texttt{charles.bouillaguet@univ-lille.fr})}}
+
+\title{Cours 4 : (Un peu plus) d'algorithmique parallèle}
+\date{2020-02-7}
+
+\begin{document}
+
+
+\section{Introduction}
+
+\begin{frame}[label=title]
+  \titlepage
+\end{frame}
+
+
+
+% \begin{frame}
+% \frametitle{Analyse du passage à l'échelle}
+
+% $n^2 / p$ calculs
+
+% 1D : $2n$ communications. Ratio calcul / comm = $n / 2p$
+
+% 2D : $4n / \sqrt{p}$ communications. Ratio calcul / comm = $n / 4\sqrt{p}$
+
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=tri_1D]
+  \frametitle{Tri d'un tableau réparti}
+
+  \begin{tikzpicture}
+%    \path[use as bounding box] (0, 0) rectangle +(10, 1);
+    \filldraw[fill=red]    (0, 0) rectangle  +(1,1);
+    \filldraw[fill=orange] (1, 0) rectangle  +(1,1);
+    \filldraw[fill=yellow] (2, 0) rectangle  +(1,1);
+    \filldraw[fill=green]  (3, 0) rectangle  +(1,1);
+    \filldraw[fill=cyan]   (4, 0) rectangle  +(1,1);
+    \filldraw[fill=blue]   (5, 0) rectangle  +(1,1);
+    \filldraw[fill=magenta] (6, 0) rectangle  +(1,1);
+    \filldraw[fill=violet] (7, 0) rectangle +(1,1);
+    \filldraw[fill=lightgray] (8, 0) rectangle +(1,1);
+    \filldraw[fill=darkgray] (9, 0) rectangle +(1,1);
+    \draw[thick] (0, 0) rectangle (10, 1);
+    \foreach \i in {0.2, 0.4, ..., 9.8} {
+      \draw (\i, 0) -- +(0, 1);
+    }
+
+    \begin{scope}[yshift=-0.75cm]
+            \foreach \i in {0, 1, ..., 9} {
+        \draw (\i+0.5, 0) node[draw,shape=circle,inner sep=1pt] (P\i) {$P_\i$};
+      }
+      \draw[<->] (P0) edge (P1)
+      (P1) edge (P2)
+      (P2) edge (P3)
+      (P3) edge (P4)
+      (P4) edge (P5)
+      (P5) edge (P6)
+      (P6) edge (P7)
+      (P7) edge (P8)
+      (P8) edge (P9);
+    \end{scope}
+  \end{tikzpicture}
+
+  \medskip
+  
+  \begin{block}{Algo TD n\textdegree 1 : \emph{Odd-Even Merge Sort}}
+    \begin{enumerate}
+    \item $P_i$ trie localement ses données.
+    \item $p-1$ phases :
+      \begin{enumerate}
+      \item $P_{2i}$ échange sa portion avec $P_{2i+1}$ ; garde les $n/p$ plus petits.
+      \item $P_{2i}$ échange sa portion avec $P_{2i-1}$ ; garde les $n/p$ plus grands.
+      \end{enumerate}
+    \end{enumerate}
+  \end{block}
+
+  \vspace{-0.5cm}
+  
+  \[
+    T = \underbrace{\frac{n}{p} \log \frac{n}{p} + 2 (p-1) \frac{n}{p}}_{\text{calcul}}
+    + \underbrace{2 (p-1)\left( \alpha +  \frac{n}{p} \beta\right)}_{\text{comm}}
+    \uncover<2>{= \bigO{\frac{n \log n}{p} + p + \alert{n} }}
+  \]
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=tri_2D]
+  \frametitle{Tri d'un tableau réparti sur un \emph{Mesh} 2D}
+
+  \begin{columns}
+    \begin{column}{4.8cm}
+      \begin{tikzpicture}[every node/.style={font=\tiny},scale=0.8]
+        \path[use as bounding box] (-0.25, -0.25) rectangle +(5.5, 5.5);
+
+        \draw<1>[thick,<->] (-0.25, 5.75) -- node[above, font=\normalsize] {$p$} +(5.5, 0);
+        \draw<1>[thick,<->] (5.75, -0.25) -- node[right, font=\normalsize] {$p$} +(0, 5.5);
+        
+        \foreach \i in {0, 1, ..., 5} {
+          \foreach \j in {0, 1, ..., 5} {
+            \draw (\i, \j) node[draw,shape=circle,inner sep=1pt] (P\i\j) {\phantom{$P_{\i\j}$}};
+          }
+        }
+        \foreach \j in {0, 1, ..., 5} {
+          \foreach \i / \k in {0/1, 1/2, 2/3, 3/4, 4/5} {
+            \draw[<->] (P\j\i) edge (P\j\k);
+            \draw[<->] (P\i\j) edge (P\k\j);
+          }
+        }
+        
+        \draw<2-3>[red, ultra thick] (2.5, -0.5) -- +(0, 6) (-0.5, 2.5) -- +(6, 0);
+        \begin{scope}[ultra thick, >=stealth]
+          % quadrants
+          \draw<3>[cyan, ->] (-0.25, 5) \foreach \i in {0, 1, 2} { -- +(0, -\i) -- +(2.5, -\i)};
+          \draw<3>[cyan, ->] (2.75, 5) \foreach \i in {0, 1, 2} { -- +(0, -\i) -- +(2.5, -\i)};
+          \draw<3>[violet, ->] (2.25, 2) \foreach \i in {0, 1, 2} { -- +(0, -\i) -- +(-2.5, -\i)};
+          \draw<3>[violet, ->] (5.25, 2) \foreach \i in {0, 1, 2} { -- +(0, -\i) -- +(-2.5, -\i)};
+          \foreach \i in {0, 1, ..., 5} {
+            \draw<4,6>[green, <-] (\i, -0.25)   -- +(0, 5.5);
+          }
+          % lignes, snakelike
+          \foreach \i in {0, 1, 2} {
+            \draw<5>[cyan, ->] (-0.25, 2*\i+1)   -- +(5.5, 0);
+            \draw<5>[violet, <-] (-0.25, 2*\i)   -- +(5.5, 0);
+          }
+          % lignes, normales
+          \foreach \i in {0, 1, ..., 5} {
+            \draw<7>[cyan, ->] (-0.25, \i)   -- +(5.5, 0);
+          }
+          % résultat final !
+          \draw<8>[red, ->] (-0.25, 5) \foreach \i in {0, 1, ..., 5} { -- +(0, -\i) -- +(5.5, -\i)};
+        \end{scope} 
+      \end{tikzpicture}
+      
+    \end{column}
+    \begin{column}{6cm}
+      
+      \begin{block}{Algo de Schimmler (1987)}
+        \begin{enumerate}
+        \item<2-> Trier les quadrants (récursion)
+        \item<4-> Trier les colonnes (algo 1D)
+        \item<5-> Trier les lignes (algo 1D)
+        \item<6-> Trier les colonnes (algo 1D)
+        \item<7-> Trier les lignes (algo 1D)
+        \item<8-> Et boum ! C'est trié.
+        \end{enumerate}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\pgfmathdeclarerandomlist{MyRandomColors}{{white}{lightgray}}
+
+
+\begin{frame}[label=tri_2D_proof]
+  \frametitle{Tri d'un tableau réparti sur un \emph{Mesh} 2D}
+  \framesubtitle{Justification}
+  
+  \begin{tikzpicture}[every node/.style={font=\tiny},scale=0.8]
+    \path[use as bounding box] (-0.25, -0.25) rectangle +(5.5, 5.5);
+
+    % état initial aléatoire
+    \begin{onlyenv}<1, 2>
+      \pgfmathsetseed{55}
+      \foreach \i in {0, 1, ..., 19} {
+        \foreach \j in {0, 1, ..., 19} {
+          \pgfmathrandomitem{\RandomColor}{MyRandomColors} 
+          \draw[draw=\RandomColor, fill=\RandomColor] (0.3*\i, 0.3*\j) rectangle +(0.3, 0.3);
+        }
+      }
+    \end{onlyenv}
+
+    % quadrants triés
+    \begin{onlyenv}<3-4>
+      \draw[fill=lightgray] (0, 3) -- +(0, 1.2) -- +(1.8, 1.2) -- +(1.8, 1.5) -- +(3, 1.5) -- +(3, 0) -- cycle;
+      \draw[fill=lightgray] (0, 0) -- +(0, 1.5) -- +(0.9, 1.5) -- +(0.9, 1.2) -- +(3, 1.2) -- +(3, 0) -- cycle;
+      
+      \draw[fill=lightgray] (3, 3) -- +(0, 1.8) -- +(0.8, 1.8) -- +(0.8, 2.1) -- +(3, 2.1) -- +(3, 0) -- cycle;
+      \draw[fill=lightgray] (3, 0) -- +(0, 2.1) -- +(2.7, 2.1) -- +(2.7, 1.8) -- +(3, 1.8) -- +(3, 0) -- cycle;
+    \end{onlyenv}
+
+    % moitiées triées
+    \begin{onlyenv}<5-6>
+      \draw[fill=lightgray] (0, 0) -- +(0, 3) -- +(0.9, 3) -- +(0.9, 2.7) -- +(1.8, 2.7) -- +(1.8, 3) -- +(3, 3) -- +(3, 0) -- cycle;
+      \draw[fill=lightgray] (3, 0) -- +(0, 3.9) -- +(0.8, 3.9) -- +(0.8, 4.2) -- +(2.7, 4.2) -- +(2.7, 3.9) -- +(3, 3.9) -- +(3, 0) -- cycle;
+    \end{onlyenv}
+
+    % moitiées coupées / décalées
+    \begin{onlyenv}<7-8>
+      \draw[fill=lightgray] (0, 0) -- +(0, 3) -- +(5.1, 3) -- +(5.1, 2.7) -- +(6, 2.7) -- +(6, 0)  -- cycle;
+      \draw[fill=lightgray] (0, 3.9) rectangle +(2.1, 0.3);
+      \draw[fill=lightgray] (3, 3.6) rectangle +(3, 0.3);
+      \draw[fill=lightgray] (0, 3.3) rectangle +(3, 0.3);
+      \draw[fill=lightgray] (3, 3) rectangle +(3, 0.3);
+
+      \begin{scope}[xshift=7cm]
+        \draw[fill=lightgray] (4.2, 4.2) rectangle +(1.8, 0.3);
+        \draw[fill=lightgray] (0, 3.9) rectangle +(3, 0.3);
+        \draw[fill=lightgray] (3, 3.6) rectangle +(3, 0.3);
+        \draw[fill=lightgray] (0, 3.3) rectangle +(3, 0.3);
+        \draw[fill=lightgray] (3, 3) rectangle +(3, 0.3);
+        \draw[fill=lightgray] (0, 0) -- +(0, 3) -- +(5.1, 3) -- +(5.1, 2.7) -- +(6, 2.7) -- +(6, 0)  -- cycle;
+
+        \draw[very thick] (0, 0) rectangle +(6, 6);
+        \draw[very thick] (3, 0) rectangle +(0, 6);
+
+        \foreach \i in {0, 1, ..., 5} {
+          \draw<8>[green, <-, ultra thick, >=stealth] (\i + 0.5, 0.25)   -- +(0, 5.5);
+        }
+      \end{scope}
+    \end{onlyenv}
+
+    % moitiées coupées / décalées / plaquées
+    \begin{onlyenv}<9-10>
+      \draw[fill=lightgray] (0, 0) -- +(0, 3.6) -- +(2.1, 3.6) -- +(2.1, 3.3) -- +(3, 3.3) -- +(3, 3.6) -- +(5.1, 3.6) -- +(5.1, 3.3) -- +(6, 3.3) -- +(6, 0)  -- cycle;
+
+      \begin{scope}[xshift=7cm]
+        \draw[fill=lightgray] (0, 0) -- +(0, 3.6) -- +(3, 3.6) -- +(3, 3.3) -- +(4.2, 3.3) -- +(4.2, 3.6) -- +(5.1, 3.6) -- +(5.1, 3.3) -- +(6, 3.3) -- +(6, 0) -- cycle;
+        \draw[very thick] (0, 0) rectangle +(6, 6);
+      \end{scope}
+    \end{onlyenv}
+
+    % résultat final
+    \begin{onlyenv}<11>
+      \draw[fill=lightgray] (0, 0) -- +(0, 3.6) -- +(4.2, 3.6) -- +(4.2, 3.3) -- +(6, 3.3) -- +(6, 0) -- cycle;
+
+      \begin{scope}[xshift=7cm]
+        \draw[fill=lightgray] (0, 0) -- +(0, 3.6) -- +(3.9, 3.6) -- +(3.9, 3.3) -- +(6, 3.3) -- +(6, 0) -- cycle;
+        \draw[very thick] (0, 0) rectangle +(6, 6);
+      \end{scope}
+    \end{onlyenv}
+    
+    \draw[very thick] (0, 0) rectangle +(6, 6);
+    \draw<1-8>[very thick] (3, 0) rectangle +(0, 6);
+    \draw<1-4>[very thick] (0, 3) rectangle +(6, 0);
+
+    \begin{scope}[ultra thick, >=stealth]
+      % quadrants
+      \draw<2>[cyan, ->] (0.25, 5.5) \foreach \i in {0, 1, 2} { -- +(0, -\i) -- +(2.5, -\i)};
+      \draw<2>[cyan, ->] (3.25, 5.5) \foreach \i in {0, 1, 2} { -- +(0, -\i) -- +(2.5, -\i)};
+      \draw<2>[violet, ->] (2.75, 2.5) \foreach \i in {0, 1, 2} { -- +(0, -\i) -- +(-2.5, -\i)};
+      \draw<2>[violet, ->] (5.75, 2.5) \foreach \i in {0, 1, 2} { -- +(0, -\i) -- +(-2.5, -\i)};
+
+      % flèches colonnes
+      \foreach \i in {0, 1, ..., 5} {
+        \draw<4,8>[green, <-] (\i + 0.5, 0.25)   -- +(0, 5.5);
+      }
+
+      % lignes, snakelike
+      \foreach \i in {0, 1, 2} {
+        \draw<6>[cyan, ->] (0.25, 2*\i+1.5)   -- +(5.5, 0);
+        \draw<6>[violet, <-] (0.25, 2*\i+0.5)   -- +(5.5, 0);
+      }
+
+      % lignes, normales
+      \foreach \i in {0, 1, ..., 5} {
+        \draw<10>[cyan, ->] (0.25, \i+0.45)   -- +(5.5, 0);
+        \draw<10>[cyan, ->] (7.25, \i+0.45)   -- +(5.5, 0);
+      }
+    \end{scope}
+
+  \end{tikzpicture}
+
+  Tri par comparaison \alert{oblivious} $\rightarrow$ principe 0/1; \\
+  \uncover<3->{$\leq 1$ ligne \alert{sale} par quadrant; }
+  \uncover<5->{$\leq 1$ ligne \alert{sale} par moitié; } \\
+  \uncover<7->{Du même côté ou pas ;}
+  \uncover<9->{$\leq 1$ ligne \alert{sale} en tout;}
+  \uncover<11>{\alert{trié} !}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\begin{frame}[label=tri_2D_cost]
+  \frametitle{Tri d'un tableau réparti sur un \emph{Mesh} 2D}
+  \framesubtitle{Analyse}
+
+  \begin{block}{Tri 2D}
+    \begin{enumerate}
+    \item Chaque processeur trie localement.
+    \item Fusion 2D (communications).
+    \end{enumerate}
+  \end{block}
+  
+  \begin{align*}
+    M(p) &= M\left( \frac{p}{2} \right)
+              + 4 \times \text{Odd-EvenMerge}\left(p\right) \\
+              % 
+%         &= M\left(\frac{p}{2}\right) + 8p \alpha +  8 \frac{n}{p} \beta \\
+%         &= 16 \left(p \alpha +  \frac{n}{p} \beta\right)\left(\frac{1}{2} + \frac{1}{4} + \dots \right)\\
+    & \leq 16 p \alpha + 16 \frac{n}{p} \beta
+  \end{align*}
+
+  Et donc :
+  \[
+    T(n, p) = \bigO{\frac{n \log n}{p} + \sqrt{p} + \frac{n}{\sqrt{p}}}
+  \]
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=tri_3D]
+  \frametitle{Tri d'un tableau réparti sur un \emph{Mesh} \alert{3D}}
+
+  \og Facile\fg : tri 2D (xz), 2D (yz), 2D (xy zigzag), 1D (y), 2D (xy)
+  
+  \includegraphics[width=\textwidth]{3Dsort.png}
+
+  \[
+    T \approx \bigO{\frac{n \log n}{p} + \sqrt[3]{p} + \frac{n}{\sqrt[3]{p}}}
+  \]
+  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\end{document}
+
+%%% Local Variables:
+%%% TeX-command-extra-options: "-shell-escape"
+%%% TeX-engine: xetex
+%%% End:
