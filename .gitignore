@@ -13,3 +13,13 @@ _minted*
 *.fls
 *.xdv
 auto
+/slides/01_intro.pdf
+/slides/02_mpi_bis.pdf
+/slides/031_linalg.pdf
+/slides/03_algo.pdf
+/slides/05_OpenMP.pdf
+/slides/06_omp_suite.pdf
+/slides/07_vectorization.pdf
+/slides/08_memory.pdf
+/slides/09_roofline.pdf
+/slides/0a_profiling.pdf
