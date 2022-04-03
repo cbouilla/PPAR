@@ -1,34 +1,27 @@
 \documentclass[xcolor={x11names,svgnames}]{beamer}
-\setbeamerfont{note page}{size=\tiny} % default = small 
-
-%\includeonlyframes{radix,radix_code,radix_noconflict}
-%\includeonlyframes{lock-free-defs,seq_intset,lf_intset}
-
+\setbeamerfont{note page}{size=\tiny}
 
 \usecolortheme{rose}
 \setbeamertemplate{footline}{}
 \setbeamertemplate{navigation symbols}{\footnotesize\insertframenumber}
   
 \usepackage{amsmath, amssymb, amsthm}
+\usepackage{anyfontsize}
 
 \usepackage[utf8]{inputenc}
 \usepackage[francais]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[normalem]{ulem}   
-%\usepackage{mdframed}
-%\usepackage{cancel}
 \usepackage{multirow}
+\usepackage[overlay,absolute]{textpos}
 
 \usepackage{minted}
 \setminted{fontsize=\scriptsize}
+\newcommand{\bigO}[1]{\ensuremath{\mathcal{O}\left( #1 \right)} }
 
 \usepackage{tikz}
 \usetikzlibrary{calc}
-%\usetikzlibrary{decorations}
-%\usetikzlibrary{positioning}
 \usetikzlibrary{decorations.pathmorphing}
-%\usetikzlibrary{decorations.pathreplacing}
-%\usetikzlibrary{shapes.multipart}
 
 \usepackage{fontspec}
 
@@ -41,22 +34,22 @@
    BoldItalicFont = *-BoldIta
 ]
 
-\newcommand{\blue}[1]{{\color{Blue}#1}}
-\newcommand{\green}[1]{{\color{LimeGreen}#1}}
+% \newcommand{\blue}[1]{{\color{Blue}#1}}
+% \newcommand{\green}[1]{{\color{LimeGreen}#1}}
 \newcommand{\red}[1]{{\color{red}#1}}
-\newcommand{\tikzmat}[2] {
-\draw[thick] let \p1 = (#1 |- #2),
-                 \p2 = (#2 |- #1) in
-   ($ (#1) + (0.05,-0.1) $) -- ++(-0.15, 0)  -- ($ (\p1) + (-0.1,0.1) $) -- ++(0.15,0)
-   ($ (\p2) + (-0.05,-0.1) $) -- ++(0.15, 0) -- ($ (#2) + (0.1,0.1) $) -- ++(-0.15,0);
-}
+% \newcommand{\tikzmat}[2] {
+% \draw[thick] let \p1 = (#1 |- #2),
+%                  \p2 = (#2 |- #1) in
+%    ($ (#1) + (0.05,-0.1) $) -- ++(-0.15, 0)  -- ($ (\p1) + (-0.1,0.1) $) -- ++(0.15,0)
+%    ($ (\p2) + (-0.05,-0.1) $) -- ++(0.15, 0) -- ($ (#2) + (0.1,0.1) $) -- ++(-0.15,0);
+% }
 
 
 \author[C.~Bouillaguet]{Charles Bouillaguet \newline
   {\small \texttt{charles.bouillaguet@lip6.fr}}}
 
 \title{Cours 7 : la \og vectorisation\fg}
-\date{2020-04-16}
+%\date{2020-04-16}
 
 
 \begin{document}
@@ -64,6 +57,8 @@
 \frame{\titlepage}
 
 \section{Intro}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
   \frametitle{Principe}
@@ -181,7 +176,8 @@
 
   \medskip
     \begin{overlayarea}{\textwidth}{6cm}
-    \only<2>{\centering\includegraphics[height=6cm]{pentium_mmx}}
+      \only<1>{\centering\includegraphics[height=6cm]{IBM_3090}}
+      \only<2>{\centering\includegraphics[height=6cm]{pentium_mmx}}
     \pause
     \pause
 
@@ -646,6 +642,76 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{frame}[fragile]
+  \frametitle{Appliquer un algorithme séquentiel sur des vecteurs}
+
+  \begin{columns}[T]
+    \begin{column}{7cm}
+  
+      \begin{block}{Un algorithme séquentiel $\mathcal{A}$}
+        \begin{itemize}
+        \item S'applique sur un tableau $X$ 
+        \item \og \textit{data-oblivious}\fg{} : séquence des instructions dépend pas des valeurs
+        \end{itemize}
+      \end{block}
+
+      \medskip
+
+      \begin{exampleblock}<3->{Appliquer $k$ fois l'algo en parallèle}
+        \begin{itemize}
+        \item scalaires $\rightarrow$ vecteurs de taille $k$
+        \item opérations scalaires $\rightarrow$ SIMD
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+
+    \begin{column}{2.6cm}
+  
+      \begin{tikzpicture}[scale=0.25, line around/.style={decoration={pre length=#1,post length=#1}}]
+        \path[use as bounding box] (0, 0) rectangle (8, 26);
+
+        \fill<1-2>[fill=lightgray]  (0, 0) rectangle +(1, 25);
+        \draw<1-2>[thick] (0, 0) rectangle (1, 25);
+        
+        \fill<3->[fill=red]     (0, 0) rectangle +(1, 25);
+        \fill<3->[fill=orange]  (1, 0) rectangle +(1, 25);
+        \fill<3->[fill=yellow]  (2, 0) rectangle +(1, 25);
+        \fill<3->[fill=green]   (3, 0) rectangle +(1, 25);
+        \fill<3->[fill=cyan]    (4, 0) rectangle +(1, 25);
+        \fill<3->[fill=blue]    (5, 0) rectangle +(1, 25);
+        \fill<3->[fill=magenta] (6, 0) rectangle +(1, 25);
+        \fill<3->[fill=violet]  (7, 0) rectangle +(1, 25);
+        \draw<3->[thick] (0, 0) rectangle (8, 25);
+        \foreach \i in {1, 2, ..., 7}
+        {
+          \draw<3-> (\i, 0) -- +(0, 25);
+        }
+
+        \foreach \i in {1, 2, ..., 24}
+        {
+          \draw<1> (0, \i) -- +(1, 0);
+          \draw<3>  (0, \i) -- +(8, 0);
+        }
+
+        
+        \draw<1-2>[<->] (2, 0) -- node[right] {$n$} +(0, 25);
+
+        \draw<3->[<->] (9, 0) -- node[right] {$n$} +(0, 25);
+        \draw<3->[<->] (0, 26) -- node[above] {$k$} +(8, 0);
+        
+        \draw<2>[decorate, decoration=snake, line around=1mm, <->] (0.5, 0.1) -- +(0, 24.8);
+        \foreach \i in {0, 1, 2, ..., 7}
+        {
+          \draw<4>[decorate, decoration=snake, line around=1mm, <->] (\i + 0.5 , 0.1) -- +(0, 24.8);
+        }
+
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Comment s'en servir ?}
 
 \begin{frame}
@@ -885,7 +951,7 @@ __m256 vY = _mm256_sub_ps(vone, _mm256_div_ps(vB, vmax));
     vC = _mm256_blendv_ps(vzero, vC, vmask);
     vM = _mm256_blendv_ps(vzero, vM, vmask);
     vY = _mm256_blendv_ps(vzero, vY, vmask);
-    // blendv : vX[i] =  vmask[i]       ? vzero[i] : vX[i]
+    // blendv : vX[i] = vmask[i]        ? vzero[i] : vX[i]
     //                  (vK[i] == 1.0)  ? vzero[i] : vX[i]   
 \end{minted}
   \end{exampleblock}
@@ -1083,26 +1149,28 @@ for (int i = 0; i < n; i++)
 \section{FFT}
 
 \begin{frame}
-  \frametitle{Étude de cas : la FFT}
+  \frametitle{Étude de cas}
 
+  \begin{block}{\textbf{Transformée de Fourier Discrete} (DFT)}
   \begin{itemize}
-  \item La \textbf{Transformée de Fourier Discrete} (DFT) d'un tableau $X$ de
-    $n$ nombres complexes est le tableau $Y$ de taille $n$ défini par
+  \item La DFT d'un tableau $X$ de $n$ nombres (complexes) est
 \[
-  Y[k] = \sum_{j=0}^{n-1} X[j] \omega_n^{jk}, \qquad \text{avec} \qquad \omega_n = e^{-\frac{2i\pi}{n}}
+  Y[k] = \sum_{j=0}^{n-1} X[j] \omega_n^{jk}, \qquad \text{avec} \qquad \omega_n = e^{-\frac{2i\pi}{n}} \qquad (0 \leq k < n)
 \]
+\item Bibliothèques optimisées (e.g. FFTW)
+\end{itemize}
+\end{block}
 
 \medskip
 
-\item Lorsque $n = n_1 \times n_2$, on pose
+\begin{alertblock}{Ré-écriture de la formule}
+Lorsque $n = n_1 \times n_2$, on pose
 $j = j_1 n_2 + j_2$ et $k = k_1 + k_2 n_1$ 
 \[
 Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 1} X[j_1n_2 + j_2] {\omega_{n_1}}^{j_1 k_1} \right) {\omega_n}^{j_2 k_1} \right] {\omega_{n_2}}^{j_2 k_2}
 \]
+\end{alertblock}
 
-\item Omniprésence dans le calcul scientifique
-\item Bibliothèques optimisées (e.g. FFTW)
-\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1132,20 +1200,28 @@ Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 
   \frametitle{FFT : algorithme récursif}
   \framesubtitle{Présentation classique}
 
-  \begin{itemize}
-  \item Choix commun : $n_2 = 2$ (\og \textit{Radix-2 Decimation in Time}\fg).
-  \end{itemize}
-
-  \begin{columns}[T]
+    \begin{columns}[T]
     \begin{column}{8cm}
+
+      \begin{itemize}
+      \item Choix commun : $n_2 = 2$
+        \begin{itemize}
+        \item \og \textit{Radix-2 Decimation in Time}\fg
+        \end{itemize}
+        
+      \item FFT taille 2 : $(x, y) \rightarrow (x + y, x - y)$
+      \end{itemize}
+      
       
 \begin{minted}{C}
 void FFT(const double * X, double *Y, int n, int s)
 {
-    if (n == 1)
+    if (n == 1) {
+       Y[0] = X[0];
        return;
+    }
     double omega_n = exp(-2*I*pi / n);
-    double omega = 1;
+    double omega = 1;   // twiddle factor
     FFT(&X[0], &Y[0]  , n/2, 2*s);
     FFT(&X[s], &Y[n/2], n/2, 2*s);
     for (int i = 0; i < n/2; i++) {
@@ -1161,18 +1237,32 @@ void FFT(const double * X, double *Y, int n, int s)
     \end{column}
     \begin{column}{1.6cm}
     
-\begin{tikzpicture}[scale=0.5,line around/.style={decoration={pre length=#1,post length=#1}}]
-  \fill[fill=LimeGreen] (0, 0) rectangle (1, 10);
-  \fill[fill=cyan] (1, 0) rectangle (2, 10);
-  \draw[thick] (0, 0) rectangle (2, 10);
+\begin{tikzpicture}[scale=0.225,line around/.style={decoration={pre length=#1,post length=#1}}]
+  \path[use as bounding box] (-1, 0) rectangle (2, 32);
+  \foreach \i in {0, 2, ..., 30}
+  {
+    \fill[fill=cyan] (0, \i) rectangle +(1, 1);
+    \fill[fill=LimeGreen] (0, \i + 1) rectangle +(1, 1);
+  }
+  \draw[thick] (0, 0) rectangle (1, 32);
+  \foreach \i in {0, 1, ..., 31}
+  {
+    \draw (0, \i) -- +(1, 0);
+  }
 
-  \draw (1, 0) -- (1, 10);
-  \draw[<->] (3, 0) -- node[right] {$\frac{n}{2}$} (3, 10);
-  \draw[<->] (0, 11) -- node[above] {$2$} (2, 11);
+  \foreach \j in {1, 3, ..., 29}
+  {
+    \draw<2> (1, \j + 0.5) .. controls (2, \j + 1) and (2, \j + 2) .. (1, \j + 2.5);
+  }
+  \foreach \j in {0, 2, ..., 28}
+  {
+    \draw<3> (1, \j + 0.5) .. controls (2, \j + 1) and (2, \j + 2) .. (1, \j + 2.5);
+  }
 
-  % 1ère passe FFT
-  \foreach \i in {0.5, 1.5}
-    \draw<2>[decorate, decoration=snake, line around=1mm, <->] (\i, 0.1) -- +(0, 9.8);
+  \draw<4> (0, 31.5) -- (-1, 31.5) -- (-1, 15.5) -- (0, 15.5);
+  \draw<5> (0, 30.5) -- (-1, 30.5) -- (-1, 14.5) -- (0, 14.5);
+  \draw<6> (0, 29.5) -- (-1, 29.5) -- (-1, 13.5) -- (0, 13.5);
+
 \end{tikzpicture}
 \end{column}
 \end{columns}
@@ -1181,60 +1271,211 @@ void FFT(const double * X, double *Y, int n, int s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}[fragile]
-  \only<1-2>{
-  \[
-    Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 1} X[j_1n_2 + j_2] {\omega_{n_1}}^{j_1 k_1} \right) {\omega_n}^{j_2 k_1} \right] {\omega_{n_2}}^{j_2 k_2}
-  \]
-}
-\only<3>{
-  \[
-    Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left( U[k_1 n_2 + j_2] {\omega_n}^{j_2 k_1} \right) {\omega_{n_2}}^{j_2 k_2}
-  \]
-}
-\only<4>{
-  \[
-    Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} V[k_1 n_2 + j_2] {\omega_{n_2}}^{j_2 k_2}
-  \]
-}
-
-\begin{itemize}
-\item<2-> $U[\star, j_2] \gets FFT(X[\star, j_2])$ (pour tout $0 \leq j_2 < n_2$)
-\item<3-> $V[k_1, j_2] \gets U[k_1, j_2] \cdot {\omega_n}^{j_2 k_1}$ (pour tout $0 \leq j_2 < n_2$ et $0 \leq k_1 < n_1$)
-\item<4-> $Y[k_1, \star] \gets FFT(U[k_1, \star])$ (pour tout $0 \leq k_1 < n_1$)
-\end{itemize}
-
-
-\begin{tikzpicture}[scale=0.5,line around/.style={decoration={pre length=#1,post length=#1}}]
-  \filldraw[thick, fill=LimeGreen] (0, 0) rectangle (16, 9);
-  %\foreach \i in {1, 2, ..., 8}
-  %\draw (0, \i) -- (16, \i);
-
-  \foreach \i in {1, 2, ..., 15}
-  \draw<2> (\i, 0) -- (\i, 9);
-
-  \draw[<->] (17, 0) -- node[right] {$n_1$} (17, 9);
-  \draw[<->] (0, 10) -- node[above] {$n_2$} (16, 10);
-
-  % 1ère passe FFT
-  \foreach \i in {0, 1, 2, ..., 15} {
-    \draw<2>[decorate,decoration=snake, line around=1mm,<->] (\i + 0.5, 0.1) -- +(0, 8.8);
+  \begin{overlayarea}{\textwidth}{2cm}
+      
+  \only<1-3>{
+    \[
+      Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 1} X[j_1n_2 + j_2] {\omega_{n_1}}^{j_1 k_1} \right) {\omega_n}^{j_2 k_1} \right] {\omega_{n_2}}^{j_2 k_2}
+    \]
   }
-
-  % pointeurs k_1, j2 dans la première passe
-  \draw<2>[->] (-1, 4) node[left] {$k_1$} -- (-0.1, 4); 
-  \draw[->] (12.5, -1) node[below] {$j_2$} -- (12.5, -0.1); 
-
-  % twiddle
-  \foreach \i in {0.5, 1.5, ..., 15.5} {
-    \foreach \j in {0.5, 1.5, ..., 8.5} {
-      \draw<3>[black,variable=\t,smooth,domain=0:21.20,samples=20] (\i, \j) plot ({\i + 0.0225 * \t *sin(\t r)}, {\j + 0.0225 * \t * cos(\t r)});
-    }
+  \only<4>{
+    \[
+      Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left( U[k_1 n_2 + j_2] {\omega_n}^{j_2 k_1} \right) {\omega_{n_2}}^{j_2 k_2}
+    \]
   }
-  
-  
-\end{tikzpicture}
+  \only<5->{
+    \[
+      Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} V[k_1 n_2 + j_2] {\omega_{n_2}}^{j_2 k_2}
+    \]
+  }
+\end{overlayarea}
 
+\begin{overlayarea}{\textwidth}{8cm}
+  \begin{columns}[T]
+    \begin{column}{6cm}
+      \small 
+      \begin{itemize}
+      \item<2-> $U[\star, j_2] \gets FFT(X[\star, j_2])$
+        \begin{itemize}
+        \item $0 \leq j_2 < n_2$
+        \end{itemize}
+
+      \item<4-> $V[k_1, j_2] \gets U[k_1, j_2] \cdot {\omega_n}^{j_2 k_1}$
+        \begin{itemize}
+        \item $0 \leq j_2 < n_2$
+        \item $0 \leq k_1 < n_1$ 
+        \end{itemize}
+
+      \item<7-> Transposer $V$
+        \begin{itemize}
+        \item \red{surcoût} de la vectorisation
+        \end{itemize}
+        
+      \item<only@5-6> $Y[k_1, \star] \gets FFT(V[k_1, \star])$
+        \begin{itemize}
+        \item $0 \leq k_1 < n_1$
+        \end{itemize}
+
+      \item<8-> $Y[\star, k_1] \gets FFT(V[\star, k_1])$
+        \begin{itemize}
+        \item $0 \leq k_1 < n_1$
+        \end{itemize}
+
+      \item<10-> Retransposer $Y$
+        \begin{itemize}
+        \item \red{surcoût} de la vectorisation
+        \end{itemize}
+        
+      \end{itemize}
+    \end{column}
+
+    \begin{column}{5.8cm}
+      \begin{tikzpicture}[scale=0.25,line around/.style={decoration={pre length=#1,post length=#1}}]
+        \path[use as bounding box] (0, 0) rectangle (20, 22);
+
+        \draw<1-6,10>[<->] (9, 0) -- node[right] {$n_1$} +(0, 20);
+        \draw<1-6,10>[<->] (0, 21) -- node[above] {$n_2$} +(8, 0);
+        \fill<1>[fill=lightgray] (0, 0) rectangle (8, 20);
+        \fill<2-6>[fill=red]      (0, 0) rectangle +(1, 20);
+        \fill<2-6>[fill=orange]   (1, 0) rectangle +(1, 20);
+        \fill<2-6>[fill=yellow]   (2, 0) rectangle +(1, 20);
+        \fill<2-6>[fill=green]    (3, 0) rectangle +(1, 20);
+        \fill<2-6>[fill=cyan]     (4, 0) rectangle +(1, 20);
+        \fill<2-6>[fill=blue]     (5, 0) rectangle +(1, 20);
+        \fill<2-6>[fill=magenta]  (6, 0) rectangle +(1, 20);
+        \fill<2-6>[fill=violet]   (7, 0) rectangle +(1, 20);
+        \draw<1-6,10>[thick] (0, 0) rectangle (8, 20);
+        \foreach \i in {1, 2, ..., 7}
+        {
+          \draw<1,2,3,4> (\i, 0) -- +(0, 20);
+        }
+        \foreach \j in {1, 2, ..., 19}
+        {
+          \draw<1,2,4,5,6> (0, \j) -- +(8, 0);
+        }
+
+        % transposée
+        \draw<7-9>[<->] (21, 0) -- node[right] {$n_2$} +(0, 8);
+        \draw<7-9>[<->] (0, 9) -- node[above] {$n_1$} +(20, 0);
+        \fill<7-8>[fill=red]      (0, 0) rectangle +(20, 1);
+        \fill<7-8>[fill=orange]   (0, 1) rectangle +(20, 1);
+        \fill<7-8>[fill=yellow]   (0, 2) rectangle +(20, 1);
+        \fill<7-8>[fill=green]    (0, 3) rectangle +(20, 1);
+        \fill<7-8>[fill=cyan]     (0, 4) rectangle +(20, 1);
+        \fill<7-8>[fill=blue]     (0, 5) rectangle +(20, 1);
+        \fill<7-8>[fill=magenta]  (0, 6) rectangle +(20, 1);
+        \fill<7-8>[fill=violet]   (0, 7) rectangle +(20, 1);
+        \draw<7-9>[thick] (0, 0) rectangle (20, 8);
+        \foreach \i in {1, 2, ..., 7}
+        {
+          \draw<7> (0, \i) -- +(20, 0);
+        }
+        \foreach \j in {1, 2, ..., 19}
+        {
+          \draw<7,8> (\j, 0) -- +(0, 8);
+        }
+
+        
+        % 1ère passe FFT
+        \foreach \i in {0, 1, 2, ..., 7} {
+          \draw<3>[decorate,decoration=snake, line around=1mm,<->] (\i + 0.5, 0.1) -- +(0, 19.8);
+        }
+               
+        % twiddle
+        \foreach \i in {0.5, 1.5, ..., 7.5} {
+          \foreach \j in {0.5, 1.5, ..., 19.5} {
+            \draw<4>[black,variable=\t,smooth,domain=0:19.5,samples=20] (\i, \j) plot ({\i + 0.0225 * \t *sin(\t r)}, {\j + 0.0225 * \t * cos(\t r)});
+          }
+        }
+
+        % 2ème passe FFT (avortée)
+        \foreach \i in {0, 1, 2, ..., 19} {
+          \draw<5,6>[decorate,decoration=snake, line around=1mm,<->] (0.1, \i + 0.5) -- +(7.8, 0);
+        }
+        \draw<6>[line width=2mm, black] (-1, -1) -- (9, 21); 
+        \draw<6>[line width=2mm, black] (-1, 21) -- (9, -1); 
+
+        % 2ème passe FFT (réussie)
+        \foreach \i in {0, 1, 2, ..., 19} {
+          \draw<8>[decorate,decoration=snake, line around=1mm,<->] (\i + 0.5, 0.1) -- +(0, 7.8);
+        }
+
+        % à transposer
+        \node<9> at (10, 4) {\includegraphics[height=2cm]{Triste.png}};
+        \node<10> at (4, 10) {\includegraphics[width=2cm]{Content.png}};
+
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{overlayarea}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Addendum : transposition vectorisée}
+
+    \begin{tikzpicture}[scale=0.225]
+%        \path[use as bounding box] (0, 0) rectangle (20, 22);
+
+        \draw[<->] (9, 0) -- node[right] {$n_1$} +(0, 32);
+        \draw[<->] (0, 33) -- node[above] {$n_2$} +(8, 0);
+
+        \foreach \i in {0, ..., 7}
+        {
+          \fill[fill=LimeGreen, fill opacity=0.1 + \i*0.128] (0, \i)      rectangle +(8, 1);
+          \fill[fill=yellow,    fill opacity=0.1 + \i*0.128] (0, \i + 8)  rectangle +(8, 1);
+          \fill[fill=cyan,      fill opacity=0.1 + \i*0.128] (0, \i + 16) rectangle +(8, 1);
+          \fill[fill=magenta,   fill opacity=0.1 + \i*0.128] (0, \i + 24) rectangle +(8, 1);
+        }
+        \foreach \i in {1, ..., 7}
+        {
+          \draw (\i, 0) -- +(0, 32);
+        }
+        \foreach \j in {1, 2, ..., 31}
+        {
+          \draw (0, \j) -- +(8, 0);
+        }
+        \draw[thick] (0, 0) rectangle (8, 32);
+
+        
+        \begin{scope}[xshift=12cm, yshift=24cm]
+        % transposée
+        \draw[<->] (33, 0) -- node[right] {$n_2$} +(0, 8);
+        \draw[<->] (0, 9) -- node[above] {$n_1$} +(32, 0);
+
+        \foreach \i in {0, ..., 7}
+        {
+          \fill[fill=magenta,   fill opacity=1 - \i*0.128] (\i     , 0) rectangle +(1, 8);
+          \fill[fill=cyan,      fill opacity=1 - \i*0.128] (\i +  8, 0) rectangle +(1, 8);
+          \fill[fill=yellow,    fill opacity=1 - \i*0.128] (\i + 16, 0) rectangle +(1, 8);
+          \fill[fill=LimeGreen, fill opacity=1 - \i*0.128] (\i + 24, 0) rectangle +(1, 8);
+        }
+        \foreach \i in {1, ..., 7}
+        {
+          \draw (0, \i) -- +(32, 0);
+        }
+        \foreach \j in {1, 2, ..., 31}
+        {
+          \draw (\j, 0) -- +(0, 8);
+        }
+        \draw[thick] (0, 0) rectangle (32, 8);
+      \end{scope}  
+    \end{tikzpicture}
+
+    \begin{textblock}{8}(5.5, 9)
+      \begin{block}{Exercice \og amusant\fg{}}
+        Écrivez du code qui transpose 
+        \begin{itemize}
+        \item Une matrice $4 \times 4$ de \texttt{double}
+        \item Une matrice $8 \times 8$ de \texttt{float}
+        \item Vectorisé avec les \emph{intrinsics}
+        \end{itemize}
+      \end{block}
+    \end{textblock}
+    
+\end{frame}
+
 \end{document}
 
 
