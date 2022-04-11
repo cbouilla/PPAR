@@ -1,4 +1,4 @@
-\documentclass[xcolor={x11names,svgnames}, 14pt]{beamer}
+\documentclass[xcolor={x11names,svgnames}]{beamer}
 \setbeamerfont{note page}{size=\tiny} % default = small 
 
 
@@ -19,7 +19,7 @@
 \usepackage{multirow}
 
 \usepackage{minted}
-%\setminted{fontsize=\scriptsize}
+\setminted{fontsize=\scriptsize}
 
 \usepackage{tikz}
 \usetikzlibrary{calc}
@@ -95,16 +95,16 @@ double x = A[i];
     \begin{column}{.9\textwidth}
       
   \begin{itemize}
-  \item La \textbf{puissance de calcul} augmente.
+  \item La \textbf{puissance de calcul} augmente
     \begin{itemize}
-    \item Augmentation rapide des FLOP/s.
+    \item Augmentation rapide des FLOP/s
     \end{itemize}
 
     \medskip
     
-  \item La vitesse de la mémoire \textbf{ne suit pas}.
+  \item La vitesse de la mémoire \textbf{ne suit pas}
         \begin{itemize}
-    \item Augmentation \emph{moins rapide} des Go/s.
+    \item Augmentation \emph{moins rapide} des Go/s
     \end{itemize}
   \end{itemize}
 \end{column}
@@ -114,15 +114,15 @@ double x = A[i];
 
 \begin{block}{On distingue...}
 \begin{itemize}
-\item Algorithmes \alert{compute-bound} {\small (ou CPU-bound)}.
+\item Algorithmes \alert{compute-bound} {\small (ou CPU-bound)}
   \begin{itemize}
-  \item Limités par FLOP/s.
+  \item Limités par FLOP/s
   \end{itemize}
   \medskip
   
-\item Algorithmes \alert{memory-bound}.
+\item Algorithmes \alert{memory-bound}
   \begin{itemize}
-  \item  limités par Go/s depuis la RAM.
+  \item  limités par Go/s depuis la RAM
   \end{itemize}
 \end{itemize}
 \end{block}
@@ -163,7 +163,8 @@ double x = A[i];
 
 \begin{frame}
   \frametitle{Multicoeur : c'est l'horreur}
-
+  \framesubtitle{STREAM benchmark}
+  
   \smallskip
   
   \small
@@ -192,6 +193,23 @@ double x = A[i];
       & 16 & 73.4 & \alert{5.7} \\
   \hline
 \end{tabular}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Déplacer des données est (énergétiquement) couteux}
+
+  \begin{center}
+    \includegraphics[width=\textwidth,clip,trim=0 0 0 3.5cm]{nvidia.pdf}
+    \footnotesize (image : Bill Dally, NVIDIA, \og the path to exascale\fg)
+  \end{center}
+
+  \begin{block}{Consommation énergétique sur un CPU normal}
+    \begin{itemize}
+    \item Lire la RAM = 10$\times$ multiplication flottante
+    \end{itemize}
+  \end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -581,7 +599,7 @@ DDR4-3200  & 400         & 25.6 & 20      & 12.5   \\
   \frametitle{La hiérarchie mémoire (les caches)}
 
   \begin{tikzpicture}[every node/.style={font=\small}, scale=0.66, node distance=0.5cm]
-    \path[draw,red,dotted,use as bounding box] (-8.5, 0) rectangle +(17, 10);
+    \path[use as bounding box] (-8.5, 0) rectangle +(17, 10);
     
     \node at (0, 0) (cpu) {\includegraphics[width=1cm]{cpu_clipart.png}};
     \node[above=of cpu, shape=rectangle, draw, align=center] (L1) {Cache L1 ($\approx$ 32Ko)};
@@ -760,48 +778,46 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
   \begin{column}{2cm}
     \begin{tikzpicture}[xscale=0.66, yscale=0.33]
       \node[anchor=west,font=\scriptsize] at (0, 19) {11111100010011100010101{\color{red}010100}{\color{green}011000}};
+
+      \node[anchor=west,font=\scriptsize,text=LimeGreen] at (10, 17.5) (pos) {position dans la ligne de cache};
+
+      \node[anchor=west,font=\scriptsize,text=red] at (0, 17.5) (set) {indice du \emph{set}};
+
+      \draw[LimeGreen,->] (pos) -| (8, 18.5);
+      \draw[red,->] (set) -| (6, 18.5);
+      
       \draw[ultra thick] (0, 0) rectangle +(3.2, 16);
       \foreach \i in {1,2, ..., 15} \draw(0, \i) -- +(3.2, 0);
       \foreach \i in {4,8, 12} \draw<2>[very thick] (0, \i) -- +(3.2, 0);
     \end{tikzpicture}
   \end{column}
-  \begin{column}{7cm}
-    En cas de faute :
+  \begin{column}{9cm}
+    \begin{block}{En cas de faute de cache}
     \begin{itemize}
     \item Quelle ligne évincer ?
+      \begin{itemize}
+      \item LRU, PLRU
+      \end{itemize}
     \item Et les écritures ?
-    \item Quels emplacements pour une ligne donnée ?      
+      \begin{itemize}
+      \item Write-through, write-back
+      \item false-sharing
+      \end{itemize}
+    \item Quels emplacements pour une ligne donnée ?
+      \begin{itemize}
+      \item Associativité
+      \end{itemize}
     \end{itemize}
-  \end{column}
+  \end{block}
+\end{column}
 \end{columns}
 \end{frame}
 
 %%%%%%%%%%%%%%%%
 
-\begin{frame}[label=applications,fragile]
-\frametitle{Petits exemples}
-\framesubtitle{Recopie de tableau 2D}
+\subsection{Petits exemples}
 
-\begin{minted}{C}
-/* Mauvais */
-for (int i = 0; i < N; i++)
-    for (int j = 0; j <N; j++)
-        dst[j][i] = src[j][i];
-\end{minted}
-
-\bigskip
-
-\begin{minted}{C}
-/* Bon */
-for (int i = 0; i < N; i++)
-    for (int j = 0; j < N; j++)
-        dst[i][j] = src[i][j];
-\end{minted}
-\end{frame}
-
-%%%%%%%%%%
-
-\begin{frame}[label=applications,fragile]
+\begin{frame}[label=applications,fragile=singleslide]
 \frametitle{Petits exemples}
 \framesubtitle{Recopie de tableau 2D}
 
@@ -856,7 +872,7 @@ transpose(B);
 for (int i = 0; i < N; i++)
   for (int j = 0; j < N; j++)
     for (int k = 0; k < N; k++)
-      C[i * N + j] += A[i * N + k] * B[j * N + kj];
+      C[i * N + j] += A[i * N + k] * B[j * N + k];
 \end{minted}
 \end{onlyenv}%
 
@@ -872,11 +888,11 @@ for (int i = 0; i < N; i++)
   \draw[thick,fill=yellow] (0, 0) rectangle + (3, 3);
   \node at (3.5, 1.5) {$=$};
   \node at (5.5, 3.5) {$A$};
-  \draw[thick,fill=red]    (4, 0) rectangle + (3, 3);
+  \draw[thick,fill=green]    (4, 0) rectangle + (3, 3);
   \node at (7.5, 1.5) {$\times$};
   \node<1,3> at (9.5, 3.5) {$B$};
   \node<5> at (9.5, 3.5) {$B^t$};
-  \draw[thick,fill=green] (8, 0) rectangle + (3, 3);
+  \draw[thick,fill=red] (8, 0) rectangle + (3, 3);
 
   \draw<1,5>[fill=lightgray] (2, 2) rectangle +(0.25, 0.25);
   \draw<3>[fill=lightgray] (0, 2) rectangle +(3, 0.25);
@@ -893,6 +909,7 @@ for (int i = 0; i < N; i++)
 \begin{itemize}
 \item Permuter les boucles sur $j$ et $k$.
 \item[$\Rightarrow$] Accès contigüs (localité spatiale)
+\item Bonus : possibilités de vectorisation.
 \end{itemize}
 \end{block}
 
@@ -926,16 +943,379 @@ for (int i = 0; i < N; i++)
   \item Défaut : récursif au lieu d'itératif.
 
   \item Avantage : les petits blocs tiennent en cache.
+  \item 3 matrices $32 \times 32$ tiennent 
   \end{itemize}
 \end{block}
-
-
 \end{overlayarea}
-
 \end{frame}
 
 
+\subsection{Bucket Sort}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      \pgfmathdeclarerandomlist{MyRandomColors}{{pink}{red}{orange}{yellow}{green}{cyan}{blue}{magenta}{violet}{lightgray}{darkgray}}
+
+      
+\begin{frame}[fragile,label=radix]
+  \frametitle{Exemple : Bucket Sort}
+
+%int C[256];
+%for (int i = 0; i < 256; i++)
+%    C[i] = 0;
+
+    \begin{columns}[c]
+    \begin{column}{.4\textwidth}
+
+\begin{minted}{C}
+// Initialization
+for (int i = 0; i < M; i++) {
+    C[i] = 0;
+}
+
+// Histogram
+for (int i = 0; i < N; i++) {
+    int bucket = f(A[i]);
+    C[bucket]++;
+}
+
+// Prefix-sum
+int s = 0;
+for (int i = 0; i < M; i++) {
+    P[i] = s;
+    s += C[i];
+}
+
+// Dispatch
+for (int i = 0; i < N; i++) {
+    int bucket = f(A[i]);
+    B[P[bucket]] = A[i];
+    P[bucket]++;
+}
+\end{minted}
+    \end{column}
+    \begin{column}{.6\textwidth}
+
+
+      \begin{tikzpicture}[scale=0.25, >={To[sep]}]
+        \path[red,dotted,use as bounding box] (-1, 0) rectangle +(26, 32);
+        
+        % état initial aléatoire
+        \pgfmathsetseed{57}
+        \foreach \i in {0, 1, ..., 31} {
+          \pgfmathrandomitem{\RandomColor}{MyRandomColors} 
+          \fill[fill=\RandomColor] (0, \i) rectangle +(3, 1);
+        }
+        \draw[thick] (0, 0) rectangle +(9, 32);
+        \draw[thick] (3, 0) -- +(0, 32);
+        \foreach \i in {1, ..., 31} {
+          \draw (0, \i) -- +(9, 0);
+        }
+        \foreach \i / \l in {0/3, 1/0, 2/7, 3/1, 4/10, 5/2, 6/5, 7/2, 8/10, 9/5,
+          10/2, 11/3, 12/8, 13/7, 14/9, 15/10, 16/3, 17/6, 18/4, 19/6,
+          20/10, 21/0, 22/5, 23/3, 24/5, 25/9, 26/5, 27/7, 28/8, 29/9,
+          30/8, 31/5} {
+%          \node[font=\tiny] at (-1, 31.5-\i) {\i};
+          \node[font=\tiny] at (4, 31.5-\i) {\l};
+        }
+        
+        % côté droit : trié
+        \begin{scope}[xshift=16cm]
+          % situation finale supposée
+          \begin{onlyenv}<1-3>
+          \fill[fill=pink] (0, 30) rectangle +(3, 2);
+          \fill[fill=magenta] (0, 29) rectangle +(3, 1);
+          \fill[fill=violet] (0, 26) rectangle +(3, 3);
+          \fill[fill=blue] (0, 22) rectangle +(3, 4);
+          \fill[fill=cyan] (0, 21) rectangle +(3, 1);
+          \fill[fill=green] (0, 15) rectangle +(3, 6);
+          \fill[fill=yellow] (0, 13) rectangle +(3, 2);
+          \fill[fill=orange] (0, 10) rectangle +(3, 3);
+          \fill[fill=red] (0, 7) rectangle +(3, 3);
+          \fill[fill=lightgray] (0, 4) rectangle +(3, 3);
+          \fill[fill=darkgray] (0, 0) rectangle +(3, 4);
+        \end{onlyenv}
+
+        % \begin{onlyenv}<4->
+        %     \fill[very nearly transparent, fill=pink] (0, 30) rectangle +(3, 2);
+        %     \fill[very nearly transparent, fill=magenta] (0, 29) rectangle +(3, 1);
+        %     \fill[very nearly transparent, fill=violet] (0, 26) rectangle +(3, 3);
+        %     \fill[very nearly transparent, fill=blue] (0, 22) rectangle +(3, 4);
+        %     \fill[very nearly transparent, fill=cyan] (0, 21) rectangle +(3, 1);
+        %     \fill[very nearly transparent, fill=green] (0, 15) rectangle +(3, 6);
+        %     \fill[very nearly transparent, fill=yellow] (0, 13) rectangle +(3, 2);
+        %     \fill[very nearly transparent, fill=orange] (0, 10) rectangle +(3, 3);
+        %     \fill[very nearly transparent, fill=red] (0, 7) rectangle +(3, 3);
+        %     \fill[very nearly transparent, fill=lightgray] (0, 4) rectangle +(3, 3);
+        %     \fill[very nearly transparent, fill=darkgray] (0, 0) rectangle +(3, 4);
+        %   \end{onlyenv}
+
+          % items qui arrivent en cours de route
+          \fill<5->[fill=blue] (0, 25) rectangle +(3, 1);
+          \fill<9->[fill=pink] (0, 31) rectangle +(3, 1);
+          \fill<11->[fill=orange] (0, 12) rectangle +(3, 1);
+          
+          % cadre
+          \draw[thick] (0, 0) rectangle +(9, 32);
+          \draw[thick] (3, 0) -- +(0, 32);
+          \foreach \i in {1, ..., 31} {
+            \draw (0, \i) -- +(9, 0);
+          }
+      \end{scope}
+
+      % taille des buckets
+      \begin{onlyenv}<2>
+        \draw[<->] (15, 30) -- node[left] {$C[0]$} +(0, 2);
+        \draw[<->] (15, 26) -- node[left] {$C[2]$} +(0, 3);
+        \draw[<->] (15, 22) -- node[left] {$C[3]$} +(0, 4);
+        \draw[<->] (15, 15) -- node[left] {$C[5]$} +(0, 6);
+        \draw[<->] (15, 13) -- node[left] {$C[6]$} +(0, 2);
+        \draw[<->] (15, 10) -- node[left] {$C[7]$} +(0, 3);
+        \draw[<->] (15, 7) -- node[left] {$C[8]$} +(0, 3);
+        \draw[<->] (15, 4) -- node[left] {$C[9]$} +(0, 3);
+        \draw[<->] (15, 0) -- node[left] {$C[10]$} +(0, 4);
+      \end{onlyenv}
+
+      % pointeurs initiaux sur les buckets
+      \begin{onlyenv}<3->
+        \draw<-8>[->] (15, 31.5) node[left] {$P[0]$} -- (16, 31.5);
+        \draw[->] (15, 28.5) node[left] {$P[2]$} -- (16, 28.5);
+        \draw<-5>[->] (15, 25.5) node[left] {$P[3]$} -- +(1, 0);
+        \draw[->] (15, 20.5) node[left] {$P[5]$} -- (16, 20.5);
+        \draw[->] (15, 14.5) node[left] {$P[6]$} -- (16, 14.5);
+        \draw<-11>[->] (15, 12.5) node[left] {$P[7]$} -- (16, 12.5);
+        \draw[->] (15, 9.5)  node[left] {$P[8]$} -- (16,  9.5);
+        \draw[->] (15, 6.5)  node[left] {$P[9]$} -- (16,  6.5);
+        \draw[->] (15, 3.5)  node[left] {$P[10]$}-- (16,  3.5);
+      \end{onlyenv}
+    
+      % pointeurs modifiés
+      \draw<6->[->] (15, 24.5) node[left] {$P[3]$} -- +(1, 0);
+      \draw<9->[->] (15, 30.5) node[left] {$P[0]$} -- +(1, 0);
+      \draw<12->[->] (15, 11.5) node[left] {$P[7]$} -- +(1, 0);
+      
+      % flèches de progression à gauche
+      \draw<4-5>[thick,->] (-2, 31.5) -- +(2, 0);
+      \draw<7-8>[thick,->] (-2, 30.5) -- +(2, 0);
+      \draw<10-11>[thick,->] (-2, 29.5) -- +(2, 0);
+
+      \draw<5>[->] (9, 31.5) -- (10, 30.5) -- (10, 27) -- (14, 27) -- (16, 26);
+      \draw<8>[->] (9, 30.5) -- (14, 30.5) -- (16, 31);
+      \draw<11>[->] (9, 29.5) -- (10, 29.5) -- (10, 13.5) -- (14, 13.5) -- (16, 13);
+      
+\end{tikzpicture}
+  
+      
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+  \frametitle{Bucket Sort : analyse}
+
+
+  \begin{exampleblock}{Phase \og histogramme\fg{}}
+    \begin{itemize}
+    \item $C$ tient en cache ? 
+    \item \# buckets $\times$ \mintinline[fontsize=\normalsize]{C}{sizeof(int)} $\leq$ 32Ko ?
+    \item \# buckets $\leq$ 8192 \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Content.png}}
+    \end{itemize}
+  \end{exampleblock}
+
+  \medskip
+
+  \begin{alertblock}{Phase \og Dispatch\fg{}}
+    \begin{itemize}
+    \item Écrit dans \#buckets adresses \red{éloignées}
+    \item Un bucket $\leftrightarrow$ une ligne de cache
+    \item \# buckets $\leq$ 512 \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Content.png}}
+    \item \scriptsize Nécessite $C$ + cible en cache
+    \end{itemize}
+  \end{alertblock}  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{GEMV : produit matrice-vecteur}
+
+  \begin{block}{version directe}
+\begin{minted}{C}
+/* y += A*x */
+void gemv(int n, int m, int stride, double * A, double * x, double * y)
+{
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++)
+            y[i] += A[i * stride + j] * x[j];
+}
+\end{minted}
+    \begin{itemize}
+    \item Lit la matrice $A$ à 7Go/s sur ma machine
+    \item 50\% de la bande passante de la RAM
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{GEMV : produit matrice-vecteur}
+
+\begin{alertblock}{version par blocs}
+\begin{minted}{C}
+static const int nb = 8;
+void gemvb(int n, int m, int stride, double *A, double *x, double * y)
+{
+    int nhi = (n / nb) * nb;
+    int mhi = (m / nb) * nb;
+    int nextra = n - nhi;
+    int mextra = m - mhi;
+    for (int i = 0; i < mhi; i += nb) {
+        for (int j = 0; j < nhi; j += nb)
+            gemv(nb, nb, stride, &A[i*stride + j], &x[j], &y[i]);
+        gemv(nb, nextra, stride, &A[i*stride + nhi], &x[nhi], &y[i]);
+    }
+    for (int j = 0; j < nhi; j += nb)
+        gemv(nb, mextra, stride, &A[mhi*stride + j], &x[j], &y[mhi]);
+    gemv(mextra, nextra, stride, &A[mhi*stride + nhi], &x[nhi], &y[mhi]);
+}
+\end{minted}
+    \begin{itemize}
+    \item Lit la matrice $A$ à 15Go/s sur ma machine
+    \item 100\% de la bande passante de la RAM
+    \item $2\times$ plus rapide que le naïf
+    \end{itemize}
+
+\end{alertblock}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+  \frametitle{SpMV : l'opération maudite}
+
+\begin{minted}{C}
+for (long k = 0; k < nnz; k++) {
+    int i = transpose ? Mj[k] : Mi[k];
+    int j = transpose ? Mi[k] : Mj[k];
+    double v = Mx[k];
+    double a = y[i];              // risque
+    double b = x[j];              // risque
+    y[i] = a + b * v;
+}
+\end{minted}
+
+  \begin{itemize}
+  \item Trier \texttt{Mi} $\leadsto$ fautes sur $x$
+  \item Trier \texttt{Mj} $\leadsto$ fautes sur $y$    
+  \item L'usage de \textbf{blocs} de vecteurs \red{amortit} les fautes de cache
+  \item Idée \og raisonnable\fg{} : blocs de la taille d'une ligne de cache
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Peut-on observer tout ces phénomènes ?}
+
+  \begin{exampleblock}{Oui !}
+    \begin{itemize}
+    \item Exécution : \og évènements\fg{} (faute de cache, etc.)
+    \item Ces évènements ont des \textbf{noms}...
+      \begin{itemize}
+      \item ... qui varient d'un système / mécanisme à l'autre
+      \end{itemize}
+    \item Compteurs matériels $\leadsto$ mesure
+    \item Pas très facile d'accès et pas vraiment portable (OS / CPU-spécifique)
+    \end{itemize}
+  \end{exampleblock}
+  
+  \begin{block}{Sous Linux, avec \texttt{perf}}
+    \begin{itemize}
+    \item Liste des évènements : \texttt{perf list}
+      \begin{itemize}
+      \item \texttt{cpu-cycles}, \texttt{instructions}, \texttt{L1-dcache-load-misses}, ...
+      \end{itemize}
+    \item \texttt{perf stat -e [list evt] ./prog}
+    \item \texttt{perf record -e [list evt] ./prog} puis \texttt{perf report}
+    \end{itemize}
+  \end{block}
+
+  + profilage avec \texttt{score-p}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Peut-on observer tout ces phénomènes ?}
+
+  \begin{alertblock}{Instrumentation manuelle avec la bibliothèque \texttt{PAPI}}
+    \begin{itemize}
+    \item La documentation ÉTAIT peu lisible
+    \item Nouvelle version 6.0
+    \item Nouvelles API
+    \item Utilitaire \texttt{papi\_avail} liste les évènements
+      \begin{itemize}
+      \item \texttt{PAPI\_L1\_DCM  : Level 1 data cache misses}
+      \end{itemize}
+    \item Puis instrumentation du code...
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
+\begin{frame}[fragile]
+\frametitle{PAPI : initialisation}
+\begin{minted}{C}
+#include <papi.h>
+
+void error (int rc)
+{
+     printf("PAPI error %d: %s\n", rc, PAPI_strerror(rc));
+     // ...
+}
+// ...
+int rc;
+int EventSet = PAPI_NULL;
+long long values[3];
+
+/* Initialize the PAPI library */
+rc = PAPI_library_init(PAPI_VER_CURRENT);
+if (retval != PAPI_VER_CURRENT) error(rc);
+
+/* Create the Event Set */
+if (rc = PAPI_create_eventset(&EventSet) != PAPI_OK) error(rc);
+
+/* Configure the Event Set */
+if (rc = PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK) error(rc);
+if (rc = PAPI_add_event(EventSet, PAPI_L3_DCM) != PAPI_OK) error(rc);
+if (rc = PAPI_add_event(EventSet, PAPI_MEM_SCY) != PAPI_OK) error(rc);
+\end{minted}
+\end{frame}
+  
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\begin{frame}[fragile]
+  \frametitle{PAPI : lecture des compteurs}
+  
+\begin{minted}{C}
+/* Start counting events in the Event Set */
+if (PAPI_start(rc = EventSet) != PAPI_OK) error(rc);
+
+// HERE : observed code 
+
+/* Read the counting events in the Event Set */
+if (rc = PAPI_read(EventSet, values) != PAPI_OK) error(rc);
+
+printf("Instructions completed: %lld\n", values[0]);
+printf("Level 3 data cache misses: %lld\n", values[1]);
+printf("Cycles Stalled Waiting for memory accesses: %lld\n", values[2]);
+\end{minted}
+
+\end{frame}
+  
 \end{document}
 
 
