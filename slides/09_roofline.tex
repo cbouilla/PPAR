@@ -1,9 +1,7 @@
-\documentclass[xcolor={x11names,svgnames}, 14pt]{beamer}
+\documentclass[xcolor={x11names,svgnames}]{beamer}
 \setbeamerfont{note page}{size=\tiny} % default = small 
 
-
-%\includeonlyframes{applications}
-
+%\includeonlyframes{roofline_intro}
 
 \usecolortheme{rose}
 \setbeamertemplate{footline}{}
@@ -20,6 +18,7 @@
 
 \usepackage{minted}
 %\setminted{fontsize=\scriptsize}
+\newcommand{\bigO}[1]{\ensuremath{\mathcal{O}\left( #1 \right)} }
 
 \usepackage{tikz}
 \usetikzlibrary{calc}
@@ -53,12 +52,9 @@
 
 
 \author[C.~Bouillaguet]{Charles Bouillaguet \newline
-  {\small \texttt{charles.bouillaguet@univ-lille.fr}}}
+  {\small \texttt{charles.bouillaguet@lip6.fr}}}
 
 \title{Cours 9 : puissance de crête, équilibrage, intensité opérationnelle, etc.}
-%\date{2020-02-28}
-
-
 
 
 \begin{document}
@@ -157,14 +153,14 @@
 
   \begin{itemize}
   \item Noeuds : 1528
-  \item CPU Xéon Gold 6248 @ \alert{[ça dépend]} GHz
-  \item Coeurs : 20
+  \item CPU Xeon Gold 6248 @ \alert{[ça dépend]} GHz
+  \item Coeurs : 20 (2 CPU / noeud)
   \item Unités SIMD : 512-bits (8 doubles)
   \item Fused Multiply-Add : oui
   \item instruction/cycle maximum : \alert{2 FMA}
     \begin{itemize}
-    \item Xeon Bronze \& Silver : 1 seul.
-    \item Xeon Gold \& Platinum : 2.
+    \item Certains Xeon : 1 seul
+    \item D'autres Xeon : 2
     \end{itemize}
   \end{itemize}
 \end{frame}
@@ -185,6 +181,10 @@
 
 \bigskip
 
+Pour les Intel Xeon Gold 6248 :
+
+\medskip
+
 \centering
   \small
 \begin{tabular}{|c|c||c|c|c|c|c|c|c|c|}
@@ -200,6 +200,12 @@
   AVX512 & 1.6	& 3.8 & 3.6 & 3.5 & 3.0 & 2.7 & 2.5 \\
   \hline
 \end{tabular}
+
+\begin{alertblock}{Conclusion}
+  \centering
+  $\text{SSE } \xrightarrow{\times 3} \text{ AVX-2 } \xrightarrow{\times 1.7} \text{ AVX-512}$
+\end{alertblock}
+
 \end{frame}
 
 %%%%%%%%%%%%
@@ -219,23 +225,205 @@
   \[
     IO = \dfrac{\text{FLOP}}{\text{Octets }\leftrightarrow\text{ RAM}}
   \]
+
+  (see also: intensité arithmétique)
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-  \frametitle{Intensité Opérationnelle}
-  \framesubtitle{Intérêt}
+\begin{frame}[label=roofline_intro]
+  \frametitle{Diagramme \emph{roofline} --- 1 coeur}
+  \framesubtitle{Intérêt :     $\text{[FLOPS]} \leq \max \bigl( [\text{peak FLOPS}],  [IO] \times [\text{peak RAM BW}]\bigr)$}
+    
+  \begin{tikzpicture}[scale=0.8, font=\scriptsize]
+    % outer box
+    \draw[thick] (0, 0) rectangle +(12, 8);
+
+    % help lines
+    \foreach \i in {1, ..., 11}
+    \draw[gray, semitransparent, densely dashed] (\i, 0) -- +(0, 8);
+
+    \foreach \j in {1, ..., 7}
+    \draw[gray, semitransparent, densely dashed] (0, \j) -- +(12, 0);
+
+    % left labels
+    \foreach \j / \lab in {0 / 1, 1 / 2, 2 / 4, 3 / 8, 4 / 16, 5 / 32, 6 / 64, 7 / 128, 8 / 256}
+    \draw[] (0, \j) -- +(-0.1, 0) node[anchor=east,] {\lab};
+
+    % left axis label
+    \node[rotate=90, anchor=south] at (-1, 4) {Attainable GFLOP/s};
+
+    % bottom labels
+    \foreach \i / \lab in {0 / $\frac{1}{64}$, 1 / $\frac{1}{32}$, 2 / $\frac{1}{16}$, 3 / $\frac{1}{8}$, 4 / $\frac{1}{4}$,
+      5 / $\frac{1}{2}$, 6 / 1, 7 / 2, 8 / 3, 9 / 4, 10 / 8, 11 / 16, 12 / 32}
+    \draw[] (\i, 0) -- +(0, -0.1) node[anchor=north] {\lab};
+
+    % left axis label
+    \node[anchor=north] at (5, -0.75) {FLOP / byte};
+
+    \begin{scope}
+    \path[clip] (0, 0) rectangle +(12, 8);
+
+
+    % peak CPU GFLOPS
+    \fill<1-3>[nearly transparent, blue] (0, 2.3) rectangle (12, 8);
+    \draw<1-3>[ultra thick, blue] (0, 2.3) -- +(12, 0) node[anchor=south east,text=black] at (12, 2.3) {scalar};
+    \draw<4->[ultra thick, blue, dashed, nearly transparent] (0, 2.3) -- +(12, 0);
+
+    
+    \fill<4>[nearly transparent, blue] (0, 3.9) rectangle (12, 8);
+    \draw<4>[ultra thick, blue] (0, 3.9) -- +(12, 0) node[anchor=south east,text=black] at (12, 3.9) {AVX2};
+    \draw<5->[ultra thick, blue, dashed, nearly transparent] (0, 3.9) -- +(12, 0);
+
+    
+    \fill<5>[nearly transparent, blue] (0, 4.7) rectangle (12, 8);
+    \draw<5>[ultra thick, blue] (0, 4.7) -- +(12, 0) node[anchor=south east,text=black] at (12, 4.7) {AVX512};
+    \draw<6->[ultra thick, blue, dashed, nearly transparent] (0, 4.7) -- +(12, 0);
+
+    
+    \fill<6>[nearly transparent, blue] (0, 5.7) rectangle (12, 8);
+    \draw<6>[ultra thick, blue] (0, 5.7) -- +(12, 0) node[anchor=south east,text=black] at (12, 5.7) {+FMA};
+    \draw<7->[ultra thick, blue, dashed, nearly transparent] (0, 5.7) -- +(12, 0);
+
+    
+    \fill<7->[nearly transparent, blue] (0, 6.7) rectangle (12, 8);
+    \draw<7->[ultra thick, blue] (0, 6.7) -- +(12, 0) node[anchor=south east,text=black] at (12, 6.7) {+ILP};
+
+
+    % peak DRAM bandwith    
+    \fill<2>[nearly transparent, orange] (0, 0) -- (2.13, 0) -- (10.13, 8) -- (0, 8) -- cycle;
+    % 4 - log2(15)                            5 + 8 - log2(15) 
+    \draw<2>[ultra thick, orange] (2.13, 0) -- node[pos=0.1, above, sloped, black] {Peak DRAM BW} (10.13, 8);
+    \draw<3->[ultra thick, orange, nearly transparent, dashed] (2.13, 0) -- (10.13, 8);
+
+    % peak L1
+    \fill<3-7>[nearly transparent, orange] (0, 0) -- (-1.022, 0) -- (6.977, 8) -- (0, 8) -- cycle;
+    \draw<3-7>[ultra thick, orange] (-1.022, 0) -- node[pos=0.36, above, sloped, black] {Peak L1 BW} (6.977, 8);
+
+    % peak L2
+    \fill<8>[nearly transparent, orange] (0, 0) -- (0.0811, 0) -- (8.0811, 8) -- (0, 8) -- cycle;
+    \draw<8>[ultra thick, orange] (0.0811, 0) -- node[pos=0.125, above, sloped, black] {Peak L2 BW} (8.0811, 8);
+  \end{scope}
   
-    \centering
-    \scalebox{0.8}{
-      $\text{[FLOPS]} \leq \max \bigl( [\text{peak FLOPS}],  [IO] \times [\text{peak RAM BW}]\bigr)$
-    }
-
-  \includegraphics[height=6cm]{roofline_basic.pdf}
+  \end{tikzpicture}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=roofline_intro]
+  \frametitle{Diagramme \emph{roofline} --- 1 coeur (résumé)}
+  \framesubtitle{Intérêt :     $\text{[FLOPS]} \leq \max \bigl( [\text{peak FLOPS}],  [IO] \times [\text{peak RAM BW}]\bigr)$}
+    
+  \begin{tikzpicture}[scale=0.8, font=\scriptsize]
+    % outer box
+    \draw[thick] (0, 0) rectangle +(12, 8);
+
+    % help lines
+    \foreach \i in {1, ..., 11}
+    \draw[gray, semitransparent, densely dashed] (\i, 0) -- +(0, 8);
+
+    \foreach \j in {1, ..., 7}
+    \draw[gray, semitransparent, densely dashed] (0, \j) -- +(12, 0);
+
+    % left labels
+    \foreach \j / \lab in {0 / 1, 1 / 2, 2 / 4, 3 / 8, 4 / 16, 5 / 32, 6 / 64, 7 / 128, 8 / 256}
+    \draw[] (0, \j) -- +(-0.1, 0) node[anchor=east,] {\lab};
+
+    % left axis label
+    \node[rotate=90, anchor=south] at (-1, 4) {Attainable GFLOP/s};
+
+    % bottom labels
+    \foreach \i / \lab in {0 / $\frac{1}{64}$, 1 / $\frac{1}{32}$, 2 / $\frac{1}{16}$, 3 / $\frac{1}{8}$, 4 / $\frac{1}{4}$,
+      5 / $\frac{1}{2}$, 6 / 1, 7 / 2, 8 / 3, 9 / 4, 10 / 8, 11 / 16, 12 / 32}
+    \draw[] (\i, 0) -- +(0, -0.1) node[anchor=north] {\lab};
+
+    % left axis label
+    \node[anchor=north] at (5, -0.75) {FLOP / byte};
+
+    \begin{scope}
+    \path[clip] (0, 0) rectangle +(12, 8);
+
+    % peak CPU GFLOPS
+    \draw[ultra thick, blue] (0, 2.3) -- +(12, 0) node[anchor=south east,text=black] at (12, 2.3) {scalar};
+    \draw[ultra thick, blue] (0, 3.9) -- +(12, 0) node[anchor=south east,text=black] at (12, 3.9) {AVX2};
+    \draw[ultra thick, blue] (0, 4.7) -- +(12, 0) node[anchor=south east,text=black] at (12, 4.7) {AVX512};
+    \draw[ultra thick, blue] (0, 5.7) -- +(12, 0) node[anchor=south east,text=black] at (12, 5.7) {+FMA};
+    \draw[ultra thick, blue] (0, 6.7) -- +(12, 0) node[anchor=south east,text=black] at (12, 6.7) {+ILP};
+
+    % peak DRAM bandwith    
+    \draw[ultra thick, orange] (2.13, 0) -- node[pos=0.1, above, sloped, black] {Peak DRAM BW} (10.13, 8);
+    \draw[ultra thick, orange] (-1.022, 0) -- node[pos=0.36, above, sloped, black] {Peak L1 BW} (6.977, 8);
+    \draw[ultra thick, orange] (0.0811, 0) -- node[pos=0.125, above, sloped, black] {Peak L2 BW} (8.0811, 8);
+  \end{scope}
+  
+  \end{tikzpicture}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=roofline_intro]
+  \frametitle{Diagramme \emph{roofline} --- 1 noeud entier}
+    
+  \begin{tikzpicture}[scale=0.8, font=\scriptsize]
+    % outer box
+    \draw[thick] (0, 0) rectangle +(12, 9);
+
+    % help lines
+    \foreach \i in {1, ..., 11}
+    \draw[gray, semitransparent, densely dashed] (\i, 0) -- +(0, 9);
+
+    \foreach \j in {1, ..., 8}
+    \draw[gray, semitransparent, densely dashed] (0, \j) -- +(12, 0);
+
+    % left labels
+    \foreach \j / \lab in {0 / 1, 1 / 2, 2 / 4, 3 / 8, 4 / 16, 5 / 32, 6 / 64, 7 / 128, 8 / 256, 9 / 512}
+    \draw[] (0, \j) -- +(-0.1, 0) node[anchor=east,] {\lab};
+
+    % left axis label
+    \node[rotate=90, anchor=south] at (-1, 4) {Attainable GFLOP/s};
+
+    % bottom labels
+    \foreach \i / \lab in {0 / $\frac{1}{64}$, 1 / $\frac{1}{32}$, 2 / $\frac{1}{16}$, 3 / $\frac{1}{8}$, 4 / $\frac{1}{4}$,
+      5 / $\frac{1}{2}$, 6 / 1, 7 / 2, 8 / 3, 9 / 4, 10 / 8, 11 / 16, 12 / 32}
+    \draw[] (\i, 0) -- +(0, -0.1) node[anchor=north] {\lab};
+
+    % left axis label
+    \node[anchor=north] at (5, -0.75) {FLOP / byte};
+
+    \begin{scope}
+    \path[clip] (0, 0) rectangle +(12, 9);
+
+
+    % peak CPU GFLOPS
+    \fill<1-2>[nearly transparent, blue] (0, 3.9) rectangle (12, 9);
+    \draw<1-2>[ultra thick, blue] (0, 3.9) -- +(12, 0) node[anchor=south east,text=black] {1 core (AVX2)};
+    \draw<3->[ultra thick, blue, dashed, nearly transparent] (0, 3.9) -- +(12, 0);
+    
+    \fill<3>[nearly transparent, blue] (0, 8.5) rectangle (12, 9);
+    \draw<3>[ultra thick, blue] (0, 8.5) -- +(12, 0) node[anchor=north east,text=black] {32 cores (AVX2)};
+
+    % 1 core
+    \fill<2>[nearly transparent, orange] (0, 0) -- (-1.022, 0) -- (7.977, 9) -- (0, 9) -- cycle;
+    \draw<2>[ultra thick, orange] (-1.022, 0) -- node[pos=0.25, above, sloped, black] {Peak L1 BW} (7.977, 9);
+    \draw<3>[ultra thick, orange, dashed, nearly transparent] (-1.022, 0) -- (7.977, 9);
+
+    \fill<2>[nearly transparent, orange] (0, 0) -- (2.13, 0) -- (11.13, 9) -- (0, 9) -- cycle;
+    \draw<2>[ultra thick, orange] (2.13, 0) -- node[pos=0.1, above, sloped, black] {Peak DRAM BW} (11.13, 9);
+    \draw<3->[ultra thick, orange, dashed, nearly transparent] (2.13, 0) -- (11.13, 9);
+
+    % 32 cores
+    \fill<3>[nearly transparent, orange] (0, 0) -- (-5.82, 0) -- (3.417, 9) -- (0, 9) -- cycle;
+    \draw<3>[ultra thick, orange] (-5.82, 0) -- node[pos=0.8, above, sloped, black] {Peak L1 BW} (3.417, 9);
+
+    \fill<3>[nearly transparent, orange] (0, 0) -- (-1.28, 0) -- (7.72, 9) -- (0, 9) -- cycle;
+    \draw<3>[ultra thick, orange] (-1.28, 0) -- node[pos=0.3, above, sloped, black] {Peak DRAM BW} (7.72, 9);
+  \end{scope}
+  
+  \end{tikzpicture}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile]
   \frametitle{Intensité Opérationnelle}
@@ -254,7 +442,7 @@ for (int j = 0; j < N; j++)
   \bigskip
 
   \[
-    IO = 1/8.
+    IO = 1 \text{FLOP / double} = 1/8
   \]  
 \end{frame}
 
@@ -280,13 +468,13 @@ for (int i = 0; i < N; i++) {
 
   \[
     IO = \begin{cases}
-      1 / 4 & \text{ si $x$ tient en cache} \\
-      1 / 8 & \text{ sinon}
+      \text{2 FLOP / double} = 1 / 4 & \text{ si $x$ tient en cache} \\
+      \text{1 FLOP / double} = 1 / 8 & \text{ sinon}
     \end{cases}
   \]  
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile]
   \frametitle{Intensité Opérationnelle}
@@ -294,11 +482,10 @@ for (int i = 0; i < N; i++) {
   
   \begin{block}{Produit matrice creuse-vecteur dense}
 \begin{minted}{C}
-for (int i = 0; i < n; i++) {
-  y[i] = 0;
-  for (int u = Ap[i]; u < Ap[i+1]; u++) {
-    int j = Aj[u];
-    y[i] += Ax[u] * x[j];
+for (int k = 0; i < NNZ; i++) {
+    int i = Ai[k];
+    int j = Aj[k];
+    y[i] += Ax[k] * x[j];
   }
 }
 \end{minted}
@@ -308,8 +495,8 @@ for (int i = 0; i < n; i++) {
 
   \[
     IO = \begin{cases}
-      1 / 6  & \text{ si $x$ tient en cache} \\
-      1 / 10 & \text{ sinon}
+      1 / 8  & \text{ si $x$ tient en cache} \\
+      1 / 12 & \text{ sinon}
     \end{cases}
   \]  
 \end{frame}
@@ -320,223 +507,291 @@ for (int i = 0; i < n; i++) {
   \frametitle{Améliorer l'intensité opérationnelle ?}
 
   \begin{itemize}
-  \item En général, il faut changer les algos...
+  \item En général, il faut changer les algos (\emph{blocking}...)
   \item Optimisation generique : \emph{loop fusion}.
   \end{itemize}
 
   \bigskip
   
-  \begin{columns}
+  \begin{columns}[T]
     \begin{column}{0.5\textwidth}
 \begin{minted}[fontsize=\scriptsize]{C}
 /* Mauvais */
 for (int i = 0; i < N; i++)
-    A[i] = B[i] * C[i];
+    A[i] += B[i] * C[i];
 for (int i = 0; i < N; i++)
-    D[i] = B[i] + E[i];
+    D[i] += B[i] + E[i];
 \end{minted}
     \end{column}
     \begin{column}{0.5\textwidth}
 \begin{minted}[fontsize=\scriptsize]{C}
 /* Meilleur */
 for (int i = 0; i < N; i++) {
-    A[i] += B[i] * C[i];
-    D[i] += B[i] + E[i];
+    double Bi = B[i];
+    A[i] += Bi * C[i];
+    D[i] += Bi + E[i];
 }
 \end{minted}
     \end{column}
   \end{columns}
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[fragile]
-  \frametitle{Application : dans le projet...}
-
-\begin{minted}[fontsize=\small]{C}
-for (int i = 0; i < n; i++) {
-   x[i] += alpha * p[i];
-   r[i] -= alpha * q[i];
-   z[i] = r[i] / d[i];
-}
-rz = dot(n, r, z);
-\end{minted}
-
-  \medskip
-  \hrule
-  \medskip
-
-\begin{minted}[fontsize=\small]{C}
-rz = 0
-for (int i = 0; i < n; i++) {
-   x[i] += alpha * p[i];
-   r[i] -= alpha * q[i];
-   z[i] = r[i] / d[i];  // on pouvait l'éliminer...
-   rz += r[i] * z[i];
-}
-\end{minted}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{Retour sur le projet}
-
-  \begin{alertblock}{Dans la plupart des cas...}
-    \begin{itemize}      
-    \item Temps de calcul dominé par SPMV
-      \begin{itemize}
-      \item Matrice creuse $\times$ vecteur dense
-      \end{itemize}
-    \item Matrice grosse (e.g. Serena = 800 Mo)
-    \item Vecteur petit (n $\approx 10^6$, 8Mo $\rightarrow$ OK cache L3)
-    \item[$\Rightarrow$] Intensité arithmétique $\approx 1/6$.
-    \end{itemize}
-  \end{alertblock}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{Diagramme \og Roofline\fg{}}
-  \centering
-  \includegraphics[width=\textwidth]{roofline_ppti.pdf}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{Diagramme \og Roofline\fg{}}
-  \centering
-  \includegraphics[width=\textwidth]{roofline_ppti2.pdf}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{On peut aussi le faire avec le réseau !}
-
-  \begin{block}{Solution naïve}
-    \begin{itemize}
-    \item Vecteurs réparti entre $p$ noeuds.
-    \item On a besoin de tout $x$ pour faire $y \gets A\cdot x$...
-    \item[$\Rightarrow$] \texttt{MPI\_Allgather} à chaque itération sur $x$
-    \item Chaque noeud reçoit $8n \frac{p-1}{p}$ octets / itération.
-    \item Une itération $\approx 2W$ FLOP (dans SPMV)
-    \end{itemize}
-  \end{block}
-
-  \begin{alertblock}{Dans la PPTI}
-    Gigabit ethernet = 128Mo/s \small (dans le meilleur des cas)
-  \end{alertblock}
-
-  \only<1>{$8n \times [\text{itération/s}] \leq 128 \cdot 10^6$}
-  \only<2>{$8n \times [\text{FLOPS}] / 2W \leq 128 \cdot 10^6$}
-  \only<3>{$[\text{FLOPS}] \leq 32 \frac{W}{n} \cdot 10^6 $}
-  
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{On peut aussi le faire avec le réseau !}
-  
-  \begin{block}{Matrice \og Serena\fg{}}
-    \begin{itemize}
-    \item $n = 1.4e6$ et $W = 64e6$
-    \item 2 GigaFLOPS et 14 itération/s sur un poste.
-    \end{itemize}
-  \end{block}
-
-  \begin{overlayarea}{\textwidth}{5cm}
-  \begin{alertblock}<only@1>{Si on passe par le réseau de la PPTI...}
-    \begin{itemize}
-    \item $[\text{FLOPS}] \leq 32 \frac{W}{n} \cdot 10^6 $
-    \item[$\Rightarrow$] $\leq 1.6$ GigaFLOPS (à cause du réseau)
-    \end{itemize}
-  \end{alertblock}
-
-  \begin{exampleblock}<only@2>{Si on avait un \textbf{meilleur} réseau ?}
-    \begin{itemize}
-    \item Infiniband/Omnipath à 100 Gigabit/s ?
-    \item $[\text{FLOPS}] \leq 32 \frac{W}{n} \cdot 10^{\alert{8}}$
-    \item[$\Rightarrow$] $\leq 163$ GigaFLOPS (à cause du réseau)
-    \item[$\Rightarrow$] $82$ noeuds ont assez de FLOPS pour saturer
-    \end{itemize}
-  \end{exampleblock}
-\end{overlayarea}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{Modèle I/O simplifié}
-
-  \begin{block}{Hypothèses}
   \begin{itemize}
-  \item Mémoire \textbf{lente} (grosse ; e.g. RAM).
-  \item Mémoire \textbf{rapide} (petite ; e.g. cache).
-  \item CPU relié à la mémoire rapide uniquement.
-  \item Transferts CPU $\leftrightarrow$ rapide = \alert{gratuit}.
+  \item[$\rightarrow$] projet 
   \end{itemize}
-\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile, label=blocking]
+  \frametitle{Améliorer l'intensité opérationnelle ?}
+
+  \begin{itemize}
+  \item En général, il faut changer les algos (\alert{\emph{blocking}}...)
+  \end{itemize}
+
+  \begin{center}
+    \begin{tikzpicture}
+    \draw[thick, fill=LimeGreen] (-1, 0) rectangle +(0.25, 4);
+    \draw[thick, fill=red] (4.75, 0) rectangle +(0.25, 4);
+    \draw[thick, fill=cyan] (0, 0) rectangle (4, 4);
+    \node at (-0.375, 2) {=};
+    \node at (4.375, 2) {$\times$};
+    \foreach \i in {1, 2, 3} {
+      \draw (\i, 0) -- +(0, 4);
+      \draw (0, \i) -- +(4, 0);
+      \draw (-1, \i) -- +(0.25, 0);
+      \draw (4.75, \i) -- +(0.25, 0);
+    }
+  \end{tikzpicture}
+\end{center}
 
 \begin{itemize}
-  \item $\nu$ FLOP, $\mu$ doubles transférés ($IO = \frac{\nu}{8\mu}$). 
-  \item Un FLOP : $t_\nu$. Un transfert : $t_\mu$.
+\item Charger un bout de $x$ en cache
+\item Charger un bout de $y$ en cache (y est déjà ?)
+\item Faire le produit avec le bloc de $A$ qui correspond
+  \begin{itemize}
+  \item $A$ lu depuis la RAM
   \end{itemize}
-%  \vspace{-0.25cm}
-  \[
-  T = \nu \times t_\nu \pause + \mu \times t_\mu \pause = \nu \times t_\nu \left(1 + \frac{t_\mu}{t_\nu} \times \only<3>{\frac{\mu}{\nu}}\only<4>{\frac{1}{8IO}} \right)
-\]
-
+\item Recommencer avec le bloc suivant
+\end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Serena
-% % # equations:   1,391,349                                           
-% # non-zeroes: 64,531,701                                           
-
-% sequential
-%     ---> CSR matrix size = 796.6Mbyte
-%     ---> Working set : 846.7Mbyte
-% ---> Per iteration: 1.3e+08 FLOP in sp_gemv() and 1.7e+07 FLOP in the rest
-% ---> error : 8.29e+00, iter : 215 (10.0 it/s, 1.46 GFLOPs)^C
-%     ---> Finished in 129.1s and 1344 iterations
-
-% stream : 12 Go/s (1 thread)
-% stream : max BW = 134Go/s (88 threads)
-
-% 88 threads :
-% ---> Finished in 8.9s and 1328 iterations
-
-%spmv
-	% for (int i = 0; i < n; i++) {
-	% 	y[i] = 0;
-	% 	for (int u = Ap[i]; u < Ap[i + 1]; u++) {
-	% 		int j = Aj[u];
-	% 		double A_ij = Ax[u];
-	% 		y[i] += A_ij * x[j];
-	% 	}
-        %       }
-        %       W * 20 bytes + 2W FLOP
-
-        %           for (int i = 0; i < n; i++) {
-        %                 x[i] += alpha * p[i];
-        %                 r[i] -= alpha * q[i];
-        %                 z[i] = r[i] / d[i];
-        %           }
-        %           rz = dot(n, r, z);
-        %           double beta = rz / old_rz;
-        %           for (int i = 0; i < n; i++)
-        %             p[i] = z[i] + beta * p[i];
-        %   7n double + 9n flops
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               
-              
+\begin{frame}[fragile]
+  \frametitle{Améliorer l'intensité opérationnelle ?}
+
+  \begin{itemize}
+  \item En général, il faut changer les algos...
+  \item ... ou les structures de données
+  \end{itemize}
+
+  \bigskip
+
+  \begin{block}{Produit matrice creuse-vecteur dense}
+\begin{minted}{C}
+for (int k = 0; i < NNZ; i++) {
+    int i = Ai[k];
+    int j = Aj[k];
+    y[i] += Ax[k] * x[j];
+  }
+}
+\end{minted}
+\begin{itemize}
+\item Triplets triés par \texttt{Ai[...]} croissant 
+\item[$\Rightarrow$] lit (souvent) le même $i$ que l'itération précédente 
+
+  \pause
+
+\item[$\leadsto$] \alert{Idée} : stocker seulement la position où $i$ change
+\end{itemize}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+  \frametitle{Représentation en mémoire des matrices creuses}
+
+  \[
+    A = \begin{pmatrix}
+      4.5 & 0 & 3.2 & 0 \\
+      3.1 & 2.9 & 0 & 0.9 \\
+      0 & 1.7 & 3.0 & 0 \\
+      3.5 & 0.4 & 0 & 1.0
+    \end{pmatrix}
+  \]
+  
+  \begin{alertblock}{Format \og liste de triplets\fg{} (\emph{COOrdinate})}
+\vspace{-2mm}
+{\scriptsize
+\begin{verbatim}
+int i[]    = { 2,   1,   3,   0,   1,   3,   3,   1,   0,   2   };
+int j[]    = { 2,   0,   3,   2,   1,   0,   1,   3,   0,   1   };
+double x[] = { 3.0, 3.1, 1.0, 3.2, 2.9, 3.5, 0.4, 0.9, 4.5, 1.7 };
+\end{verbatim}
+}
+\vspace{-4mm}
+\begin{itemize}
+    \item Taille : $\texttt{nnz} \times (2 \times \texttt{int} + \texttt{double})$
+    \end{itemize}
+  \end{alertblock}
+
+  \begin{exampleblock}{Format \og par ligne\fg{} (\emph{Compressed Sparse Row})}
+\vspace{-2mm}
+{\scriptsize
+\begin{verbatim}
+int p[]    = { 0,        2,             5,        7,            10 };
+int j[]    = { 0,   2,   0,   1,   3,   1,   2,   0,   1,   3   };
+double x[] = { 4.5, 3.2, 3.1, 2.9, 0.9, 1.7, 3.0, 3.5, 0.4, 1.0 };
+\end{verbatim}
+}
+\vspace{-4mm}
+\begin{itemize}
+    \item Taille : $\texttt{nnz} \times (\texttt{int} + \texttt{double}) + (n + 1) \times \texttt{int}$
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+  \frametitle{Représentation en mémoire des matrices creuses}
+  
+  \begin{alertblock}{Format \og liste de triplets\fg{} (\emph{COOrdinate})}
+    \begin{itemize}
+    \item Triplets \textbf{pas triés}
+    \item Pratique pour les I/O, transposition gratuite \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Content.png}}
+    \item Seule opération possible : produit matrice-vecteur \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Triste.png}}
+    \end{itemize}
+  \end{alertblock}
+
+  \begin{exampleblock}{Format \og par ligne\fg{} (\emph{Compressed Sparse Row})}
+    \begin{itemize}
+    \item Triplets \textbf{triés} (nécessite \alert{conversion} depuis COO \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Triste.png}})
+    \item Possible d'itérer sur une ligne \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Content.png}}
+\begin{minted}[fontsize=\scriptsize]{C}
+for (int i = 0; i < n; i++)
+    for (int k = Ap[i]; k < Ap[i + 1]; k++) {
+        int j = Aj[k];
+        y[i] += Ax[k] * x[j];
+    }
+\end{minted}
+    \item Plus compact \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Content.png}}
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Opérations fréquentes}
+
+  \begin{itemize}
+  \item $z \gets x \cdot y$ et $y \gets y + Ax$
+    \begin{itemize}
+    \item $IO = \bigO{1}$
+    \item Quasiment toujours \alert{memory-bound} \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Triste.png}}
+    \end{itemize}
+
+    \bigskip
+
+  \item $C \gets FFT(x)$ 
+    \begin{itemize}
+    \item $IO = \bigO{\log n}$
+    \item $\approx$ 1\% des performances de crête
+    \end{itemize}
+
+    \bigskip
+    
+  \item $C \gets C + AB$
+    \begin{itemize}
+    \item $IO = \bigO{n}$
+    \item 50-80\% des performances de crête \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Content.png}}
+    \item Intérêt d'utiliser les BLAS-3 dès que possible
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{En toute généralité}
+
+  \begin{theorem}
+    Si un bout de code traite des données de taille $M$ octets et effectue $F$ opérations
+    arithmétiques, alors $IO \leq F / M$
+  \end{theorem}
+
+  \begin{align*}
+    [\text{Time}]  &\leq [\text{Local Computation}] + [\text{Memory Transfer}] \\
+                   &\leq \frac{[\text{\#FLOP}]}{[\text{CPU speed}]} + \frac{[\text{\# byte transferred}]}{[\text{DRAM bandwidth}]} \\
+                   &\leq \frac{[\text{\#FLOP}]}{[\text{CPU speed}]} \left( 1 + \frac{[\text{\# byte transferred}]}{[\text{DRAM bandwidth}]} \cdot \frac{[\text{CPU speed}]}{[\text{\#FLOP}]} \right) \\
+                   &\leq \frac{[\text{\#FLOP}]}{[\text{CPU speed}]} \left( 1 + \frac{[\text{\# byte transferred}]}{[\text{\#FLOP}]} \cdot \frac{[\text{CPU speed}]}{[\text{DRAM bw}]}  \right) \\
+                   &\leq \frac{[\text{\#FLOP}]}{[\text{CPU speed}]} \left( 1 + \frac{[\text{Machine Balance}]}{[\text{Operational Intensity}]} \right) \\
+  \end{align*}
+\end{frame}  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Avec le réseau aussi}
+
+  Par ex. : projet (Distribution 1D) $\leadsto$ $nnz$ FLOP + $n$ communication
+
+  \begin{tikzpicture}[scale=0.8, font=\scriptsize]
+    % outer box
+    \draw[thick] (0, 0) rectangle +(12, 7);
+
+    % help lines
+    \foreach \i in {1, ..., 11}
+    \draw[gray, semitransparent, densely dashed] (\i, 0) -- +(0, 7);
+
+    \foreach \j in {1, ..., 6}
+    \draw[gray, semitransparent, densely dashed] (0, \j) -- +(12, 0);
+
+    % left labels
+    \foreach \j / \lab in {0 / 1, 1 / 2, 2 / 4, 3 / 8, 4 / 16, 5 / 32, 6 / 64, 7 / 128}
+    \draw[] (0, \j) -- +(-0.1, 0) node[anchor=east,] {\lab};
+
+    % left axis label
+    \node[rotate=90, anchor=south] at (-1, 4) {Attainable GFLOP/s};
+
+    % bottom labels
+    \foreach \i / \lab in {0 / 7, 1 / 11, 2 / 18, 3 / 30, 4 / 47,
+      5 / 76, 6 / 123, 7 / 199, 8 / 321, 9 / 521, 10 / 842, 11 / 1364}
+    \draw[] (\i, 0) -- +(0, -0.1) node[anchor=north] {\lab};
+
+    % left axis label
+    \node[anchor=north] at (5, -0.75) {\#nz / row};
+
+    \begin{scope}
+    \path[clip] (0, 0) rectangle +(12, 7);
+
+
+    % peak CPU GFLOPS
+    \fill<1>[nearly transparent, blue] (0, 1.5) rectangle (12, 9);
+    \draw<1>[ultra thick, blue] (0, 1.5) -- +(12, 0) node[anchor=south east,text=black] {1 node};
+    \draw<2->[ultra thick, blue, dashed, nearly transparent] (0, 1.5) -- +(12, 0);
+    
+    \fill<2->[nearly transparent, blue] (0, 4.5) rectangle (12, 9);
+    \draw<2->[ultra thick, blue] (0, 4.5) -- +(12, 0) node[anchor=north east,text=black] {8 nodes};
+    \draw<3->[ultra thick, blue, dashed, nearly transparent] (0, 4.5) -- +(12, 0);
+
+    \fill<3->[nearly transparent, blue] (0, 6.5) rectangle (12, 9);
+    \draw<3->[ultra thick, blue] (0, 6.5) -- +(12, 0) node[anchor=north east,text=black] {32 nodes};
+
+    \fill<4->[nearly transparent, orange] (0, 0) -- (2.13, 0) -- (11.13, 9) -- (0, 9) -- cycle;
+    \draw<4->[ultra thick, orange] (2.13, 0) -- node[pos=0.25, above, sloped, black] {Network BW} (11.13, 9);
+  \end{scope}
+  
+  \end{tikzpicture}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \end{document}
 
