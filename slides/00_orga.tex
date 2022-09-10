@@ -25,13 +25,12 @@
 
 
 
-\title[Introduction à la Sécurité]{Introduction à la Sécurité}
 
 \subtitle{Organisation}
-\author[C. Bouillaguet]{\textbf{Charles Bouillaguet / Ninon Devis}}
+\author[C. Bouillaguet]{\textbf{Charles Bouillaguet / Vincent Neiger}}
 \institute[SU]{Sorbonne Université}
 
-\date{ISEC}
+\date{PPAR}
 
 \begin{document}
 %\maketitle
@@ -44,84 +43,158 @@
   
   \vspace{1cm}
   
-  \textbf{\Large Introduction au Calcul Haute Performance : Notions de Base}
+  \textbf{\Large Parallel Programming (PPAR)}
 
   \bigskip
 
-  a.k.a. MU4I903 (Masters Universitaires) a.k.a. N8-IPA (MAIN4)
+  a.k.a. MU4I903 (university masters) a.k.a. N8-IPA (MAIN4)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Organisation de l'UE}
+  \frametitle{This is the Boring Part}
 
-  \begin{block}{Documents, planning, etc.}
-    Tout est sur Moodle !!
+  \begin{block}{Documents, Planning, etc.}
+    Everything is on Moodle !!
   \end{block}
   
   \begin{itemize}
-  \item 10 semaines
-  \item 1 semaine = cours + TD/TP (en principe)
-  \item Pas d'examen réparti au milieu (\og partiel \fg)
-  \item Gros projet
-  \item Deux rendus : un à mi-semestre, un à la fin
+  \item 10 weeks
+  \item 1 week = lecture + TD (exercises) + TP (hands-on in lab room)
+  \item TP: you have to sumbit (brief) reports on Moodle (``homework'')
+  \item No midterm exam (\og partiel \fg)
+  \item Final exam in January (January 11th?)
+  \item Two projects (medium to high difficulty ; lots of work)
+    \begin{itemize}
+    \item Deadline \#1: November 11th
+    \item Deadline \#2: January 11th (tentative)
+    \end{itemize}
   \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \begin{alertblock}{Équipe pédagogique}
-    \begin{description}
-    \item[Cours] ~ 
-      \begin{itemize}    
-      \item Charles Bouillaguet (SU)
-      \end{itemize}
-      
-    \item[TD/TP (SFPN/IQ/...)] ~ 
-      \begin{itemize}    
-      \item Vincent Neiger (SU)
+  \begin{block}{How Will You be Evaluated?}
+    \begin{itemize}
+    \item \textbf{Final Exam (20 points)} 
+      \begin{itemize}
+      \item Actual date unknown (educated guess: January 11th)
       \end{itemize}
 
-    \item[TD/TP (MAIN4)] ~ 
+      \medskip
+      
+    \item \textbf{Two projects (2 $\times$ 20 points)} 
       \begin{itemize}
-      \item Charles Bouillaguet (SU)
+      \item November 11th
+      \item January 10th (?)
       \end{itemize}
-    \end{description}
+      
+      \medskip
+
+    \item \textbf{Homework (0 points)} 
+      \begin{itemize}
+      \item Not graded but you'll be punished if you don't return it
+      \end{itemize}
+    \end{itemize}
+  \end{block}
+
+  \begin{alertblock}{Course Validation Recipe}
+    \begin{itemize}
+    \item Final grade $\geq$ 30 $\Longrightarrow$ you pass. Bye-bye!
+    \item Otherwise:
+      \begin{itemize}
+      \item You take another written exam in June (20 points)
+      \item It replaces your worst earlier grade
+      \item New final grade $\geq$ 30 $\Longrightarrow$ you pass
+      \end{itemize}
+    \end{itemize}
   \end{alertblock}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Programming is \textbf{not} a science}
+
+  \centering
+  \includegraphics[width=\textwidth]{welding.jpg}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+{
+  \setbeamercolor{background canvas}{bg=black}
+\begin{frame}
+  \frametitle{\color{white} You are going to learn the \textbf{hard} way}
+
+  \centering
+  \includegraphics[width=\textwidth]{severus.jpg}
+\end{frame}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \frametitle{\textbf{Practicing} is the only way to learn}
+  \framesubtitle{$\Rightarrow$ Two heavy projects \raisebox{-2pt}{\includegraphics[height=\baselineskip]{content.png}}}
+  \begin{block}{Course Project\textbf{s}}
+    \begin{itemize}
+      
+    \item \textbf{Concept} :
+      \begin{itemize}
+      \item We provide you with some \textbf{sequential} code
+      \item You have to \textbf{parallelize} it
+      \item Evaluate the \textbf{performance} of your work
+      \item Run it on \textbf{challenging inputs} (using lots of cores)
+      \item Write a \textbf{report} about what happened
+      \end{itemize}
+  
+      \medskip
+
+    \item They are \textbf{not easy} and require a \textbf{non-trivial amount of work} \includegraphics[width=0.5cm,trim=0 17mm 0 0]{triste}
+      
+      \medskip
+      
+    \item Starting 2 days before the deadline is the recipe for \textbf{disaster}
+      \begin{itemize}
+      \item We keep telling you but it unfortunately happens every year...
+      \end{itemize}
+    \end{itemize}
+  \end{block} 
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}[label=tme]
-  \frametitle{Concept des Travaux sur Machine Encadrés}
+  \frametitle{Computing Infrastructure}
 
   \begin{columns}
     \begin{column}{7cm}
 
-      \begin{block}{Pratiquer la programmation parallèle}
+      \begin{block}{\textbf{Practice} parallel programming}
         \begin{itemize}
-        \item Vous avez tous un cluster chez vous ?
+        \item Need parallel machines...
+        \item No serious infrastructure @ SU
+          \begin{itemize}
+          \item (there is some but not for students \raisebox{-2pt}{\includegraphics[height=\baselineskip]{triste.png}}
+)
+          \end{itemize}
         \end{itemize}
       \end{block}
 
       \medskip
 
-      \begin{alertblock}<2->{\textbf{Pas de cluster à la maison ?}}
-        \begin{itemize}
-        \item Dommage !
-        \end{itemize}
-      \end{alertblock}
+      \begin{center}
+        \includegraphics{grid5000_logo.png}
+      \end{center}
       
-      \medskip
-
-      \begin{exampleblock}<3->{Heureusement, on a un plan B}
+      \begin{exampleblock}{We'll use grid5000 (aka g5K)}
         \begin{itemize}
-        \item Grid'5000
+        \item Decent approximation of a real computing center
         \end{itemize}
       \end{exampleblock}
       
@@ -140,19 +213,19 @@
   \begin{columns}
     \begin{column}{5cm}
 
-      \begin{exampleblock}{C'est quoi ?}
+      \begin{exampleblock}{What is it?}
         \begin{itemize}
-        \item Infrastructure publique de recherche
-        \item Mutualisation de ressources de calcul
+        \item Experimental research platform 
+        \item Mutualized computing resources
         \end{itemize}
       \end{exampleblock}
       
-      \begin{block}{Les détails}
+      \begin{block}{Concretely}
         \begin{itemize}
-        \item 8 sites
+        \item 8 geographic sites
         \item 37 clusters
-        \item 806 ``ordinateurs''
-        \item 15 702 coeurs en tout
+        \item 806 ``computers''
+        \item 15,702 CPU cores
         \end{itemize}
       \end{block}
 
@@ -165,139 +238,75 @@
   \end{columns}
 \end{frame}
 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \begin{frame}[label=tme]
+%   \frametitle{\includegraphics[height=1cm]{grid5000_logo.png}}
+
+%   \begin{block}{Accès à distance via \textbf{ssh}}
+%     \begin{enumerate}
+%     \item Connection à un \textbf{serveur d'accès} de Grid'5000
+%       \begin{itemize}
+%       \item \texttt{ssh login@access.grid5000.fr}
+%       \end{itemize}
+
+%       \smallskip
+      
+%     \item Connection à la \textbf{frontale} d'un \textbf{site}
+%       \begin{itemize}
+%       \item \texttt{ssh nancy}
+%       \end{itemize}
+
+%       \smallskip
+      
+%     \item Réservation des \textbf{noeuds de calcul} via \textbf{OAR}
+%       \begin{itemize}
+%       \item \texttt{oarsub --interactive --property "cluster='gros'"}
+%       \end{itemize}
+
+%       \smallskip
+      
+%     \item Hop ! Connecté à un noeud de \texttt{gros}
+%       \begin{itemize}
+%       \item 18 coeurs à 2.2Ghz, 96Go de RAM, 25Gbps ethernet
+%       \end{itemize}
+%     \end{enumerate}
+%   \end{block}
+
+%   \begin{alertblock}{Conditions d'utilisation}
+%     \begin{itemize}
+%     \item Ne pas monopoliser les ressources
+%     \item Ne pas miner de cryptomonnaies (même ``pour la science'')
+%     \end{itemize}
+%   \end{alertblock}
+% \end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=tme]
   \frametitle{\includegraphics[height=1cm]{grid5000_logo.png}}
 
-  \begin{block}{Accès à distance via \textbf{ssh}}
-    \begin{enumerate}
-    \item Connection à un \textbf{serveur d'accès} de Grid'5000
-      \begin{itemize}
-      \item \texttt{ssh login@access.grid5000.fr}
-      \end{itemize}
-
-      \smallskip
-      
-    \item Connection à la \textbf{frontale} d'un \textbf{site}
-      \begin{itemize}
-      \item \texttt{ssh nancy}
-      \end{itemize}
-
-      \smallskip
-      
-    \item Réservation des \textbf{noeuds de calcul} via \textbf{OAR}
-      \begin{itemize}
-      \item \texttt{oarsub --interactive --property "cluster='gros'"}
-      \end{itemize}
-
-      \smallskip
-      
-    \item Hop ! Connecté à un noeud de \texttt{gros}
-      \begin{itemize}
-      \item 18 coeurs à 2.2Ghz, 96Go de RAM, 25Gbps ethernet
-      \end{itemize}
-    \end{enumerate}
-  \end{block}
-
-  \begin{alertblock}{Conditions d'utilisation}
+  \begin{exampleblock}{RTFM}
     \begin{itemize}
-    \item Ne pas monopoliser les ressources
-    \item Ne pas miner de cryptomonnaies (même ``pour la science'')
-    \end{itemize}
-  \end{alertblock}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=tme]
-  \frametitle{\includegraphics[height=1cm]{grid5000_logo.png}}
-
-  \begin{alertblock}{Votre \textbf{devoir}}
-    \begin{itemize}
-    \item Lire la doc sur \url{https://www.grid5000.fr}
-    \item Relire la doc, rerelire la doc, rerererelire la doc
-    \item Ça m'\textbf{énerve} qu'on me pose une question alors que la doc contient la réponse
-    \item Mais \textbf{n'hésitez pas} à nous poser des questions !
-    \end{itemize}
-  \end{alertblock}
-  
-  \medskip
-  
-  \begin{exampleblock}{Bon à savoir}
-    \begin{itemize}
-    \item Les \texttt{\$HOMEDIR} ne sont pas les mêmes d'un site à l'autre
-    \item Fonctionnement jour/nuit et semaine/week-end
-    \item \textbf{OAR} : interactif, \emph{batch} ou réservation
-    \item Les autres utilisateurs aussi peuvent réserver les ressources
+    \item Read the doc on \url{https://www.grid5000.fr}
+    \item Re-read it
+    \item Read it again
     \end{itemize}
   \end{exampleblock}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \begin{block}{Le projet}
-    \begin{itemize}
-    \item \textbf{Pratique} = partie importante de l'apprentissage du HPC
-
-      \medskip
-      
-    \item \textbf{Concept} :
-      \begin{itemize}
-      \item On vous fourni un code \textbf{séquentiel}
-      \item Vous devez en faire une (ou des) versions \textbf{parallèles}
-      \item Évaluer les \textbf{performances}
-      \item Résoudre des \textbf{instances défi}
-      \item Rédiger un \textbf{rapport}
-      \end{itemize}
   
-      \medskip
-
-    \item \textbf{Quantité de travail nécessaire} : pas négligeable \includegraphics[width=0.5cm,trim=0 17mm 0 0]{triste}
-      
-      \medskip
-      
-    \item \textbf{Planning} :
-      \begin{itemize}
-      \item 50\% du semestre : rendu 1ère version
-      \item 50\% + $\varepsilon$ du semestre : retours sur les rendus
-      \item 100\% du semestre : rendu 2ème version
-      \end{itemize}
-    \end{itemize}
-  \end{block}
-
   \medskip
-  
-  \centering 
-\url{http://hpc.sfpn.net/static/project.py}
- 
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \begin{block}{Évaluation de l'UE}
+  \begin{alertblock}{Usage Policy}
+    Free scientific instrument, but there are rules (cf. website)
     \begin{itemize}
-    \item \textbf{Examen final} 
+    \item Do not monopolize resources \emph{during the day}
       \begin{itemize}
-      \item Vendredi 20 mai
+      \item Night / week-ends: you can do whatever you want
       \end{itemize}
-
-      \medskip
-      
-    \item \textbf{Projet} 
-      \begin{itemize}
-      \item 1ère version le 18 mars
-      \item 2ème version le 20 mai
-      \end{itemize}
-      
-      \medskip
-      
-    \item Note finale : moyenne des deux
+    \item \textbf{NEVER} mine cryptocurrencies (not even ``for science'')
     \end{itemize}
-  \end{block}
+  \end{alertblock}
+  
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -308,9 +317,6 @@
    \centering
    \includegraphics[height=8cm]{PRACE_twitter.png}
  \end{frame}
-
-
-
 \end{document}
 
 %%% Local Variables:
