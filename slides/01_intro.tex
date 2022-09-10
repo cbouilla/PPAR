@@ -1,6 +1,5 @@
-\documentclass[xcolor={x11names,svgnames}]{beamer}
+\documentclass[xcolor={x11names,svgnames,psnames}]{beamer}
 
-\usepackage[french]{babel}
 \usepackage[T1]{fontenc}
 \usepackage{cellspace}
 
@@ -59,41 +58,10 @@
 %\author[C.~Bouillaguet]{Charles Bouillaguet \newline
 %  {\small (\texttt{charles.bouillaguet@lip6.fr})}}
 
-\title{Cours 1 : Introduction}
+\title{Lecture \# 1 : Introduction}
 %\date{2020-01-27}
 
 \begin{document}
-
-\begin{frame}[fragile]
-
-  Charles Bouillaguet (\verb|charles.bouillaguet@lip6.fr|)
-  
-  \begin{exampleblock}{Credits}
-    \begin{itemize}
-    \item Ce cours est basé sur celui de Pierre Fortin (SU $\leadsto$ ULille)
-    \item Celui de P. Fortin était basé sur celui de  J.-L. Lamotte (SU)
-    \end{itemize}
-  \end{exampleblock}
-
-  \begin{block}{Bibliographie}
-    \begin{itemize}
-    \item {\small \textit{Parallel Programming in C with MPI and OpenMP} (M.J. Quinn)}
-    \item \textit{MPI: A Message-Passing Interface Standard}
-    \item \textit{OpenMP Application Programming Interface}
-    \item ...
-    \end{itemize}
-  \end{block}
-
-
-% \item U.C. Berkeley CS267 (J. Demmel,  \url{http://www.cs.berkeley.edu/~demmel} )
-%   \item Univ. Tennessee Knoxville CS 594 (J. Dongarra, {\small \url{http://www.netlib.org/utk/people/JackDongarra/courses.htm}})
-%   \item Computer Architecture, A Quantitative Approach (J.L. Hennessy \&
-%     D.A. Patterson, fifth edition) 
-% %  \item Architectures et Systèmes des Calculateurs Parallèles 
-% %    (cours de F. Pellegrini, ENSEIRB) 
-%   \end{itemize}
-  
-\end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,21 +76,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\frametitle{Qu'est-ce que le HPC ?}
+\frametitle{What is HPC ?}
 
 
 \begin{alertblock}{\emph{High-Performance Computing} (HPC)}
-  Mélange de :
+  Mixture of
   \begin{enumerate}
-  \item Matériel spécialisé (parallèle)
-  \item Algorithmes adaptés (parallèles)
-  \item Techniques de programmation \textit{ad hoc}
+  \item Specialized (parallel) hardware 
+  \item Adapted (parallel) algorithms 
+  \item \textit{Ad hoc} (parallel) programming techniques
   \end{enumerate}
 \end{alertblock}
 
 \medskip
 
-+ Programmeurs spécialement formés !
++ Specially trained programmers !
 
 \end{frame}
 
@@ -131,20 +99,20 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-  \frametitle{Plan du cours}
+  \frametitle{Course Topics}
   
   \begin{enumerate}%[circle]
   \item Introduction
-  \item Programmation distribuée avec MPI
-  \item Programmation multi-threads avec OpenMP
-  \item Vectorisation (SIMD)    
-  \item Compréhension et exploitation des capacités du matériel
-  \item Problèmes algorithmiques récurrents
+  \item Distributed programming using MPI
+  \item Multi-thread programming with OpenMP
+  \item Vectorization
+  \item Understanding the hardware and exploiting its full capacity 
+  \item Recurring algorithmic themes/problems
   \end{enumerate}
 
   \bigskip
   
-  \alert{Hors-programme : GPU et autres accélérateurs} (RDV en M2)
+  \alert{Next year: GPUs/accelerators} 
 \end{frame}
 
 
@@ -156,25 +124,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\frametitle{Importance de la simulation numérique}
+\frametitle{Fundamental Role of Numerical Simulations}
 
-\begin{block}{Méthode scientifique traditionnelle}
+\begin{block}{Traditional scientific method}
   \begin{enumerate}
-  \item Elaboration d'une théorie à partir des observations  
-  \item Expérimentation physique pour valider la théorie
-  \item Confrontation des résultats de l'expérimentation aux observations 
+  \item Formulation of a theory based on observations
+  \item Design of experiments to (in)validate the theory
+  \item Compare experimental results with observations
   \end{enumerate}
 \end{block}
 
-On itère le processus si les résultats de l'expérimentation ne correspondent pas
-aux observations.
+Iterate the process until convergence.
 
-\begin{alertblock}{L'expérimentation peut être trop...}
+\begin{alertblock}{But experimenting can be too...}
   \begin{itemize}
-  \item Difficile (\emph{Wind Tunnel} contenant un Airbus A380 ?)
-  \item Chère (\emph{crash test}, ...)
-  \item Lente (évolution du climat, dynamique des galaxies, ...)
-  \item Dangereuse (essais cliniques, \Biohazard, \Radioactivity, \Laserbeam)
+  \item Difficult (\emph{Wind Tunnel} containing an Airbus A380?)
+  \item Expensive (\emph{crash test}, ...)
+  \item Slow (climate evolution, galaxy dynamics, ...)
+  \item Dangerous (clinical trials, \Biohazard, \Radioactivity, \Laserbeam, ...)
   \end{itemize}
 \end{alertblock}
 \end{frame}
@@ -182,24 +149,22 @@ aux observations.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Simulation numérique}
+  \frametitle{Numerical Simulations}
 
-  \begin{exampleblock}{Utilisation d'ordinateurs pour simuler et analyser le phénomène}
+  \begin{exampleblock}{Using computers to simulate and analyze a physical phenomenon}
   
   \begin{columns}[t]
     \column{0.5\textwidth} 
     \begin{itemize}
-    \item à partir de lois physiques 
+    \item Starting from physical laws
 
       \medskip
 
-    \item grâce à des méthodes 
-      numériques
+    \item Using numerical methods
 
       \medskip
       
-    \item avec des ordinateurs toujours 
-      plus puissants
+    \item with ever more powerful computers
     \end{itemize}
     
     \column{0.5\textwidth}
@@ -208,7 +173,7 @@ aux observations.
         \centering
         \includegraphics[width=0.9\textwidth]{Science-SimuNum.pdf}
       \end{figure}
-      {\tiny (d'après 
+      {\tiny (after
         % {\it Parallel Programming in C 
         % with MPI and OpenMP}, 
         M.J. Quinn)} 
@@ -217,51 +182,51 @@ aux observations.
 \end{exampleblock}
 
 \begin{itemize}
-\item[$\leadsto$] 3ème pilier de la science ?
+\item[$\leadsto$] 3rd pillar of science?
 \end{itemize}  
 \end{frame}
 
 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}
+% \frametitle{Les grands domaines d'application du HPC}
+
+
+% \begin{block}{``Grands challenges'' scientifiques}
+%   \begin{itemize}
+%   \item Chimie, biologie : dynamique moléculaire 
+%   \item Bio-informatique : séquençage du génome
+%   \item Astrophysique : dynamique des  galaxies, de l'Univers  
+%   \item Climatologie : échanges océan $\leftrightarrow$ atmosphère
+%   \item Méca. des fluides : écoulements turbulents, combustion
+%   \item ...
+%   \end{itemize}
+% \end{block}
+
+% Et aussi : 
+% \begin{itemize}
+% \item Géophysique : propagation d'ondes sismiques
+% \item Industrie automobile : simulation d'accidents 
+% \item \og \textit{Deep Learning}\fg
+% \item ... 
+% \end{itemize}
+% \end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-\frametitle{Les grands domaines d'application du HPC}
-
-
-\begin{block}{``Grands challenges'' scientifiques}
-  \begin{itemize}
-  \item Chimie, biologie : dynamique moléculaire 
-  \item Bio-informatique : séquençage du génome
-  \item Astrophysique : dynamique des  galaxies, de l'Univers  
-  \item Climatologie : échanges océan $\leftrightarrow$ atmosphère
-  \item Méca. des fluides : écoulements turbulents, combustion
-  \item ...
-  \end{itemize}
-\end{block}
-
-Et aussi : 
-\begin{itemize}
-\item Géophysique : propagation d'ondes sismiques
-\item Industrie automobile : simulation d'accidents 
-\item \og \textit{Deep Learning}\fg
-\item ... 
-\end{itemize}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\frametitle{Illustration du problème}
+\frametitle{Illustration of the Problem}
 
 \begin{center}
 \includegraphics[width=5cm]{earth-core.jpg}
 \end{center}
 
 \begin{itemize}
-\item surface = 510 millions de km${^2}$, volume $\approx 10^{12}$ km${}^3$
+\item surface = 510 millions km${^2}$, volume $\approx 10^{12}$ km${}^3$
   \medskip
-\item Un \texttt{double} par km${}^3$ $\leadsto$ 8 To de mémoire
+\item One \texttt{double} per km${}^3$ $\leadsto$ 8 TB of memory
 
-\item Un \texttt{double} par m${}^2$ $\leadsto$ 4 Po de mémoire
+\item One \texttt{double} per m${}^2$ $\leadsto$ 4 PB of memory
 \end{itemize}
 
 \end{frame}
@@ -269,22 +234,22 @@ Et aussi :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\frametitle{Illustration du problème}
+\frametitle{Illustration of the Problem (continued)}
 
 \begin{center}
 \includegraphics[width=5cm]{cell.jpg}
 \end{center}
 
 \begin{itemize}
-\item Cellule humaine. Environ $10^{14}$ atomes.
-\item 3 $\times$ \texttt{double} $(x, y, z)$ par atome $\leadsto$ 2.4 Po de mémoire
+\item Human cell. About $10^{14}$ atoms.
+\item 3 $\times$ \texttt{double} $(x, y, z)$ per atom $\leadsto$ 2.4 PB of memory
 \end{itemize}
 
 \medskip
 
 \begin{alertblock}{Not to mention...}
   \begin{itemize}
-  \item $10^{11}$--$10^{12}$ étoiles dans notre galaxie
+  \item $10^{11}$--$10^{12}$ stars in out galaxy
   \item $10^{11}$--$10^{12}$ galaxies...
   \end{itemize}
 \end{alertblock}
@@ -295,21 +260,21 @@ Et aussi :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Constat \triste}
+  \frametitle{Realization \triste}
 
   \begin{itemize}
-  \item Vous savez \textbf{un peu} comment fonctionne un ordinateur
+  \item You know \textbf{a little} how does a computer work
     \begin{itemize}
-    \item Mais \red{pas complètement}
-    \item Surtout pour les gros
+    \item But \red{not completely}
+    \item Especially the big ones
     \end{itemize}
 
     \medskip
     
-  \item Vous n'avez pas été formés à :
+  \item You have not been trained to :
     \begin{itemize}
-    \item vous \red{préoccuper} des \textbf{performances} de votre code
-    \item écrire des programmes \red{efficaces}
+    \item \red{Care} about the \textbf{performance} of your code
+    \item Write \textbf{efficient} programs
     \end{itemize}
     
     \pause
@@ -323,10 +288,10 @@ Et aussi :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}
-  \frametitle{Puissance de calcul}
+  \frametitle{Computing Power}
 
-  \begin{block}{Mesure de performance}
-  Unité : FLOP (\textit{Floating Point OPeration}), FLOP/s (ou FLOPS)
+  \begin{block}{performance measurement}
+  Unit : FLOP (\textit{Floating Point OPeration}), FLOP/s (or FLOPS)
 
   \begin{itemize}
   \item Giga ($10^9 \approx 2^{30}$)
@@ -339,23 +304,22 @@ Et aussi :
 \bigskip
 
 \begin{itemize}
-\item Machines pour gros calculs = \textbf{machines \red{parallèles}}
+\item Machines for large computations = \textbf{\red{parallel} computers}
 
   \medskip
 
-  \item Le parallélisme est une \textbf{tendance de fond}
+  \item Parallelism is an \textbf{inexorable trend}
   \end{itemize}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Matériel pour le HPC}
+\section{HPC Hardware}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{PC des années 1990}
-  \framesubtitle{Le seul que vous savez vraiment programmer}
+  \frametitle{1990's PC}
+  \framesubtitle{The only one your really know how to program}
   
   \centering
   \includegraphics[height=0.5\textheight]{old_pc}
@@ -364,14 +328,14 @@ Et aussi :
 
   \bigskip
 
-  1 coeur, 25Mhz, 16Ko de Cache, 4Mo de RAM
+  1 core, 25Mhz, 16KB cache, 4MB RAM
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Laptop moderne}
-  \framesubtitle{Celui que vous avez, avec un peu de chance}
+  \frametitle{Contemporary Laptop}
+  \framesubtitle{What you own, fortunately}
   
   \centering
   \includegraphics[width=5cm]{laptop}%
@@ -380,13 +344,13 @@ Et aussi :
 
     \bigskip
 
-  4 coeurs, 4Ghz, 8Mo de cache, 16Go de RAM (2 canaux)
+  4 cores, 4Ghz, 8MB cache, 16GB RAM (2 channels)
 \end{frame}
 
 
 \begin{frame}
-  \frametitle{PC de gamer}
-  \framesubtitle{Pour ceux qui se croient malin en faisant de l'IA}
+  \frametitle{Gamer's PC}
+  \framesubtitle{For smart-asses who think IA will replace actual science}
   
   \centering
   \includegraphics[width=5cm]{gamer}%
@@ -395,12 +359,12 @@ Et aussi :
 
     \bigskip
 
-    10--16 coeurs, 4Ghz, 16Mo de cache, 32Go de RAM (2 canaux)
+    10--16 cores, 4Ghz, 16MB cache, 32Go RAM (2 channels)
 \end{frame}
 
 
 \begin{frame}
-  \frametitle{Serveur de calcul}
+  \frametitle{Compute Node}
   \framesubtitle{Now we're talking}
   
   \centering
@@ -408,18 +372,17 @@ Et aussi :
   \includegraphics[width=5cm]{dell2}
 
 
-  
   \includegraphics[width=8cm]{gt40}
 
   \bigskip
 
-  2 CPUs, 32--128 coeurs, 2.5Ghz, 192Go RAM ($2\times 6$ canaux)
+  2 CPUs, 32--128 cores, 2.5Ghz, 256Go RAM ($2\times$ 6--8 channels)
 \end{frame}
 
 
 \begin{frame}
-  \frametitle{Machine de HPC}
-  \framesubtitle{Rare et cher}
+  \frametitle{Supercomputer}
+  \framesubtitle{Rare and Expensive}
   
   \centering
   \includegraphics[width=7cm]{bgp}
@@ -428,15 +391,13 @@ Et aussi :
 
   \bigskip
   
-  1000--10000000 coeurs. coût variable de $10^{6}$ à $10^{9}$ euros
+  1000--10000000 cores. Cost between $10^{6}$ and $10^{9}$ euros
 \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Une machine de HPC : \texttt{Turing}}
+  \frametitle{Description of an HPC machine: \texttt{Turing}}
   \framesubtitle{IBM BlueGene/Q (2012--2019) @ IDRIS (CNRS)}
   
   \begin{center}
@@ -444,38 +405,41 @@ Et aussi :
   \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Une machine de HPC : \texttt{Turing}}
+  \frametitle{Description of an HPC machine: \texttt{Turing}}
   \framesubtitle{IBM BlueGene/Q (2012--2019) @ IDRIS (CNRS)}
 
-  6 baies, 98~304 coeurs (``petit'') $\leadsto$ \texttt{Sequoia} (USA) en a 1~572~864
+  6 racks, 98~304 cores (``small'') $\leadsto$ \texttt{Sequoia} (USA) has 1~572~864
   
   \begin{center}
     \includegraphics[width=\textwidth]{bgq}
   \end{center}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}
-  \frametitle{Une machine de HPC : \texttt{Turing}}
+  \frametitle{Description of an HPC machine: \texttt{Turing}}
   \framesubtitle{IBM BlueGene/Q (2012--2019) @ IDRIS (CNRS)}
   
   \begin{columns}
     \begin{column}{0.33\textwidth}
-      1 baie =
+      1 rack =
       \begin{itemize}
       \item 16 \textit{node cards}
-      \item + alimentation
+      \item + power feeds
       \item + \textit{water cooling}
-      \item + noeuds I/O
+      \item + I/O nodes
       \end{itemize}
 
       \bigskip
       
       Total =
       \begin{itemize}
-      \item 1024 noeuds
-      \item 16 384 coeurs
+      \item 1024 nodes
+      \item 16 384 cores
       \item 16 To de RAM
       \end{itemize}
       
@@ -487,9 +451,10 @@ Et aussi :
   \end{columns}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Une machine de HPC : \texttt{Turing}}
+    \frametitle{Description of an HPC machine: \texttt{Turing}}
   \framesubtitle{IBM BlueGene/Q (2012--2019) @ IDRIS (CNRS)}
   
   1 \textit{node card} = 32 \textit{compute cards}
@@ -501,13 +466,13 @@ Et aussi :
 
 
 \begin{frame}
-  \frametitle{Une machine de HPC : \texttt{Turing}}
+    \frametitle{Description of an HPC machine: \texttt{Turing}}
   \framesubtitle{IBM BlueGene/Q (2012--2019) @ IDRIS (CNRS)}
   
   1 \textit{compute card} =
   \begin{itemize}
-  \item 1 processeur (PowerPC A2, 1.6Ghz, 16 coeurs)
-  \item 16Go de RAM ECC (36 chips de 512Mo)
+  \item 1 PowerPC A2 CPU (16 cores @ 1.6Ghz, 32MB Cache)
+  \item 16Go of ECC RAM (36 $\times$ 512MB chip)
   \end{itemize}
 
   \begin{center}
@@ -515,17 +480,17 @@ Et aussi :
   \end{center}
 \end{frame}
 
-\begin{frame}
-  \frametitle{Une machine de HPC : \texttt{Turing}}
-  \framesubtitle{IBM BlueGene/Q (2012--2019) @ IDRIS (CNRS)}
+% \begin{frame}
+%   \frametitle{Description of an HPC machine: \texttt{Turing}}
+%   \framesubtitle{IBM BlueGene/Q (2012--2019) @ IDRIS (CNRS)}
 
-    \includegraphics[width=\textwidth]{lstopo_bgq}
-\end{frame}
+%     \includegraphics[width=\textwidth]{lstopo_bgq}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Pas des ordinateurs \og normaux \fg}
+  \frametitle{Not ``Normal'' computers}
 
   \begin{center}
     \begin{tikzpicture}
@@ -541,37 +506,37 @@ Et aussi :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Quelques exemples (au CNRS)}
+  \frametitle{A Few Examples (in France)}
 
   \begin{enumerate}
-  \item \texttt{Turing} (IDRIS / CNRS, 2012--2019), 1.2 PetaFLOPS
+  \item \texttt{Turing} (IDRIS / CNRS, 2012--2019), 1.2 PFLOPS
     \begin{itemize}
     \item IBM BlueGene/Q ($\approx$ 20 millions \euro)
-    \item 6144 noeuds, 98 304 coeurs, 98To de RAM
+    \item 6144 nodes, 98 304 cores, 98TB RAM
       \begin{itemize}
-      \item 16Go + 1 $\times$ IBM PowerPC A2, 16 coeurs @ 1.6 Ghz
-      \item 1 CPU = ??? \euro = 200 GigaFLOPS
+      \item 16Go + 1 $\times$ IBM PowerPC A2, 16 cores @ 1.6 Ghz
+      \item 1 CPU = ??? \euro = 200 GFLOPS
       \end{itemize}
-    \item Réseau = ``maison'', tore 5D, 10 $\times$ 2Go/s par noeud.
+    \item Interconnect = ``in-house'' 5D-torus, 160 Gbit/s per node
     \item 600kW (cold water cooling)
     \end{itemize}
 
     \medskip\pause
 
-  \item<2-> \texttt{Jean-Zay} (IDRIS / CNRS, 2019--), 28 PetaFLOPS
+  \item<2-> \texttt{Jean-Zay} (IDRIS / CNRS, 2019--), 28 PFLOPS
     \begin{itemize}
     \item HPE SGI 8600 (25 millions \euro)
-    \item 1528 noeuds ``CPU'' $\rightarrow$ 61~120 coeurs, 4.9 PetaFLOPS
+    \item 1528 ``CPU'' nodes $\rightarrow$ 61~120 cores, 4.9 PFLOPS
       \begin{itemize}
-        \item 192Go + 2 $\times$ Intel Xeon Gold 6248, 20 coeurs, 2.5Ghz
-        \item 1CPU = 3000\euro = 1.6 TeraFLOPS
+        \item 192Go + 2 $\times$ Intel Xeon Gold 6248, 20 cores, 2.5Ghz
+        \item 1CPU = 3000\euro = 1.6 TFLOPS
         \end{itemize}
-    \item<3-> 662 noeuds ``GPU'' $\rightarrow$ 199~040 coeurs, 21.5 PetaFLOPS
+    \item<3-> 662 ``GPU'' nodes  $\rightarrow$ 199~040 cores, 21.5 PFLOPS
       \begin{itemize}
-      \item idem + 4 $\times$ NVIDIA V100 SMX2 16/32Go, 80 coeurs
-      \item 1 GPU = 8500\euro = 8 TeraFLOPS
+      \item idem + 4 $\times$ NVIDIA V100 SMX2 16/32GB, 80 cores
+      \item 1 GPU = 8500\euro = 8 TFLOPS
       \end{itemize}
-    \item réseau = Intel OmniPath 100Gbit/s
+    \item Interconnect = 100Gbit/s OmniPath 
     \item $\approx$ 1MW (warm water cooling)
     \end{itemize}
   \end{enumerate}
@@ -580,36 +545,36 @@ Et aussi :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Quelques exemples (TOP 500)}
+  \frametitle{More Examples (TOP 500)}
 
   \begin{enumerate}
-  \item \#2 = \texttt{Summit} (DoE, USA, 2018--), 200 PetaFLOPS
+  \item \#4 = \texttt{Summit} (DoE, USA, 2018--), 200 PFLOPS
     \begin{itemize}
     \item IBM  ($\approx$ \$ 500 millions)
-    \item 4~608 noeuds
+    \item 4~608 nodes
       \begin{itemize}
-      \item $2 \times$ IBM Power9, 22 coeurs, 3Ghz
-      \item $6 \times$ NVIDIA V100 16Go
-      \item 512Go DDR4 + 96Go HBM + 1.6To non-volatile memory
-      \item 1 noeud $\approx$ 120~000\euro = 42 TeraFLOPS
+      \item $2 \times$ IBM Power9, 22 cores, 3Ghz
+      \item $6 \times$ NVIDIA V100 16GB
+      \item 512GB DDR4 + 96GB HBM + 1.6TB non-volatile memory
+      \item 1 node $\approx$ 120~000\euro = 42 TFLOPS
       \end{itemize}
-    \item[$\rightarrow$] 2.8Po de RAM, 202~752 coeurs CPU, 2~211~840 coeurs GPU
-    \item Réseau = Infiniband 100Gb/s
+    \item[$\rightarrow$] 2.8PB RAM, 202~752 CPU cores, 2~211~840 GPU cores 
+    \item Interconnect = 100Gb/s Infiniband 
     \item 13MW 
     \end{itemize}
 
     \medskip\pause
 
-  \item \#6 = \texttt{Frontera} (Univ. Texas, 2019--), 38.7 PetaFLOPS
+  \item \#16 = \texttt{Frontera} (Univ. Texas, 2019--), 38.7 PFLOPS
     \begin{itemize}
     \item Dell ($\approx$ \$60 millions)
-    \item 8008 noeuds
+    \item 8008 nodes
       \begin{itemize}
-        \item 192Go + 2 $\times$ Intel Xeon Platinum 8280, 28 coeurs, 2.7Ghz
-        \item 1 CPU = 10~000\euro = 2.4 TeraFLOPS
+        \item 192GB + 2 $\times$ Intel Xeon Platinum 8280, 28 cores @ 2.7Ghz
+        \item 1 CPU = 10~000\euro = 2.4 TFLOPS
         \end{itemize}
-      \item[$\rightarrow$] 1.5Po RAM, 448~448 coeurs
-    \item réseau = Infiniband 100Gbit/s
+      \item[$\rightarrow$] 1.5PB RAM, 448~448 cores
+    \item Interconnect = 100Gbit/s Infiniband 
     \end{itemize}
   \end{enumerate}
 \end{frame}
@@ -617,46 +582,62 @@ Et aussi :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Et bien sûr...}
+  \frametitle{And of Course...}
 
   \begin{itemize}
-  \item \#1 = \texttt{Fugaku} (RIKEN, Japon, 2021--), 550 PetaFLOPS
+  \item \#2 = \texttt{Fugaku} (RIKEN, Japon, 2021--), 550 PetaFLOPS
     \begin{itemize}
     \item Fujitsu ($\approx$ 900 millions \euro)
-    \item $\geq$ 150~000 noeuds
+    \item $\geq$ 150~000 nodes
       \begin{itemize}
-      \item 32Go HBM2 + $1 \times$ Fujitsu A64FX (arm), 48 coeurs, 2Ghz
-      \item 1 CPU = 2.7 TeraFLOPS
+      \item 32GB HBM2 + $1 \times$ Fujitsu A64FX (arm), 48 cores @ 2Ghz
+      \item 1 CPU = ??? \euro = 2.7 TFLOPS
       \end{itemize}
-    \item[$\rightarrow$] 4.8Po de RAM, 7~200~000 coeurs
-    \item Réseau = Tore 6D (tofu)
+    \item[$\rightarrow$] 4.8PB RAM, 7~200~000 cores
+    \item Interconnect = ``in-house'' 3D torus
     \end{itemize}
   \end{itemize}
 
-  \bigskip
+  \pause
+  
+  \begin{itemize}
+  \item \#1 = \texttt{Frontier} (DOE, USE, 2022--), 1.1 EFLOPS
+    \begin{itemize}
+    \item HPE Cray ($\approx$ 600 millions \euro)
+    \item $\geq$ 9472 nodes
+      \begin{itemize}
+      \item 512GB RAM + AMD Epyc 7A53, 64 cores @ 2Ghz
+      \item $4 \times$ AMD Radeon Instinct MI250X GPUs (128GB) 
+      \end{itemize}
+    \item[$\rightarrow$] 606,208 CPU cores + 8,335,360 GPU cores + 9PB RAM
+    \item Interconnect = HPE Slingshot
+    \item 21MW
+    \end{itemize}
+  \end{itemize}
 
-  Bientôt des machines (pre-)exascale en Europe
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 \begin{frame}
-  \frametitle{Votre futur (proche)...}
+  \frametitle{Your (Near) Future...}
 
   \begin{center}
     \includegraphics[height=4cm]{ppti}
   \end{center}
   
   \begin{itemize}
-  \item \#9999 = Une salle de TP, $\approx 0.8$ TeraFLOPS
+  \item \#9999 = One computer lab room, $\approx 0.8$ TFLOPS
     \begin{itemize}
-    \item 16 noeuds
+    \item 16 nodes
       \begin{itemize}
-      \item 4Go RAM + $1 \times$ Core i5 (4 coeurs)
-      \item 1 CPU = 50 GigaFLOPS
+      \item 4GB RAM + $1 \times$ Core i5 CPU (4 cores)
+      \item 1 CPU = 50 GFLOPS
       \end{itemize}
-    \item[$\rightarrow$] 64Go de RAM, 64 coeurs
-    \item Réseau = (gigabit ?) ethernet
+    \item[$\rightarrow$] 64GB RAM, 64 cores
+    \item Interconnect = (gigabit ?) ethernet
     \end{itemize}
   \end{itemize}
 
@@ -665,21 +646,21 @@ Et aussi :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}
-  \frametitle{Grande variété architecturale}
+  \frametitle{Great Architectural Diversity}
 
-  \begin{block}{Comment obtenir de la puissance de calcul ?}
+  \begin{block}{How to get computing power ?}
     \begin{itemize}
-    \item CPUs les plus puissants possible (\texttt{frontera})
-    \item Plein de CPUs peu puissants (IBM BlueGene)
-    \item Accélérateurs matériels (GPU) (\texttt{summit}, \texttt{jean-zay})
-    \item Convergence CPU/GPU (\texttt{fugaku})
+    \item As-powerful-as-possible CPUs (\texttt{frontera})
+    \item Tons of weak CPUs (IBM BlueGene)
+    \item Hardware accelerators (GPU) (\texttt{frontier}, \texttt{summit}, \texttt{jean-zay})
+    \item CPU-GPU hybrids (\texttt{fugaku})
     \end{itemize}
   \end{block}
 
   \bigskip
 
-  \begin{alertblock}{Difficulté de portage}
-    À l'extrême, des programmes sont parfois optimisés pour UNE machine donnée.
+  \begin{alertblock}{Porting difficulties}
+    Some codes are sometimes written for \textbf{ONE} target machine
   \end{alertblock}  
 \end{frame}
 
@@ -688,13 +669,14 @@ Et aussi :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Histoire du Top500}
+  \frametitle{TOP500 History}
 
   \small
   \begin{tabular}{|l||c|r|r|r|r|r|}
   \hline
   Machine             & Année & nodes   & $M$/node & FLOPS \\
   \hline\hline
+Frontier              & 2022 &   9 472  & 1T       &  1100P  \\
 Fugaku                & 2020 & 158 976	& 32G	   &   430P  \\
 Summit                & 2018 &   4 608	& 608G	   &   150P  \\
 Sunway TaihuLight     & 2016 &  40 960	& 32G	   &    93P  \\
@@ -720,29 +702,28 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\section{Parallélisme}
+\section{Parallelism}
 
 \begin{frame}
-  \frametitle{La ``loi de Moore'' et la fin du ``\textit{Dennard Scaling}''}
+  \frametitle{``Moore's Law'' and the End of ``\textit{Dennard Scaling}''}
 
   \includegraphics[width=\textwidth]{42-years-processor-trend.jpg}
 \end{frame}
 
 \begin{frame}
-  \frametitle{La ``loi de Moore'' et la fin du ``\textit{Dennard Scaling}''}
-
-  \framesubtitle{Repercussion sur le TOP500}
+  \frametitle{``Moore's Law'' and the End of ``\textit{Dennard Scaling}''}
+  \framesubtitle{Consequence in the TOP500}
   
   \includegraphics[width=\textwidth]{Top500-Dennard-scaling-effect.png}
 \end{frame}
 
 \begin{frame}
-  \frametitle{Amélioration de l'efficacité énergétique (FLOP/Watt)}
-  \framesubtitle{$\leadsto$ réduire fréquence, augmenter \# processeurs}
+  \frametitle{Improving the Energy Efficiency (FLOP/Watt)}
+  \framesubtitle{$\leadsto$ Reduce Frequency, increase \# processors}
 
   \centering
 
-  \small CPU = Cortex A9 (ARM, smartphone). Calcul = (morceau de la) FFT. 
+  \small CPU = Cortex A9 (ARM, smartphone). Computation = (part of the) FFT. 
   
   \includegraphics[width=\textwidth]{cpu_freq_scaling.pdf}
 \end{frame}
@@ -750,14 +731,14 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Glossaire}
+  \frametitle{Glossary}
 
     \begin{description}
     \item[machine] ensemble des composants
 
     \item[\textit{cluster}] des serveurs de calcul réliés à un réseau (\sout{COVID})
       
-    \item[noeud] un \og ordinateur\fg indépendant
+    \item[noeud] un ``ordinateur'' indépendant
 
     \item[baie] armoire contenants noeuds, switch, etc.
 
@@ -781,7 +762,7 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Glossaire --- difficulté avec \og \emph{thread}\fg}
+  \frametitle{Glossaire --- difficulté avec ``\emph{thread}''}
 
   \begin{center}
     \includegraphics[height=6cm]{lstopo_laptop.pdf}%
@@ -802,8 +783,8 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
   \frametitle{Notions de processus et de thread dans les OS}
 
 \begin{description}
-\item[Processus] \og flot d'exécution \fg $~+~$ \og espace mémoire \fg 
-\item[Thread] \og flot d'exécution \fg 
+\item[Processus] ``flot d'exécution'' $~+~$ ``espace mémoire''
+\item[Thread] ``flot d'exécution'' 
 \end{description}
 
 \pause 
@@ -941,7 +922,7 @@ différentes données simultanément.
       \node[draw, shape=circle, inner sep=1pt] (R2) at (2, 2.25)  {RAM};
       \node[draw, shape=circle, inner sep=1pt] (R3) at (3, 2.25)  {RAM};
 
-      \filldraw[fill=LightGray] (-1, 0) rectangle node (net) {Réseau} +(5, -0.33);
+      \filldraw[fill=lightgray] (-1, 0) rectangle node (net) {Réseau} +(5, -0.33);
 
       \draw[<->,thick] (P0) edge (0, 0) edge (R0);
       \draw[<->,thick] (P1) edge (1, 0) edge (R1);
@@ -959,6 +940,7 @@ différentes données simultanément.
   \end{itemize}
 \end{frame}
 
+\iffalse
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
@@ -1162,12 +1144,12 @@ différentes données simultanément.
 
 \begin{frame}
   \frametitle{Topologie Réseau}
-  \framesubtitle{Dragonfly (Cray \og Aries\fg interconnect)}
+  \framesubtitle{Dragonfly (Cray ``Aries'' interconnect)}
 
   \centering
   \includegraphics[height=8cm]{dragonfly.pdf}
 \end{frame}
-
+\fi
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1185,7 +1167,7 @@ différentes données simultanément.
 
       \node[draw, shape=circle, inner sep=5pt] (R0) at (6, -0.33/2)  {RAM};
 
-      \filldraw[fill=LightGray] (-1, 0) rectangle node (net) {Bus mémoire} +(5, -0.33);
+      \filldraw[fill=lightgray] (-1, 0) rectangle node (net) {Bus mémoire} +(5, -0.33);
 
       \draw[<->,thick] (P0) edge (0, 0);
       \draw[<->,thick] (P1) edge (1, 0);
@@ -1226,7 +1208,7 @@ différentes données simultanément.
     \item au moins 2 processeurs accèdent à la même variable
     \item au moins un processeur y accède en écriture 
     \item ces accès sont potentiellement concurrents (ils peuvent
-      être effectués \og au même moment \fg)
+      être effectués ``au même moment'')
     \end{itemize}
   \end{block}
   
@@ -1256,7 +1238,7 @@ différentes données simultanément.
   \begin{exampleblock}{Solution}
     \begin{itemize}
     \item Simuler mémoire partagée avec mémoire distribuée.
-    \item Chaque CPU \og contrôle\fg une partie de la mémoire.
+    \item Chaque CPU ``contrôle'' une partie de la mémoire.
       \begin{itemize}
       \item Il y accède \emph{directement}
       \end{itemize}
@@ -1274,7 +1256,7 @@ différentes données simultanément.
   \framesubtitle{Un vrai exemple}
 
   \begin{itemize}
-  \item un noeud SMP avec $2 \times$ CPU AMD EYPC \og Naples\fg
+  \item un noeud SMP avec $2 \times$ CPU AMD EYPC ``Naples''
   \item 4 $\times$ contrôleurs RAM indépendants par CPU
   \item<3-> Graphe complet à l'intérieur d'un CPU
   \item<4-> Interconnection partielle entre les 2 sockets
@@ -1419,7 +1401,7 @@ addi 9,9,1
 
   \begin{itemize}
   \item<1-> Parallélisation automatique
-  \item<2-> \og Annotations\fg de parallélisme dans des programmes C (\red{OpenMP}, OpenACC)
+  \item<2-> ``Annotations'' de parallélisme dans des programmes C (\red{OpenMP}, OpenACC)
   \item<3-> plain C + bibliothèques (\texttt{pthread}, \red{MPI})
   \item<4-> Nouveaux langages ?
   \end{itemize}
@@ -1539,7 +1521,7 @@ Juge de paix : \alert{horloge murale}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-\frametitle{\emph{Strong scaling} (\og extensibilité forte \fg)}
+\frametitle{\emph{Strong scaling} (``extensibilité forte'')}
 
 \begin{alertblock}{Objectif de la parallélisation}
   \begin{itemize}
@@ -1664,7 +1646,7 @@ limitée à 5.
 
 \bigskip
 
-(Sur)co\^ut d\^u au parallélisme \og $1-E(n,p)$ \fg~ 
+(Sur)co\^ut d\^u au parallélisme `` $1-E(n,p)$''~ 
 d\^u aux parties séquentielles et :
 \begin{itemize}
 \item démarrage et terminaison des tâches 
@@ -1678,7 +1660,7 @@ d\^u aux parties séquentielles et :
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-\frametitle{\emph{Weak scaling} (\og extensibilité faible \fg)}
+\frametitle{\emph{Weak scaling} (``extensibilité faible'')}
 
 \begin{alertblock}{Objectif de la parallélisation}
   \begin{itemize}

@@ -2,9 +2,9 @@
 
 \usepackage{verbatim}
 \usepackage{graphicx,color}
-\usepackage[french]{babel}
 \usepackage{xspace}
 \usepackage{tikz}
+\usepackage{url}
 
 \usecolortheme{rose}
 \setbeamertemplate{footline}{}
@@ -62,8 +62,8 @@
   \begin{itemize}
   \item 10 weeks
   \item 1 week = lecture + TD (exercises) + TP (hands-on in lab room)
-  \item TP: you have to sumbit (brief) reports on Moodle (``homework'')
-  \item No midterm exam (\og partiel \fg)
+  \item TP: you have to submit (brief) reports on Moodle (``homework'')
+  \item No midterm exam (``partiel'')
   \item Final exam in January (January 11th?)
   \item Two projects (medium to high difficulty ; lots of work)
     \begin{itemize}
@@ -118,29 +118,95 @@
 \begin{frame}
   \frametitle{Prerequisites for this Class}
   \begin{block}{Just two (but they are important)}
+    \begin{itemize}
+    \item<2-> You know how to code in C
+    \item<3-> You know how to use a terminal
+    \end{itemize}
+  \end{block}
+  
+  \begin{overlayarea}{\textwidth}{4cm}
+    \begin{columns}
+      \begin{column}{0.47\textwidth}
+        \includegraphics<2->[width=\textwidth]{tc.png}
+      \end{column}
+      \begin{column}{0.47\textwidth}
+        \includegraphics<3->[width=\textwidth]{terminal.jpg}
+      \end{column}
+    \end{columns}
+  \end{overlayarea}
+  
+  \begin{alertblock}<4->{Just in case}
+    If you're not fluent with the C language, come talk to me at the end
+  \end{alertblock}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \begin{block}{Why the C language?}
   \begin{itemize}
-  \item<2-> You know how to code in C
-  \item<3-> You know how to use a terminal
+  \item 99.9\% of (serious) scientific computing is in Fortran / C / C++
+
+    \medskip
+
+  \item C / Fortran are \textbf{mature} and \textbf{stable}
+    \begin{itemize}
+    \item Fortran (resp. C) started in 1955 (resp. 1972)
+    \item Fortran libraries from the late 1970's still used today!
+    \item Code from 50 years ago compiles and works fine
+    \end{itemize}
+
+    \medskip
+
+  \item There is \textbf{always} a C compiler
+    \begin{itemize}
+    \item Even on the most exotic HPC platform
+    \end{itemize}    
   \end{itemize}
 \end{block}
 
-\begin{overlayarea}{\textwidth}{4cm}
-\begin{columns}
-  \begin{column}{0.47\textwidth}
-    \includegraphics<2->[width=\textwidth]{tc.png}
-  \end{column}
-  \begin{column}{0.47\textwidth}
-    \includegraphics<3->[width=\textwidth]{terminal.jpg}
-  \end{column}
-\end{columns}
-\end{overlayarea}
-
-\begin{alertblock}<4->{Just in case}
-  If you're not fluent with the C language, come talk to me at the end
-\end{alertblock}
-
+\begin{exampleblock}{Here comes a challenger: Python is \textbf{gaining traction}}
+  \begin{itemize}
+  \item \textbf{Not mature yet} (code from $\leq$ 10 years ago \alert{no longer run})
+  \item \textbf{Interpreted} language ($\approx 1000\times$ slower than C / Fortran)
+  \item Python packages used in scientific computing (\texttt{numpy}, \texttt{scipy}, ...)
+    \begin{itemize}
+    \item ... are just \emph{wrappers} around C / Fortran code that do the heavy lifting
+    \end{itemize}
+  \end{itemize}
+\end{exampleblock}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Course Material}
+
+  \begin{itemize}
+  \item All${}^1$ the course materials (\texttt{.pdf} files) are${}^2$ available on Moodle
+  \item Public domain
+  \item \LaTeX sources available
+    \begin{center}
+      \url{https://github.com/cbouilla/PPAR}
+    \end{center}
+
+    \medskip
+
+  \item If you find a typo/error/misspell/etc., \textbf{please}
+    \begin{itemize}
+    \item Open a github issue
+    \item Even better, fix it and send a pull request
+    \end{itemize}
+  \end{itemize}
+
+  \vfill
+
+  \tiny
+  \begin{enumerate}
+  \item The TD/TP handouts are not there yet because our files contain the answers. We are working on it
+  \item or they will be at some point
+  \end{enumerate}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -151,20 +217,7 @@
   \includegraphics[width=\textwidth]{welding.jpg}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-{
-  \setbeamercolor{background canvas}{bg=black}
-\begin{frame}
-  \frametitle{\color{white} You are going to learn the \textbf{hard} way}
-
-  \centering
-  \includegraphics[width=\textwidth]{severus.jpg}
-\end{frame}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}
   \frametitle{\textbf{Practice} is the only way}
@@ -195,6 +248,17 @@
   \end{block} 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+{
+  \setbeamercolor{background canvas}{bg=black}
+\begin{frame}
+  \frametitle{\color{white} You are going to learn the \textbf{hard} way}
+
+  \centering
+  \includegraphics[height=8cm]{severus.jpg}
+\end{frame}
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
@@ -330,7 +394,7 @@
     \begin{itemize}
     \item Do not monopolize resources \emph{during the day}
       \begin{itemize}
-      \item Night / week-ends: you can do whatever you want
+      \item Nights / week-ends: you can do whatever you want
       \end{itemize}
     \item \textbf{NEVER} mine cryptocurrencies (not even ``for science'')
     \end{itemize}
