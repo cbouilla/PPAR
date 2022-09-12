@@ -734,27 +734,27 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
   \frametitle{Glossary}
 
     \begin{description}
-    \item[machine] ensemble des composants
+    \item[machine] all components
 
-    \item[\textit{cluster}] des serveurs de calcul réliés à un réseau (\sout{COVID})
+    \item[\textit{cluster}] compute servers connected to a network (\sout{COVID})
       
-    \item[noeud] un ``ordinateur'' indépendant
+    \item[node] an independent ``computer''
 
-    \item[baie] armoire contenants noeuds, switch, etc.
+    \item[rack] frame or enclosure for mounting servers, switches, etc.
 
-    \item[SMP] noeud qui contient plusieurs processeurs
+    \item[SMP] node with several processors
 
-    \item[processeur] objet qui contient au moins un \emph{coeur} + cache, etc.
+    \item[processeur] contains at least one core + cache, etc.
   
-    \item[\emph{socket}] prise sur laquelle on branche un processeur
+    \item[\emph{socket}] connects a processor to the motherboard
 
-    \item[coeur] circuit qui exécute du code de façon autonome
+    \item[core] circuit executing code autonomously
 
-    \item[multicoeur] processeur qui contient plusieurs coeurs
+    \item[multicore] processor containing several cores
   
-    \item[thread matériel] contexte d'exécution autonome dans un coeur
+    \item[hardware thread] autonomous execution context in a core
 
-    \item[SMT] coeur qui héberge plusieurs threads matériels
+    \item[SMT] core that hosts several hardware threads
     \end{description}
 
 \end{frame}
@@ -762,87 +762,83 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Glossaire --- difficulté avec ``\emph{thread}''}
+  \frametitle{Glossary --- trouble with ``\emph{thread}''}
 
   \begin{center}
     \includegraphics[height=6cm]{lstopo_laptop.pdf}%
-    \quad \small sortie de \texttt{lstopo} sur un laptop
+    \quad \small \texttt{lstopo} output on a laptop
   \end{center}
 
   \begin{itemize}
-  \item thread matériel $\neq$ thread logiciel (OS)
-  \item ``coeur physique'' $\approx$ coeur
-  \item ``coeur logique''  $\approx$ thread matériel
+  \item hardware thread $\neq$ software thread (OS)
+  \item ``physical core'' $\approx$ core
+  \item ``logical core'' $\approx$ hardware thread
   \end{itemize}
   
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-  \frametitle{Notions de processus et de thread dans les OS}
+% \begin{frame}
+%   \frametitle{Notions de processus et de thread dans les OS}
 
-\begin{description}
-\item[Processus] ``flot d'exécution'' $~+~$ ``espace mémoire''
-\item[Thread] ``flot d'exécution'' 
-\end{description}
+% \begin{description}
+% \item[Processus] ``flot d'exécution'' $~+~$ ``espace mémoire''
+% \item[Thread] ``flot d'exécution'' 
+% \end{description}
 
-\pause 
+% \pause 
 
-\bigskip
+% \bigskip
 
-\centering
+% \centering
 
-%% Tanenbaum sur les Systèmes d'exploitation : 
-\begin{tabular}{c|c}
-Eléments propres   & Eléments propres \\
-à chaque processus & à chaque thread \\ 
-\hline
-Espace d'adressage & Compteur ordinal \\ 
-Variables globales & Registres \\
-Fichiers ouverts & Pile (dont variables locales)\\
-  Processus enfant, signaux\dots & Etat \\
-  \hline
-  \\
-    \includegraphics[height=0.15\textheight]{multi-processus}$\quad$&
-    \includegraphics[height=0.15\textheight]{multi-thread} \\
-    Mode multi-processus    &
-    $\quad$ Mode multi-thread $\quad$ \\
-\end{tabular}
-\end{frame} 
+% %% Tanenbaum sur les Systèmes d'exploitation : 
+% \begin{tabular}{c|c}
+% Eléments propres   & Eléments propres \\
+% à chaque processus & à chaque thread \\ 
+% \hline
+% Espace d'adressage & Compteur ordinal \\ 
+% Variables globales & Registres \\
+% Fichiers ouverts & Pile (dont variables locales)\\
+%   Processus enfant, signaux\dots & Etat \\
+%   \hline
+%   \\
+%     \includegraphics[height=0.15\textheight]{multi-processus}$\quad$&
+%     \includegraphics[height=0.15\textheight]{multi-thread} \\
+%     Mode multi-processus    &
+%     $\quad$ Mode multi-thread $\quad$ \\
+% \end{tabular}
+% \end{frame} 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\frametitle{Les machines parallèles --- classification}
+\frametitle{Parallel Machines --- Classification}
 
-\begin{block}{Classification de Flynn (1966) :}
+\begin{block}{Flynn's taxonomy (1966) :}
 
   \begin{center}
     \begin{tabular}{|l|l|c|c|}
       \cline{3-4}
-      \multicolumn{2}{c|}{}    & \multicolumn{2}{c|}{Flot de données} \\
+      \multicolumn{2}{c|}{}   & \multicolumn{2}{c|}{Data stream} \\
       \cline{3-4}
-      \multicolumn{2}{c|}{}    & unique & multiple \\
+      \multicolumn{2}{c|}{}   & single & multiple \\
       \hline
-      Flot           & unique   & \bf SISD   & \bf SIMD \\
+      Instruction             & single   & \bf SISD   & \bf SIMD \\
       \cline{2-4}
-      d'instructions & multiple & \bf MISD   & \bf MIMD \\
+      Stream                  & multiple   & \bf MISD   & \bf MIMD \\
       \hline
     \end{tabular}
   \end{center}
 \end{block}
 
 \pause
-  
   \begin{itemize}
 
-  \item {\bf machines SISD} Ce sont les machines séquentielles !
+  \item {\bf SISD} Usual sequential machines
 
-  \item {\bf machines MISD} Ça n'existe pas vraiment.
-    
-    {\small \it (Chaque processeur recevrait des instructions distinctes opérant sur le même
-    flot de données ???)}
+  \item {\bf MISD} Do not really exist
   \end{itemize}
 
 \end{frame}
@@ -850,37 +846,36 @@ Fichiers ouverts & Pile (dont variables locales)\\
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}<1>[label=flynn_suite]
-\frametitle{Classification de Flynn (suite)}
+\frametitle{Flynn's Taxonomy (continued)}
 
 \begin{itemize}
   
-\item {\bf machines SIMD} 
+\item {\bf SIMD} 
 
-Les unités de traitement %% (processing units)  %% ou unités de calcul  
-exécutent simultanément la même opération sur
-leurs données propres.
+Processing units simultaneously execute the same operation on their own data
 \begin{itemize}
-\item fonctionnement synchrone
-\item une seule unité de contr\^ole centralisée 
-\item exemples :
+\item Synchronous operations
+\item Single centralized control unit
+\item Examples :
   \begin{itemize}
-  \item machines vectorielles des années 1970--90 (CRAY , NEC \dots)
-  \item instructions vectorielles (SSE, AVX2, AVX-512, NEON, \dots)
+  \item Vector machines from the 1970--90 (CRAY , NEC \dots)
+  \item Vector instructions in contemporary CPUs (SSE, AVX2, AVX-512, NEON, \dots)
   \item Graphics Processing Units (GPUs)
   \end{itemize}
 \end{itemize}
 
 
-\item<2-> {\bf machines MIMD} 
+\item<2-> {\bf MIMD} 
 
-Les processeurs peuvent effectuer différentes opérations sur
-différentes données simultanément.
+  Independent processors can perform arbitrary operations on their own data
+  simultaneously.
 \begin{itemize}
-\item fonctionnement asynchrone 
-\item exemples :
+\item Asynchronous 
+\item Examples :
   \begin{itemize}
-  \item grappe ({\it cluster}) de PC
-  \item Toutes les grosses machines de HPC    
+  \item Multicore CPU
+  \item Clusters
+  \item All big HPC machines
   \end{itemize}
 \end{itemize}
 
@@ -907,8 +902,7 @@ différentes données simultanément.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Mémoire distribuée}
-  \framesubtitle{Classification selon l'organisation de la mémoire}
+  \frametitle{Distributed Memory}
 
   \begin{center}
     \begin{tikzpicture}[scale=1.33,>=stealth]
@@ -922,7 +916,7 @@ différentes données simultanément.
       \node[draw, shape=circle, inner sep=1pt] (R2) at (2, 2.25)  {RAM};
       \node[draw, shape=circle, inner sep=1pt] (R3) at (3, 2.25)  {RAM};
 
-      \filldraw[fill=lightgray] (-1, 0) rectangle node (net) {Réseau} +(5, -0.33);
+      \filldraw[fill=lightgray] (-1, 0) rectangle node (net) {Network} +(5, -0.33);
 
       \draw[<->,thick] (P0) edge (0, 0) edge (R0);
       \draw[<->,thick] (P1) edge (1, 0) edge (R1);
@@ -932,20 +926,19 @@ différentes données simultanément.
   \end{center}
 
   \begin{itemize}
-  \item Chaque processeur possède sa propre mémoire
+  \item Each processor has its own memory
     
-  \item Communication $=$ échange de messages sur le réseau
+  \item Communication $=$ messages exchange on a network
 
-  \item Performances du réseau = aspect \textbf{critique} de la machine
+  \item Network performance = \textbf{critical} aspect of the machine
   \end{itemize}
 \end{frame}
 
-\iffalse
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Mauvaise idée}
-  \framesubtitle{réseau en arbre, switches quelconques}
+  \frametitle{Bad Idea}
+  \framesubtitle{Tree-like Ethernet, Ordinary Switches}
   \begin{tikzpicture}
     \path[red, dotted, use as bounding box] (-0.5, 1) rectangle (10, -4.5);
     \node at(5, 0) (switch) {\includegraphics[width=5cm]{old_switch.jpg}};
@@ -957,9 +950,11 @@ différentes données simultanément.
 
   \bigskip
 
-  Mauvaises performances, problème de passage à l'échelle.
+  Bad performance, scalability problems
   
 \end{frame}
+
+\iffalse
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1155,8 +1150,7 @@ différentes données simultanément.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Mémoire partagée}
-  \framesubtitle{Classification selon l'organisation de la mémoire}
+  \frametitle{Shared Memory}
 
   \begin{center}
     \begin{tikzpicture}[scale=1.33,>=stealth]
@@ -1167,7 +1161,7 @@ différentes données simultanément.
 
       \node[draw, shape=circle, inner sep=5pt] (R0) at (6, -0.33/2)  {RAM};
 
-      \filldraw[fill=lightgray] (-1, 0) rectangle node (net) {Bus mémoire} +(5, -0.33);
+      \filldraw[fill=lightgray] (-1, 0) rectangle node (net) {Bus} +(5, -0.33);
 
       \draw[<->,thick] (P0) edge (0, 0);
       \draw[<->,thick] (P1) edge (1, 0);
@@ -1181,70 +1175,66 @@ différentes données simultanément.
   
   \begin{itemize}
     
-  \item CPUs reliés à l'ensemble de la mémoire par un bus.
+  \item CPUs connected to the memory through a bus
     
-  \item Chacun peut accéder à l'intégralité de la mémoire.
+  \item Each CPU may access the whole memory
     
-  \item Communications $\leftrightarrow $ lecture/écriture en mémoire.    
+  \item Communications $\leftrightarrow $ memory accesses    
   \end{itemize}
 
   \bigskip
   \begin{itemize}
-  \item Attention aux conflits d'accès à une même adresse !
+  \item Beware of race conditions!
   \end{itemize}  
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \frametitle{Mémoire partagée}
-  \framesubtitle{Classification selon l'organisation de la mémoire}
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{frame}
+%   \frametitle{Mémoire partagée}
+%   \framesubtitle{Classification selon l'organisation de la mémoire}
 
 
-  \begin{block}{{\it Race condition :}}
-    Il y a {\it race condition} lorsque  
-    \begin{itemize}
-    \item au moins 2 processeurs accèdent à la même variable
-    \item au moins un processeur y accède en écriture 
-    \item ces accès sont potentiellement concurrents (ils peuvent
-      être effectués ``au même moment'')
-    \end{itemize}
-  \end{block}
+%   \begin{block}{{\it Race condition :}}
+%     Il y a {\it race condition} lorsque  
+%     \begin{itemize}
+%     \item au moins 2 processeurs accèdent à la même variable
+%     \item au moins un processeur y accède en écriture 
+%     \item ces accès sont potentiellement concurrents (ils peuvent
+%       être effectués ``au même moment'')
+%     \end{itemize}
+%   \end{block}
   
-  \medskip
+%   \medskip
   
-  \mintinline{C}{i = i + 1;}
+%   \mintinline{C}{i = i + 1;}
   
-  \medskip
+%   \medskip
   
-  \begin{exampleblock}{Solution}
-    mécanismes de synchronisation (section critique,
-    opération atomique, barrière de synchronisation)
-  \end{exampleblock}
-\end{frame}
+%   \begin{exampleblock}{Solution}
+%     mécanismes de synchronisation (section critique,
+%     opération atomique, barrière de synchronisation)
+%   \end{exampleblock}
+% \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
   \frametitle{Non-Uniform Memory Access}
-  \framesubtitle{Classification selon l'organisation de la mémoire}
 
-  \begin{alertblock}{Mémoire partagée : problème de passage à l'échelle}
-    Contention sur le bus mémoire...
+  \begin{alertblock}{Shared memory: scalability problem}
+    More CPUS $\leadsto$ contention on the bus
   \end{alertblock}
 
   \begin{exampleblock}{Solution}
     \begin{itemize}
-    \item Simuler mémoire partagée avec mémoire distribuée.
-    \item Chaque CPU ``contrôle'' une partie de la mémoire.
+    \item Simulate a shared memory with a distributed memory
+    \item Each CPU ``owns'' and control a share of the memory
       \begin{itemize}
-      \item Il y accède \emph{directement}
+      \item \emph{Directly} accesses its own share 
       \end{itemize}
-    \item Pour accéder au reste de la mémoire, il faut passer par les autres
-      CPUs.
-    \item[$\Rightarrow$] Réseau \textit{ad hoc}, très rapide.
+    \item Accesses the rest by communicating with other CPUs
+    \item[$\Rightarrow$] \textit{ad hoc} network, very fast.
     \end{itemize}
   \end{exampleblock}
 \end{frame}
@@ -1253,14 +1243,14 @@ différentes données simultanément.
 
 \begin{frame}
   \frametitle{Non-Uniform Memory Access}
-  \framesubtitle{Un vrai exemple}
+  \framesubtitle{Real Example}
 
   \begin{itemize}
-  \item un noeud SMP avec $2 \times$ CPU AMD EYPC ``Naples''
-  \item 4 $\times$ contrôleurs RAM indépendants par CPU
-  \item<3-> Graphe complet à l'intérieur d'un CPU
-  \item<4-> Interconnection partielle entre les 2 sockets
-  \item<4-> Lien rouge = $\approx 2\times$ plus de latence
+  \item SMP node with $2 \times$ AMD EYPC ``Naples'' CPUs
+  \item 4 $\times$ independent memory controller per CPU
+  \item<3-> Complete interconnection inside of a CPU
+  \item<4-> Partial interconnection between the two sockets
+  \item<4-> Red link = $\approx 2\times$ higher latency
   \end{itemize}
 
   \medskip
@@ -1315,25 +1305,25 @@ différentes données simultanément.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{En pratique...}
+  \frametitle{In practice...}
 
   \begin{itemize}
-  \item machine = noeuds reliés par un réseau
+  \item machine = nodes connected to a network
     \begin{itemize}
-      \item MIMD / mémoire \emph{distribuée}
+      \item MIMD / distributed memory
     \end{itemize}
     \medskip
-  \item Un noeud = plusieurs processeurs
+  \item One node = several processors (SMP)
     \begin{itemize}
-    \item Sûrement NUMA
+    \item Most likely NUMA
     \end{itemize}
     \medskip
-  \item Dans un noeud = tous les coeurs ont accès à la RAM
+  \item Inside a node = all cores access the memory
     \begin{itemize}
-    \item Mémoire \emph{partagée}
+    \item Shared memory
     \end{itemize}
     \medskip
-  \item Dans un coeur = instructions vectorielles
+  \item Inside a core = vector instructions
     \begin{itemize}
     \item SIMD
     \end{itemize}
@@ -1341,7 +1331,7 @@ différentes données simultanément.
 
   \bigskip
 
-  Bref, on a droit à tout à la fois.
+  Everything, everywhere, all the time.
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1372,22 +1362,22 @@ addi 9,9,1
     \end{column}  
 
     \begin{column}{7cm}
-      code = liste \emph{ordonnée} d'instructions
+      code = \emph{ordered} sequence of instructions
 
       \medskip
 
-      \begin{alertblock}{Parallélisme au sein d'un coeur}
+      \begin{alertblock}{Parallelism inside a core}
       \begin{itemize}
       \item \emph{Pipeline(s)}
-      \item \emph{Superscalarité}
+      \item \emph{Superscalarity}
       \item \emph{Out-of-order execution}
       \item \emph{Simultaneous Multi-Threading}
       \end{itemize}
     \end{alertblock}
 
     \begin{itemize}
-    \item[$\Rightarrow$] Mécanismes parallèles
-    \item[$\Rightarrow$] Sémantique séquentielle
+    \item[$\Rightarrow$] Parallel implementation
+    \item[$\Rightarrow$] Sequential semantics
     \end{itemize}
     
     \end{column}
@@ -1397,13 +1387,13 @@ addi 9,9,1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile]
-  \frametitle{Comment écrire des programmes parallèles ?}
+  \frametitle{How to Write Parallel Programs?}
 
   \begin{itemize}
-  \item<1-> Parallélisation automatique
-  \item<2-> ``Annotations'' de parallélisme dans des programmes C (\red{OpenMP}, OpenACC)
-  \item<3-> plain C + bibliothèques (\texttt{pthread}, \red{MPI})
-  \item<4-> Nouveaux langages ?
+  \item<1-> Automatic parallelization
+  \item<2-> ``Annotations'' and compiler hints in C programs  (\red{OpenMP}, OpenACC)
+  \item<3-> plain C + libraries (\texttt{pthread}, \red{MPI})
+  \item<4-> New languages?
   \end{itemize}
 
   \medskip
@@ -1429,7 +1419,7 @@ pthread_exit();
 \end{minted}
   \end{block}
 
-  \begin{block}<only@4>{Nouveaux langages (Go, UPC, coarray Fortran, ....)}
+  \begin{block}<only@4>{Go}
 \begin{minted}[fontsize=\small]{go}
 func main() {
     s := []int{7, 2, 8, -9, 4, 0}
@@ -1449,14 +1439,14 @@ func main() {
 
 
 \begin{frame}[fragile]
-  \frametitle{Recycler les langages séquentiels}
+  \frametitle{Recycling Sequential Programming Languages}
 
 
-  \begin{block}{\emph{Single Program Mutiple Data}}
+  \begin{block}{\emph{Single Program Multiple Data} (SPMD)}
     \begin{itemize}
-    \item Même code séquentiel exécuté plusieurs fois en parallèle
-    \item Variable spéciale : \texttt{rank}
-    \item $\texttt{rank} = i$ sur le $i$-ème processeur
+    \item Same sequential code executed many times in parallel
+    \item Special variable: \texttt{rank}
+    \item $\texttt{rank} = i$ in the $i$-th copy of the program
     \end{itemize}
   \end{block}
 
@@ -1469,48 +1459,43 @@ for (int j = 0; j < n; j++)
         C[i][j] += A[i][k] * B[k][j];
 
 if (rank == 0) {             /* control parallelism */
-  <<Portion purement séquentielle>>
+  <<Purely sequential section>>
 } else {
-  <<Attend>>
+  <<Wait>>
 }
 \end{minted}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\frametitle{Évaluation des performances}
-\framesubtitle{Étudier le passage à l'échelle (\emph{scalability}) d'un algorithme parallèle}
+\frametitle{Performance Evaluation}
 
-Juge de paix : \alert{horloge murale}
+Justice of the peace : \alert{wall clock}
 
 \medskip
 
 \begin{itemize}
-\item $T_1(n)$ : temps nécessaire à l'exécution du \textbf{meilleur} algorithme
-  séquentiel pour résoudre une instance de problème de taille $n$
+\item $T_1(n)$: time needed by the \textbf{best} sequential algorithm
+  to process an instance of size $n$
 
   \medskip
   
-\item $T_p(n)$ : temps nécessaire à l'exécution de l'algorithme parallèle
-  considéré pour résoudre une instance de problème de taille $n$ avec $p$
-  processeurs
+\item $T_p(n)$: time needed by the parallel algorithm   to process an instance of size $n$ on $p$ processors
 \end{itemize}
 
 \vspace*{-0.5cm}
 \begin{columns}[t]
 
 \column{0.5\textwidth}
-\begin{block}{\textbf{Accélération}, \emph{speedup}}
+\begin{block}{\textbf{Speedup}}
   \[
     S(n,p)  =  \frac{T_1(n)}{T_p(n)}
   \]
 \end{block}
 
 \column{0.5\textwidth}
-\begin{block}{{\bf Efficacité}, {\it efficiency}}
+\begin{block}{\textbf{Efficiency}}
   \[
     E(n,p)  = \frac{S(n,p)}{p}
   \]
@@ -1521,32 +1506,32 @@ Juge de paix : \alert{horloge murale}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-\frametitle{\emph{Strong scaling} (``extensibilité forte'')}
+\frametitle{Strong scaling}
 
-\begin{alertblock}{Objectif de la parallélisation}
+\begin{alertblock}{Goal when Parallelizing?}
   \begin{itemize}
-  \item Etude des performances en fonction de $p$ avec $n$ fixé
-  \item Résoudre un problème de taille fixe le plus vite possible
+  \item \textbf{Minimize time-to-solution for a fixed problem}
+  \item[$\Rightarrow$] Study of the performance with fixed $n$ and increasing $p$
   \end{itemize}
 \end{alertblock}
 
 \medskip
 
 \begin{itemize} 
-\item  {\bf Accélération linéaire ($\rightarrow$ l'idéal) :} 
-les processeurs sont occupés à 100\% 
-\[S(n,p)  = p \qquad E(n,p)  = 1\]
+\item  \textbf{Linear speedup ($\rightarrow$ ideal):} 
+processors are 100\% busy, no extra operations
+\[
+  S(n,p)  = p \qquad E(n,p)  = 1
+\]
 
 \medskip
 
-\item {\bf Accélération sublinéaire :}
-les processeurs sont occupés à moins de~100\% 
+\item \textbf{Sublinear speedup:}
+processors are less than~100\% busy, or extra operations 
 
 \medskip
 
-\item {\bf Accélération supralinéaire :} difficile à envisager.
-Toutefois cela peut arriver si la mémoire est mieux utilisée
-(utilisation des caches), ou si l'on économise des calculs
+\item {\bf Superinear speedup:} hard to envision 
 
 
 \end{itemize}
@@ -1557,44 +1542,42 @@ Toutefois cela peut arriver si la mémoire est mieux utilisée
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-  \frametitle{\emph{Strong scaling}}
-  \framesubtitle{Exemple d'une application non triviale}
+  \frametitle{Strong scaling}
+  \framesubtitle{Real example}
   
   \begin{columns}
     \begin{column}{0.4\textwidth}
       \begin{center}
         \begin{tikzpicture}
           \path[use as bounding box] (-0.2, -0.5) rectangle +(4.2, 4.8);
-          \draw[thick,->] (-0.15, 0.075) -- node[above,sloped] {Temps} +(0, 4.7);
-          \draw[thick,->] (0, -0.15) -- node[below] {Processeurs} +(4.3, 0);
+          \draw[thick,->] (-0.15, 0.075) -- node[above,sloped] {Time} +(0, 4.7);
+          \draw[thick,->] (0, -0.15) -- node[below] {Processors} +(4.3, 0);
           \node[anchor=south west,inner sep=0] at (0, 0) {\includegraphics[width=\textwidth]{strong.png}};
         \end{tikzpicture}
         
-        {\tiny (d’après M.J. Quinn)}
+        {\tiny (M.J. Quinn)}
       \end{center}
     \end{column}
     
     \begin{column}{0.63\textwidth}
       \begin{itemize}
-      \item en grisé : temps de calcul
+      \item Gray: computation time
         \begin{itemize}
-        \item décroît (ou stagne) lorsque $p \nearrow$
+        \item decreases (or stagnate) when $p \nearrow$
         \end{itemize}
 
         \medskip
         
-      \item en blanc : temps de communication
+      \item White: overhead
         \begin{itemize}
-        \item augmente lorsque $p \nearrow$
+        \item Increases when $p \nearrow$
         \end{itemize}
 
         \medskip
         
-      \item Pour un problème donné ($n$ fixé), il existe un nombre maximal de
-        processeurs utilisables efficacement
+      \item For a given problem size ($n$), there is an optimal number of processors that can be efficiently exploited
         \begin{itemize}
-        \item Au-delà, l'ajout de processeurs supplémentaires n'apporte plus
-          de gain de performance
+        \item Beyond this point, adding extra processors no longer bring any gain
         \end{itemize}
       \end{itemize}
     \end{column}
@@ -1604,8 +1587,8 @@ Toutefois cela peut arriver si la mémoire est mieux utilisée
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\frametitle{Exemple avec un (vrai) programme multi-thread}
-\framesubtitle{Calcul de rang de matrices creuses}
+\frametitle{Real Example (my code)}
+\framesubtitle{Compute Rank of Sparse Integer Matrices}
 
 \centering
 \includegraphics[height=6cm]{d19.pdf}
@@ -1632,50 +1615,48 @@ C    & Xeon E5-2695 v4 & $2 \times$ & 18        & 45MB\\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\frametitle{Loi d'Amdahl}
+  \frametitle{Amdahl's Law}
+  \framesubtitle{Sequential Portions Limit Parallel Speedup}
 
-Un algorithme dont une fraction $f$ est non
-parallélisable. Alors :
+  An Algorithm with a fraction $f$ of operations that must be performed
+  sequentially. Then
 
 \[
   S(n,p)  \leq  \frac{1}{f + (1 - f)/p}
 \]
 
-$\Rightarrow$ 20\% d'un algo est séquentiel, l'accélération est 
-limitée à 5.
+$\Rightarrow$ 20\% of an algorithm is sequential $\leadsto$ Speedup $\leq 5$
 
 \bigskip
 
-(Sur)co\^ut d\^u au parallélisme `` $1-E(n,p)$''~ 
-d\^u aux parties séquentielles et :
+Overhead caused by parallelism ($1 - E(n,p)$) 
+caused by sequential parts and
 \begin{itemize}
-\item démarrage et terminaison des tâches 
-\item communications et/ou synchronisations  
-\item qualité de l'équilibrage de charge (voir cours suivants)
-\item surcoûts logiciels dûs aux
-  compilateurs, bibliothèques, outils, systèmes d'exploitation... 
+\item Communications
+\item Starting / Synchronizing tasks 
+\item Load imbalance
+\item ...
 \end{itemize}
 
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-\frametitle{\emph{Weak scaling} (``extensibilité faible'')}
+\frametitle{Weak scaling}
 
-\begin{alertblock}{Objectif de la parallélisation}
+\begin{alertblock}{Goal when Parallelizing?}
   \begin{itemize}
-  \item Etude des performances quand $n$ augmente avec $p$.
-  \item Résoudre de plus gros problèmes en temps fixe.
+  \item \textbf{Solve \emph{bigger} problems with more processors}
+  \item[$\Rightarrow$] Study of the performance when both $p$ and $n$ increase
   \end{itemize}
 \end{alertblock}
 
 \medskip
 
-\begin{exampleblock}{Effet d'Amdahl (empirique)}
+\begin{exampleblock}{Amdahl's effect (empirical)}
 \begin{itemize}
-\item La fraction intrinsèquement séquentielle d'un algo diminue généralement quand $n \nearrow$
-\item Coûts de communication $\nearrow$ (car $p \nearrow$), mais \emph{moins
-    vite} que la quantité de calculs (car $n \nearrow$).
+\item When $n \nearrow$, computation time often increase \emph{more} that communication time
+\item Often allows for greater speedups
 \end{itemize}
 \end{exampleblock}
 \end{frame}
@@ -1683,28 +1664,26 @@ d\^u aux parties séquentielles et :
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Loi de Gustafson-Barsis}
+  \frametitle{Gustafson-Barsis's Law}
 
   On exécute un programme parallèle sur $p$ processeurs.
 
   \medskip
   
-  On mesure que la fraction du temps d'exécution passé dans des portions
-  intrinsèquement séquentielles est $s$.
+  A parallel computation is run ; time spent in sequential operations is measured and represents a fraction $s$ of the total.
 
   \medskip
   
   Alors :
   \[
-    S(n, p)  \leq  p - (p-1)s
+    S(n, p) \leq  p - (p-1)s
   \]
 
     \medskip
   
-    \begin{block}{Exemple}
-      Un calcul parallèle s'exécute sur 32 processeurs en 100
-      secondes, dont 5 secondes dans des parties séquentielles sur 1 seul
-      processeur, alors $ S(n, p)  \leq 30.45$
+    \begin{block}{Example}
+      A parallel computation runs in 100s on 32 processors, including 5s in serial portions.
+      Then $S(n, p) \leq 30.45$.
     \end{block}
   \end{frame}
 
