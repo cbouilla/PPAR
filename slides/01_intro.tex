@@ -1,3 +1,4 @@
+%! TEX program = xelatex
 \documentclass[xcolor={x11names,svgnames,psnames}]{beamer}
 
 \usepackage[T1]{fontenc}
@@ -46,14 +47,15 @@
 
 \usepackage{fontspec}
 
-\setsansfont{PalatinoSansLTPro}[
-   Path = /home/charles/charles_work/fonts/PalatinoSans/, 
-   Extension      = .otf,
-   UprightFont    = *-Regular,
-   BoldFont= *-Bold ,
-   ItalicFont = *-Italic,
-   BoldItalicFont = *-BoldIta
-]
+%\setsansfont{PalatinoSansLTPro}[
+%   Path = /home/charles/charles_work/fonts/PalatinoSans/, 
+%   %Path = ../PalatinoSans/, 
+%   Extension      = .otf,
+%   UprightFont    = *-Regular,
+%   BoldFont= *-Bold ,
+%   ItalicFont = *-Italic,
+%   BoldItalicFont = *-BoldIta
+%]
 
 %\author[C.~Bouillaguet]{Charles Bouillaguet \newline
 %  {\small (\texttt{charles.bouillaguet@lip6.fr})}}
@@ -263,7 +265,7 @@ Iterate the process until convergence.
   \frametitle{Realization \triste}
 
   \begin{itemize}
-  \item You know \textbf{a little} how does a computer work
+  \item You know \textbf{a little} how a computer works
     \begin{itemize}
     \item But \red{not completely}
     \item Especially the big ones
@@ -319,7 +321,7 @@ Iterate the process until convergence.
 
 \begin{frame}
   \frametitle{1990's PC}
-  \framesubtitle{The only one your really know how to program}
+  \framesubtitle{The only one you really know how to program}
   
   \centering
   \includegraphics[height=0.5\textheight]{old_pc}
@@ -359,7 +361,7 @@ Iterate the process until convergence.
 
     \bigskip
 
-    10--16 cores, 4Ghz, 16MB cache, 32Go RAM (2 channels)
+    10--16 cores, 4Ghz, 16MB cache, 32GB RAM (2 channels)
 \end{frame}
 
 
@@ -376,7 +378,7 @@ Iterate the process until convergence.
 
   \bigskip
 
-  2 CPUs, 32--128 cores, 2.5Ghz, 256Go RAM ($2\times$ 6--8 channels)
+  2 CPUs, 32--128 cores, 2.5Ghz, 256GB RAM ($2\times$ 6--8 channels)
 \end{frame}
 
 
@@ -440,7 +442,7 @@ Iterate the process until convergence.
       \begin{itemize}
       \item 1024 nodes
       \item 16 384 cores
-      \item 16 To de RAM
+      \item 16 TB RAM
       \end{itemize}
       
     \end{column}
@@ -472,7 +474,7 @@ Iterate the process until convergence.
   1 \textit{compute card} =
   \begin{itemize}
   \item 1 PowerPC A2 CPU (16 cores @ 1.6Ghz, 32MB Cache)
-  \item 16Go of ECC RAM (36 $\times$ 512MB chip)
+  \item 16GB of ECC RAM (36 $\times$ 512MB chip)
   \end{itemize}
 
   \begin{center}
@@ -514,7 +516,7 @@ Iterate the process until convergence.
     \item IBM BlueGene/Q ($\approx$ 20 millions \euro)
     \item 6144 nodes, 98 304 cores, 98TB RAM
       \begin{itemize}
-      \item 16Go + 1 $\times$ IBM PowerPC A2, 16 cores @ 1.6 Ghz
+      \item 16GB + 1 $\times$ IBM PowerPC A2, 16 cores @ 1.6 Ghz
       \item 1 CPU = ??? \euro = 200 GFLOPS
       \end{itemize}
     \item Interconnect = ``in-house'' 5D-torus, 160 Gbit/s per node
@@ -528,7 +530,7 @@ Iterate the process until convergence.
     \item HPE SGI 8600 (25 millions \euro)
     \item 1528 ``CPU'' nodes $\rightarrow$ 61~120 cores, 4.9 PFLOPS
       \begin{itemize}
-        \item 192Go + 2 $\times$ Intel Xeon Gold 6248, 20 cores, 2.5Ghz
+        \item 192GB + 2 $\times$ Intel Xeon Gold 6248, 20 cores, 2.5Ghz
         \item 1CPU = 3000\euro = 1.6 TFLOPS
         \end{itemize}
     \item<3-> 662 ``GPU'' nodes  $\rightarrow$ 199~040 cores, 21.5 PFLOPS
@@ -674,7 +676,7 @@ Iterate the process until convergence.
   \small
   \begin{tabular}{|l||c|r|r|r|r|r|}
   \hline
-  Machine             & Année & nodes   & $M$/node & FLOPS \\
+  Machine             & year & nodes   & $M$/node & FLOPS \\
   \hline\hline
 Frontier              & 2022 &   9 472  & 1T       &  1100P  \\
 Fugaku                & 2020 & 158 976	& 32G	   &   430P  \\
@@ -891,7 +893,7 @@ Processing units simultaneously execute the same operation on their own data
 \hfill
 \includegraphics[width=0.4\textwidth]{SIMD}
 
-\hfill (image: Wikipédia)
+\hfill (image: Wikipedia)
 
 \end{frame}
 
@@ -1419,7 +1421,7 @@ pthread_exit();
 \end{minted}
   \end{block}
 
-  \begin{block}<only@4>{Go}
+  \begin{block}<only@4>{GB}
 \begin{minted}[fontsize=\small]{go}
 func main() {
     s := []int{7, 2, 8, -9, 4, 0}
@@ -1577,7 +1579,7 @@ processors are less than~100\% busy, or extra operations
         
       \item For a given problem size ($n$), there is an optimal number of processors that can be efficiently exploited
         \begin{itemize}
-        \item Beyond this point, adding extra processors no longer bring any gain
+        \item Beyond this point, adding extra processors no longer brings any gain
         \end{itemize}
       \end{itemize}
     \end{column}
@@ -1655,7 +1657,7 @@ caused by sequential parts and
 
 \begin{exampleblock}{Amdahl's effect (empirical)}
 \begin{itemize}
-\item When $n \nearrow$, computation time often increase \emph{more} that communication time
+\item When $n \nearrow$, computation time often increases \emph{more} that communication time
 \item Often allows for greater speedups
 \end{itemize}
 \end{exampleblock}
@@ -1666,15 +1668,14 @@ caused by sequential parts and
 \begin{frame}
   \frametitle{Gustafson-Barsis's Law}
 
-  On exécute un programme parallèle sur $p$ processeurs.
+  %On exécute un programme parallèle sur $p$ processeurs.
+  %\medskip
+  
+  A parallel computation is run on \(p\) processors; time spent in sequential operations is measured and represents a fraction $s$ of the total.
 
   \medskip
   
-  A parallel computation is run ; time spent in sequential operations is measured and represents a fraction $s$ of the total.
-
-  \medskip
-  
-  Alors :
+  Then
   \[
     S(n, p) \leq  p - (p-1)s
   \]
