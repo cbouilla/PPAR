@@ -263,15 +263,15 @@ Iterate the process until convergence.
   \frametitle{Realization \triste}
 
   \begin{itemize}
-  \item You know \textbf{a little} how does a computer work
+  \item You know \textbf{a little} how computers work
     \begin{itemize}
     \item But \red{not completely}
-    \item Especially the big ones
+    \item Especially not the big ones
     \end{itemize}
 
     \medskip
     
-  \item You have not been trained to :
+  \item You have \textbf{not} been trained to :
     \begin{itemize}
     \item \red{Care} about the \textbf{performance} of your code
     \item Write \textbf{efficient} programs
@@ -736,17 +736,17 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
     \begin{description}
     \item[machine] all components
 
-    \item[\textit{cluster}] compute servers connected to a network (\sout{COVID})
+    \item[cluster] compute servers connected to a network (\sout{COVID})
       
     \item[node] an independent ``computer''
 
-    \item[rack] frame or enclosure for mounting servers, switches, etc.
+    \item[rack] frame or enclosure for mounting servers, switches...
 
     \item[SMP] node with several processors
 
     \item[processeur] contains at least one core + cache, etc.
   
-    \item[\emph{socket}] connects a processor to the motherboard
+    \item[socket] connects a processor to the motherboard
 
     \item[core] circuit executing code autonomously
 
@@ -1665,16 +1665,12 @@ caused by sequential parts and
 
 \begin{frame}
   \frametitle{Gustafson-Barsis's Law}
-
-  On exécute un programme parallèle sur $p$ processeurs.
+  
+  A parallel computation is run on $p$ processors; time spent in sequential operations is measured and represents a fraction $s$ of the total.
 
   \medskip
   
-  A parallel computation is run ; time spent in sequential operations is measured and represents a fraction $s$ of the total.
-
-  \medskip
-  
-  Alors :
+  Then :
   \[
     S(n, p) \leq  p - (p-1)s
   \]
