@@ -63,7 +63,7 @@
 \author[C.~Bouillaguet]{Charles Bouillaguet \newline
   {\small (\texttt{charles.bouillaguet@lip6.fr})}}
 
-\title{Cours 3 : (Un peu) d'algorithmique parallèle}
+\title{Lecture 3 : (Some) Parallel Algorithms }
 \date{2021-02-12}
 
 \begin{document}
@@ -79,24 +79,23 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-\frametitle{Comment obtenir un programme parallèle efficace ?}
+\frametitle{How to write an effective parallel program?}
 
-\begin{block}{Les grands principes}
+\begin{block}{First Principles}
 
 \begin{itemize}
-\item {\bf localité des données} : {\it répartir les données de sorte que
-  chaque processeur dispose localement d'un maximum de données à traiter.}
+\item {\bf location of data} : {\it Carefully organize the data so that each processor
+    maximizes the amount of data in their reach.}
 
 \medskip
 
-\item {\bf équilibrage de charge} ({\it load balancing}) : {\it attribuer au mieux les charges de
-  calcul en fonction des caractéristiques de chaque processeur, afin
-  de limiter les périodes d'inactivité.}
+\item {\bf load balancing} : {\it minimize periods of inactivity by taking into account
+    the unique characteristics of each processor and assigning work accordingly.}
 
 \medskip
 
-\item {\bf recouvrement des communications par le calcul} : {\it éviter que les
-    processeurs restent passifs pendant les phases de communications.}
+\item {\bf recouvrement des communications par le calcul} : {\it Avoid having processors
+    sit idle during communicating transfers.}
 \end{itemize}
 \end{block}
 
@@ -105,33 +104,33 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-\frametitle{\'Equilibrages de charge}
+\frametitle{Load balancing}
 
 
-\begin{exampleblock}{Charge de calcul prédictible}
+\begin{exampleblock}{Predictable workload}
 
   \begin{itemize}
-  \item[$\Rightarrow$] équilibrage de charge \textbf{statique}.
-    
-  \item Toutes les données nécessitent le même temps de calcul.
+  \item[$\Rightarrow$] \textbf{static} workload.
 
-    $\rightarrow$ distribution par bloc, cyclique, \dots 
-    
-  \item Données régulières présentant des temps de calcul différents 
+  \item All data requiring the same amount of calculation time.
 
-    $\rightarrow$ utilisation d'une fonction de coût $+$ distribution
-    bloc, cyclique, \dots 
+    $\rightarrow$ Distributed by block, cyclic, \dots
+
+  \item Regular data with different calculation time
+
+    $\rightarrow$ use of a cost function $+$ block distribution,
+    cyclic, \dots
 
 \end{itemize}
 \end{exampleblock}
 
 \medskip
 
-\begin{alertblock}{Charge de calcul non prédictible}
+\begin{alertblock}{Unpredictable workload}
   \begin{itemize}
-   \item[$\Rightarrow$] équilibrage de charge \textbf{dynamique}
-   \item modèle \sout{maître-esclave} patron-ouvrier
-   \item modèle auto-régulé (\og vol de travail\fg)
+   \item[$\Rightarrow$]  \textbf{dynamic} load balancing
+   \item \sout{master-slave} boss-worker model
+   \item self-regulating model (\og work stealing\fg)
    \end{itemize}
  \end{alertblock}
 
@@ -141,26 +140,25 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-\frametitle{Modèle patron-ouvrier (maître-esclave)}
+\frametitle{Boss-Worker \sout{master-slave} Model}
 
 
-\begin{itemize} 
-\item Le patron connaît les données et le travail à faire
-\item Les ouvriers disponibles demandent du travail
-\item Le patron des ordres de travail ou un ordre de fin
-
-\begin{alertblock}{Limites}
 \begin{itemize}
-\item Si le patron doit charger toutes les données, il lui faut beaucoup de RAM
-\item 2 envois de messages par tâche (A/R) $\longrightarrow$ grosse granularité
-\item Trop d'ouvriers $\rightarrow$ le patron peut être un goulet d'étranglement
+\item The boss knows the data and the work to be done
+\item Available workers ask for work
+\item The boss either provides a task to do or orders the workers to stop
+\begin{alertblock}{Limitations}
+\begin{itemize}
+\item The boss needs a lot of RAM if he's in charge of all the data
+\item 2 message exchanges per task (A/R) $\longrightarrow$ high granularity
+\item Too many workers $\rightarrow$ the boss becomes a bottleneck
 \end{itemize}
 \end{alertblock}
 
-\begin{exampleblock}{Avantages~:}
+\begin{exampleblock}{Advantages~:}
 \begin{itemize}
-\item l'équilibrage de charge, même avec matériel hétérogène (ou disponibilité/vitesse qui varie dans le temps)
-\item \emph{checkpointing} assez facile (seulement le patron)
+\item load balancing, even with heterogenous resources (or availability/speed that varies with time)
+\item very easy \emph{checkpointing} (only the boss)
 \end{itemize}
 \end{exampleblock}
 
@@ -171,22 +169,21 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
-\frametitle{Modèle auto-régulé}
+\frametitle{Self-Regulating Model}
 
-\begin{exampleblock}{Principe du \og vol de travail \fg~ ({\it work stealing})}
+\begin{exampleblock}{Work stealing principle}
 
-\begin{itemize} 
-\item Chaque processeur gère sa propre liste de travaux à
-  effectuer
+\begin{itemize}
+\item Each processor manages their own list of work to do
 
   \begin{itemize}
-  \item Répartition initiale équitable a priori
+  \item Initial distribution assumed to be equal
   \end{itemize}
 
-\item Si la liste de travail d'un processeur est vide :
+\item If the task list is empty :
   \begin{itemize}
-  \item Choisit une \emph{victime} (aléatoirement ?)
-  \item \og Vole\fg une fraction (50\% ?) du travail restant à la victime
+  \item Choose a \emph{victim} (randomly?)
+  \item \og Steal \fg a fraction (50\% ?) of the victim's remaining work
   \end{itemize}
 \end{itemize}
 \end{exampleblock}
@@ -194,19 +191,19 @@
 \bigskip
 
 \begin{itemize}
-\item [+] Complètement symétrique
+\item [+] Completely symmetrical
   \begin{itemize}
-  \item Ni dieu ni maître \CircledA
+  \item No god nor master \CircledA
   \end{itemize}
-  
-\item [+] tous les processeurs participent au calcul
+
+\item [+] Every process participates in the calculation
   \begin{itemize}
-  \item Pas de \sout{parasite} patron qui se tourne les pouces
-    
+  \item No \sout{parasitic} bosses twiddling their thumbs
+
   \end{itemize}
-\item [--] pas facile de détecter qu'il n'y a plus de travail
-\item [--] difficulté de programmation
-\item [--] difficulté de \emph{checkpointing}
+\item [--] not easy to detect when there's no more work to do
+\item [--] difficult to program
+\item [--] difficult to establish \emph{checkpointing}
 \end{itemize}
 
 \end{frame}
