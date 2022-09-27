@@ -1,4 +1,4 @@
-TARGETS =  01_intro.pdf 02_mpi_bis.pdf 03_algo.pdf 031_linalg.pdf 05_OpenMP.pdf \
+TARGETS =  01_intro.pdf 02_mpi.pdf 03_comm_cost.pdf 04_algo.pdf 05_OpenMP.pdf \
            06_omp_suite.pdf 07_vectorization.pdf 08_memory.pdf 09_roofline.pdf 0a_profiling.pdf
 
 DEPS_DIR = .deps
@@ -17,7 +17,7 @@ $(DEPS_DIR) :
 
 %.pdf : %.tex
 	if [ ! -e $(DEPS_DIR) ]; then mkdir $(DEPS_DIR); fi
-	$(LATEXMK) -lualatex -shell-escape -deps-out=$(DEPS_DIR)/$@P $<
+	$(LATEXMK) -xelatex -shell-escape -deps-out=$(DEPS_DIR)/$@P $<
 
 .PHONY: clean
 
