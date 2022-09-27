@@ -1,6 +1,6 @@
 # HPC
 
-Lecture notes and slides for the course "Introduction to HPC".
+Lecture notes and slides for the course "Parallel Programming" at Sorbonne University.
 
 # compiling
 

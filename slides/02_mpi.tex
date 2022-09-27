@@ -1849,7 +1849,7 @@ int MPI_Scan(void* sendbuf, void* recvbuf, int count,
   \frametitle{Collective Operations on a Subgroup}
 
   \begin{itemize}
-  \item Collective operations $=$ all processes in a \alert{communicator}
+  \item Collective operations $=$ \textbf{all} processes in a \alert{communicator}
   \item Initially, a single communicator (\mintinline{C}{MPI_COMM_WORLD})
   \item Possible to create \textbf{sub-}communicators
   \end{itemize}
