@@ -127,6 +127,32 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{frame}
+  \frametitle{Latency VS Bandwidth}
+  
+\footnotesize 
+\begin{tabular}{|c|c|l|r|r|r|}
+  \hline
+  Cluster   &  Year & Interconnect & $1/\beta$ & $\alpha$ ($\mu$s) & $n\beta = \alpha$ \\
+  \hline
+  \hline
+  PPTI      &  20?? & \phantom{00}1Gbit ethernet &    64MB/s & 50.0   & 3.2K \\
+  sagitaire &  2006 & \phantom{00}1Gbit ethernet   &   116MB/s & 65.0 & 7.5K \\
+  taurus    &  2012 & \phantom{0}10Gbit ethernet   &  1156MB/s & 25.9 & 30K  \\
+  gros      &  2019 & \phantom{0}25Gbit ethernet   &  2480MB/s & 8.9  & 22K  \\
+  \hline
+  grcinq    &  2013 & \phantom{0}56Gbit InfiniBand &  2488MB/s & 1.2 & 3K    \\
+  grimoire  &  2016 & \phantom{0}56Gbit InfiniBand &  4248MB/s & 1.1 & 4.6K  \\
+  drac      &  2015 & 100Gbit InfiniBand        &  7760MB/s & 1.7    & 13K   \\
+  \hline
+  grvingt   &  2018 & 100Gbit OmniPath             & 12100MB/s & 0.9 & 11K   \\
+  \hline
+\end{tabular}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Broadcast}
 
 \begin{frame}
@@ -317,7 +343,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
+\begin{frame}<1>[label=bcast_2D_torus]
   \frametitle{Naive Broadcast With 2D Torus Network}
 
   \begin{center}
@@ -449,6 +475,15 @@
   }
 \end{frame}
 
+\begin{frame}
+  \frametitle{Naive Broadcast With 2D Torus Network}
+
+  \begin{center}
+    \includegraphics[width=6cm]{torus.png}
+  \end{center}
+\end{frame}
+
+\againframe<2->{bcast_2D_torus}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -722,12 +757,12 @@
         \filldraw<\t->[fill=blue]   (3*\n, 0) rectangle node[white] {$f$} +(1,1);
 
         \ifthenelse{\t < 6}{
-          \draw<\t>[->, red, thick]    (3*\i + 1, 5.5) -- +(1, 0);
-          \draw<\t>[->, orange, thick] (3*\j + 1, 4.5) -- +(1, 0);
-          \draw<\t>[->, yellow, thick] (3*\k + 1, 3.5) -- +(1, 0);
-          \draw<\t>[->, green, thick]  (3*\l + 1, 2.5) -- +(1, 0);
-          \draw<\t>[->, cyan, thick]   (3*\m + 1, 1.5) -- +(1, 0);
-          \draw<\t>[->, blue, thick]   (3*\n + 1, 0.5) -- +(1, 0);
+          \draw<\t>[->, red, thick]    (3*\i + 1, 5.5) -- +(2, 0);
+          \draw<\t>[->, orange, thick] (3*\j + 1, 4.5) -- +(2, 0);
+          \draw<\t>[->, yellow, thick] (3*\k + 1, 3.5) -- +(2, 0);
+          \draw<\t>[->, green, thick]  (3*\l + 1, 2.5) -- +(2, 0);
+          \draw<\t>[->, cyan, thick]   (3*\m + 1, 1.5) -- +(2, 0);
+          \draw<\t>[->, blue, thick]   (3*\n + 1, 0.5) -- +(2, 0);
         }{}
       }
     \end{tikzpicture}
@@ -1052,9 +1087,25 @@
   \includegraphics[height=8cm]{dragonfly.pdf}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{frame}
+  \frametitle{On Grid5000 ?}
+  Except in special case, all nodes of a cluster connected to a switch
+
+  MPI All-to-All:
+  \includegraphics[width=\textwidth]{gros_sort.pdf}
+\end{frame}
+
+\begin{frame}
+  \frametitle{On Grid5000 ?}
+
+  Ring algorithm:
+  \includegraphics[width=\textwidth]{gros_cyclic.pdf}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Scatter / Gather again}
 \begin{frame}[label=red]
   \frametitle{Scatter/Gather Again: Binary Tree Algorithm}
