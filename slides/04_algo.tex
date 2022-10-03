@@ -1285,13 +1285,12 @@ int MPI_Waitall(int count,
 \framesubtitle{Classic example: \emph{prefix-sum} (a.k.a. ``scan'')}
 
 \begin{minted}[fontsize=\small]{C}
-void exclusive_scan(int n, double * A)
+void exclusive_scan(double acc, int n, double * A)
 {
-    int sum = 0;
     for (int i = 0; i < n; i++) {
-        int tmp = A[i]; 
-        A[i] = sum; 
-        sum += tmp;                          /* n FLOP */
+        double tmp = A[i]; 
+        A[i] = acc; 
+        acc += tmp;                          /* n FLOP */
     }
 }
 \end{minted}
@@ -1348,7 +1347,7 @@ void exclusive_scan(int n, double * A)
   \end{center}
 
   \begin{itemize}
-  \item $A_i \gets A_0 + A_1 + \dots + A_{i-1}$
+  \item $A_i \gets \texttt{acc} + A_0 + A_1 + \dots + A_{i-1}$
   \item Common operation when dealing with irregular sizes
   \item (Apparently unescapable) \textbf{data dependency}
     \begin{itemize}
@@ -1398,7 +1397,7 @@ void exclusive_scan(int n, double * A)
   \frametitle{Distributed \texttt{Prefix-Sum}}
 
   \begin{itemize}
-  \item Scenario: \mintinline{C}{exclusive_scan(...)} a block-distributed array
+  \item \mintinline{C}{exclusive_scan(0, ...)} a block-distributed array
   \end{itemize}
   
   \begin{center}
@@ -1423,12 +1422,12 @@ void exclusive_scan(int n, double * A)
   
   \begin{enumerate}
   \item $P_i$ computes the sum $S_i$ of its own slice \hfill \alert{[local]}
-  \item Distributed algorithm for $T \gets$ \mintinline{C}{exclusive_scan(p, S)}
+  \item Distributed algorithm for $T \gets$ \mintinline{C}{exclusive_scan(0, p, S)}
     \begin{itemize}
     \item \texttt{MPI\_Exscan}
     \end{itemize}
   \item[$\rightarrow$] $P_i$ gets $T_i = $ sum of \emph{all previous} slices
-  \item $P_i$ \mintinline{C}{exclusive_scan(...)} its own slice, adding $T_i$ \hfill \alert{[local]}
+  \item $P_i$ \mintinline{C}{exclusive_scan(T[i], ...)} its own slice \hfill \alert{[local]}
   \end{enumerate}
 
   \begin{alertblock}{Analysis}
@@ -1494,9 +1493,9 @@ void exclusive_scan(int n, double * A)
       \path<4> [semitransparent,gray] (-8, -1) node[text=black,left] {t=3};
       \path<5> [semitransparent,gray] (-8, -1) node[text=black,left] {t=4};
 
-      \draw (1.7, -9.4) rectangle (6, -10.5);
+      \draw (1.7, -9.4) rectangle (6.75, -10.5);
       \node[gray] at (3, -10) {Legend:};
-      \node at (5, -10) {$x_i, \alert{y_i}$};
+      \node at (5.25, -10) {$x_i, \alert{y_i + x_i}$};
       
       \begin{scope}[every node/.style={font=\small\ttfamily}]
           \node<1> {[15]}
@@ -1671,7 +1670,7 @@ void exclusive_scan(int n, double * A)
 
   \begin{center}
     \begin{tikzpicture}[level distance=25mm, xscale=0.7, yscale=0.75,
-      emph/.style={edge from parent/.style={red,thick,draw}},
+      emph/.style={edge from parent/.style={black,thick,draw}},
       norm/.style={edge from parent/.style={black,thin,draw}},
       ]
 
@@ -1685,9 +1684,9 @@ void exclusive_scan(int n, double * A)
     \path<5> [semitransparent,gray] (-8, -1) node[text=black,left] {t=4};
     \path<6> [semitransparent,gray] (-8, -1) node[text=black,left] {fini};
 
-    \draw (1.7, -9.4) rectangle (6, -10.5);
+    \draw (1.7, -9.4) rectangle (6.75, -10.5);
     \node[gray] at (3, -10) {Legend:};
-    \node at (5, -10) {$x_i, \alert{y_i}$};
+    \node at (5.25, -10) {$x_i, \alert{y_i + x_i}$};
 
     \begin{scope}[every node/.style={font=\small\ttfamily}]  
 
@@ -3048,92 +3047,92 @@ int my_size(int n, int nb, int p, int rank)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[label=gemm]
-  \frametitle{Level-3 General Matrix-Matrix Product (\mintinline{C}{xGEMM})}
+% \begin{frame}[label=gemm]
+%   \frametitle{Level-3 General Matrix-Matrix Product (\mintinline{C}{xGEMM})}
 
-  \begin{center}
-    \begin{tikzpicture}[scale=0.75]
-      \draw<2>[dashed] (0.5, 7) |- (4, 10.5);
-      \draw<2>[dashed] (1.5, 7) |- (4, 9.5);
-      \draw<2>[dashed] (2.5, 7) |- (4, 8.5);
+%   \begin{center}
+%     \begin{tikzpicture}[scale=0.75]
+%       \draw<2>[dashed] (0.5, 7) |- (4, 10.5);
+%       \draw<2>[dashed] (1.5, 7) |- (4, 9.5);
+%       \draw<2>[dashed] (2.5, 7) |- (4, 8.5);
 
-      \begin{scope}[xshift=4cm]
-        \tikzmat{0,0}{5, 7}
+%       \begin{scope}[xshift=4cm]
+%         \tikzmat{0,0}{5, 7}
 
-        \begin{scope}
-          \clip (0, 0) rectangle +(5, 7);
-          \foreach \i in {0, 2, 4, 6} {
-            \foreach \j in {0, 3, 6} {
-              \filldraw[fill=red]             (\i,   \j)   rectangle +(1, 1);
-              \filldraw<1>[fill=red!50!white]    (\i,   \j+1) rectangle +(1, 1);
-              \filldraw<1>[fill=orange]          (\i  , \j+2) rectangle +(1, 1);
-              \filldraw<1>[fill=orange!50!white] (\i+1, \j)   rectangle +(1, 1);
-              \filldraw<1>[fill=yellow]          (\i+1, \j+1) rectangle +(1, 1);
-              \filldraw<1>[fill=yellow!50!white] (\i+1, \j+2) rectangle +(1, 1);
-            }
-          }
-        \end{scope}
-        \foreach \j in {0.5, 1, ..., 6.5} {
-          \draw (0, \j) -- +(5, 0);
-        }
-        \foreach \i in {0.5, 1, ..., 4.5} {
-          \draw (\i, 0) -- +(0, 7); 
-        }
-      \end{scope}
+%         \begin{scope}
+%           \clip (0, 0) rectangle +(5, 7);
+%           \foreach \i in {0, 2, 4, 6} {
+%             \foreach \j in {0, 3, 6} {
+%               \filldraw[fill=red]             (\i,   \j)   rectangle +(1, 1);
+%               \filldraw<1>[fill=red!50!white]    (\i,   \j+1) rectangle +(1, 1);
+%               \filldraw<1>[fill=orange]          (\i  , \j+2) rectangle +(1, 1);
+%               \filldraw<1>[fill=orange!50!white] (\i+1, \j)   rectangle +(1, 1);
+%               \filldraw<1>[fill=yellow]          (\i+1, \j+1) rectangle +(1, 1);
+%               \filldraw<1>[fill=yellow!50!white] (\i+1, \j+2) rectangle +(1, 1);
+%             }
+%           }
+%         \end{scope}
+%         \foreach \j in {0.5, 1, ..., 6.5} {
+%           \draw (0, \j) -- +(5, 0);
+%         }
+%         \foreach \i in {0.5, 1, ..., 4.5} {
+%           \draw (\i, 0) -- +(0, 7); 
+%         }
+%       \end{scope}
 
-      \begin{scope}[]
-        \tikzmat{0,0}{3, 7}
-        \begin{scope}
-          \clip (0, 0) rectangle +(3, 7);
-          \foreach \i in {0, 2, 4, 6} {
-            \foreach \j in {0, 3, 6} {
-              \filldraw[fill=blue]          (\i,   \j)   rectangle +(1, 1);
-              \filldraw<1>[fill=blue!50!white] (\i,   \j+1) rectangle +(1, 1);
-              \filldraw<1>[fill=teal]          (\i,   \j+2) rectangle +(1, 1);
-              \filldraw<1>[fill=teal!50!white] (\i+1, \j)   rectangle +(1, 1);
-              \filldraw<1>[fill=cyan]          (\i+1, \j+1) rectangle +(1, 1);
-              \filldraw<1>[fill=cyan!50!white] (\i+1, \j+2) rectangle +(1, 1);
-            }
-          }
-        \end{scope}
-        \filldraw<2>[fill=blue!50!white,opacity=0.1] (1, 6) rectangle +(1, 1);
+%       \begin{scope}[]
+%         \tikzmat{0,0}{3, 7}
+%         \begin{scope}
+%           \clip (0, 0) rectangle +(3, 7);
+%           \foreach \i in {0, 2, 4, 6} {
+%             \foreach \j in {0, 3, 6} {
+%               \filldraw[fill=blue]          (\i,   \j)   rectangle +(1, 1);
+%               \filldraw<1>[fill=blue!50!white] (\i,   \j+1) rectangle +(1, 1);
+%               \filldraw<1>[fill=teal]          (\i,   \j+2) rectangle +(1, 1);
+%               \filldraw<1>[fill=teal!50!white] (\i+1, \j)   rectangle +(1, 1);
+%               \filldraw<1>[fill=cyan]          (\i+1, \j+1) rectangle +(1, 1);
+%               \filldraw<1>[fill=cyan!50!white] (\i+1, \j+2) rectangle +(1, 1);
+%             }
+%           }
+%         \end{scope}
+%         \filldraw<2>[fill=blue!50!white,opacity=0.1] (1, 6) rectangle +(1, 1);
 
-        \foreach \i in {0.5, 1, ..., 2.5} {
-          \draw (\i, 0) -- +(0, 7);
-        }        
-        \foreach \j in {0.5, 1, ..., 6.5} {
-          \draw (0, \j) -- +(3, 0); 
-        }
-      \end{scope}
-      \begin{scope}[xshift=4cm, yshift=8cm]
-        \tikzmat{0,0}{5,3}
-        \begin{scope}
-          \clip (0, 0) rectangle +(5, 3);
-          \foreach \i in {0, 2, 4, 6} {
-            \foreach \j in {0, 3, 6} {
-              \filldraw<1>[fill=green]              (\i,   \j)   rectangle +(1, 1);
-              \filldraw<1>[fill=green!50!white]     (\i,   \j+1) rectangle +(1, 1);
-              \filldraw[fill=lime]               (\i,   \j+2) rectangle +(1, 1);
-              \filldraw<1>[fill=lime!50!white]      (\i+1, \j)   rectangle +(1, 1);
-              \filldraw<1>[fill=lightgray]          (\i+1, \j+1) rectangle +(1, 1);
-              \filldraw<1>[fill=lightgray!50!white] (\i+1, \j+2) rectangle +(1, 1);
-            }
-          }
-        \end{scope}
-        \filldraw<2>[fill=green,opacity=0.1]             (0,   0)   rectangle +(1, 1);
-        \filldraw<2>[fill=green!50!white,opacity=0.1]     (0,   1) rectangle +(1, 1);
+%         \foreach \i in {0.5, 1, ..., 2.5} {
+%           \draw (\i, 0) -- +(0, 7);
+%         }        
+%         \foreach \j in {0.5, 1, ..., 6.5} {
+%           \draw (0, \j) -- +(3, 0); 
+%         }
+%       \end{scope}
+%       \begin{scope}[xshift=4cm, yshift=8cm]
+%         \tikzmat{0,0}{5,3}
+%         \begin{scope}
+%           \clip (0, 0) rectangle +(5, 3);
+%           \foreach \i in {0, 2, 4, 6} {
+%             \foreach \j in {0, 3, 6} {
+%               \filldraw<1>[fill=green]              (\i,   \j)   rectangle +(1, 1);
+%               \filldraw<1>[fill=green!50!white]     (\i,   \j+1) rectangle +(1, 1);
+%               \filldraw[fill=lime]               (\i,   \j+2) rectangle +(1, 1);
+%               \filldraw<1>[fill=lime!50!white]      (\i+1, \j)   rectangle +(1, 1);
+%               \filldraw<1>[fill=lightgray]          (\i+1, \j+1) rectangle +(1, 1);
+%               \filldraw<1>[fill=lightgray!50!white] (\i+1, \j+2) rectangle +(1, 1);
+%             }
+%           }
+%         \end{scope}
+%         \filldraw<2>[fill=green,opacity=0.1]             (0,   0)   rectangle +(1, 1);
+%         \filldraw<2>[fill=green!50!white,opacity=0.1]     (0,   1) rectangle +(1, 1);
 
-        \foreach \i in {0.5, 1, ..., 4.5} {
-          \draw (\i, 0) -- +(0, 3); 
-        }
-        \foreach \j in {0.5, 1, ..., 2.5} {
-          \draw (0, \j) -- +(5, 0); 
-        }
-      \end{scope}
+%         \foreach \i in {0.5, 1, ..., 4.5} {
+%           \draw (\i, 0) -- +(0, 3); 
+%         }
+%         \foreach \j in {0.5, 1, ..., 2.5} {
+%           \draw (0, \j) -- +(5, 0); 
+%         }
+%       \end{scope}
       
-    \end{tikzpicture}
-  \end{center}
-\end{frame}
+%     \end{tikzpicture}
+%   \end{center}
+% \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3932,8 +3931,10 @@ int my_size(int n, int nb, int p, int rank)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subsubsection{Sparsity and formats}
+
 \begin{frame}
-  \frametitle{Sparse Linear Algebra}
+  \frametitle{\textbf{Sparse} Linear Algebra}
 
   \begin{itemize}
   \item Many physical situations yields \red{sparse} linear systems
@@ -3974,7 +3975,287 @@ int my_size(int n, int nb, int p, int rank)
   \end{block}
   
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+\frametitle{Sparse Matrix Storage, Triplet Form}
+
+\begin{exampleblock}{Simplest Possible Idea}
+  List of triplets $(i, j, x)$ for each non-zero entry $A[i,j] = x$.
   
+\begin{minted}[fontsize=\small]{C}
+struct triplet {
+    int n, m, nz;
+    int nzmax;    /* allocated size for Ai, Aj, Ax */
+    int *Ai;
+    int *Aj;
+    double *Ax;
+};                /* note: order is irrelevant */
+\end{minted}
+\end{exampleblock}
+
+\medskip
+
+Assuming \mintinline{C}{int} indices ($i$, $j$) and \mintinline{C}{double} coefficients ($x$),
+\[
+\mintinline{c}{sizeof(A)} =  16 |A| + 16 \texttt{ bytes} \qquad\text{(regardless of $n, m$)}
+\]
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+\frametitle{Sparse Matrix Storage, Triplet Form (continued)}
+
+\begin{block}{Pros}
+  \begin{itemize}
+  \item Friendly format for I/O
+  \item Repeated $i,j$ can be allowed (coefficients are summed)
+  \end{itemize}
+\end{block}
+
+Possible file format :
+\begin{verbatim}
+n m
+i_0 j_0 x_0
+i_1 j_1 x_1
+.....
+\end{verbatim}
+
+
+\begin{alertblock}{Cons}
+  \begin{itemize}
+  \item Limited operations. $x \gets A[i,j]$ is impossible!
+  \end{itemize}
+\end{alertblock}
+\end{frame}
+
+%%%%%%%%%%%
+
+\begin{frame}[fragile]
+\frametitle{Storage, Triplet Form, Operations}
+
+\begin{itemize}
+\item $A \gets A^t$
+\item<2-> $A \gets \lambda A$
+\item<3-> $y \gets y + x A$
+\item<4-> $y \gets y + A x$
+\item<5-> $A \gets P A Q$
+\item<6-> $A \gets B + C$
+\end{itemize}
+
+
+
+\begin{overlayarea}{\textwidth}{3cm}
+\begin{onlyenv}<1>
+\begin{minted}{C}
+int *tmp = Ai;      /* constant-time! */
+Ai = Aj;
+Aj = tmp;
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<2>
+\begin{minted}{C}
+for (int p = 0; p < nz; p++)
+    Ax[p] *= lambda;
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<3>
+\begin{minted}{C}
+for (int p = 0; p < nz; p++)
+    y[Aj[p]] += x[Ai[p]] * Ax[p];       
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<4>
+\begin{minted}{C}
+for (int p = 0; p < nz; p++)
+    y[Ai[p]] += x[Aj[p]] * Ax[p];       
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<5>
+\begin{minted}{C}
+for (int p = 0; p < nz; p++) {
+    Ai[p] = Pinv[Ai[p]];
+    Aj[p] = Qinv[Aj[p]];
+}
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<6>
+  \medskip
+
+  Essentially concatenate $B$ and $C$.
+\end{onlyenv}
+
+
+\begin{alertblock}<7>{Main Limitations}
+  \begin{itemize}
+  \item Everything else is impossible!
+  \item Wasteful storage
+  \end{itemize}
+\end{alertblock}
+
+\end{overlayarea}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+\frametitle{Storage, Compressed Sparse Rows (CSR) Form}
+
+\begin{exampleblock}{Pack Rows Together}
+%  For each row $i$, list of pairs $(j, x)$ such that $A[i,j] = x$. 
+\begin{minted}[fontsize=\small]{C}
+struct csr {
+    int n, m;
+    int *Ap;     // row pointers   (size n+1)
+    int *Aj;     // column indices (size nz)
+    double *Ax;  // coefficients   (size nz)
+};
+\end{minted}
+\end{exampleblock}
+
+\begin{tikzpicture}[scale=0.6]
+  \node[anchor=south east] at (0,0) {\texttt{Aj}};
+  \draw (0, 0) -- (15, 0);
+  \draw (0, 1) -- (15, 1);
+  \draw (0, 0) -- (0, 1);
+  \draw[dashed] (15, 0) -- +(1, 0);
+  \draw[dashed] (15, 1) -- +(1, 0);
+
+  \begin{scope}[yshift=-1.25cm]
+    \node[anchor=south east] at (0,0) {\texttt{Ax}};
+    \draw (0, 0) -- (15, 0);
+    \draw (0, 1) -- (15, 1);
+    \draw (0, 0) -- (0, 1);
+    \draw[dashed] (15, 0) -- +(1, 0);
+    \draw[dashed] (15, 1) -- +(1, 0);
+  \end{scope}
+
+  \draw (4, 0) -- +(0, 1);
+  \path (0, 0) rectangle node {row 0} +(4, 1);
+  \draw (6, 0) -- +(0, 1);
+  
+  \path (4, 0) rectangle node {row 1} +(2, 1);
+
+  \draw (9, 0) -- +(0, 1);
+  \path (6, 0) rectangle node {row 2} +(3, 1);
+
+  \draw (15, 0) -- +(0, 1);
+  \path (9, 0) rectangle node {row 3} +(6, 1);
+
+  \begin{scope}[yshift=-1.25cm]
+  \draw (4, 0) -- +(0, 1);
+  \path (0, 0) rectangle node {row 0} +(4, 1);
+  \draw (6, 0) -- +(0, 1);
+  
+  \path (4, 0) rectangle node {row 1} +(2, 1);
+
+  \draw (9, 0) -- +(0, 1);
+  \path (6, 0) rectangle node {row 2} +(3, 1);
+
+  \draw (15, 0) -- +(0, 1);
+  \path (9, 0) rectangle node {row 3} +(6, 1);
+\end{scope}
+
+\draw[->] (0, -2) node[anchor=north,font=\ttfamily] {Ap[0]} -- (0, -1.4);
+\draw[->] (4, -2) node[anchor=north,font=\ttfamily] {Ap[1]} -- (4, -1.4);
+\draw[->] (6, -2) node[anchor=north,font=\ttfamily] {Ap[2]} -- (6, -1.4);
+\draw[->] (9, -2) node[anchor=north,font=\ttfamily] {Ap[3]} -- (9, -1.4);
+\draw[->] (15, -2) node[anchor=north,font=\ttfamily] {Ap[4]} -- (15, -1.4);
+\end{tikzpicture}
+
+%\vspace{-0.5cm}
+\[
+\mintinline{c}{sizeof(A)} =  12 |A| + 4n + 12 \texttt{ bytes} \qquad\text{(regardless of $m$)}
+\]
+
+
+% \begin{block}{Iterating over row $i$}
+% \begin{minted}{c}
+%   for (int p = Ap[i]; p < Ap[i + 1]; p++) {
+%             int j = Aj[p];
+%             int x = Ax[p];
+%             ...
+% \end{minted}
+% \end{block}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Storage, CSR Form, Operations}
+
+\begin{itemize}
+\item $x \gets |A|$  
+\item<2-> $y \gets y + x A$
+\item<3-> $y \gets y + A x$
+\item<4-> $A \gets A Q$
+\end{itemize}
+
+\begin{overlayarea}{\textwidth}{3cm}
+
+\begin{onlyenv}<1>
+\begin{minted}{C}
+  x = Ap[n + 1];
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<2>
+\begin{minted}{C}
+for (int i = 0; i < n; i++)
+    for (int p = Ap[i]; p < Ap[i + 1]; p++)
+        y[Aj[p]] += x[i] * Ax[p];
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<3>
+\begin{minted}{C}
+for (int i = 0; i < n; i++)
+    for (int p = Ap[i]; p < Ap[i + 1]; p++)
+        y[i] += x[Aj[p]] * Ax[p];
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<4>
+\begin{minted}{C}
+for (int p = 0; p < Ap[n + 1]; p++)
+    Aj[p] = Qinv[Aj[p]];
+\end{minted}
+\end{onlyenv}
+
+\begin{block}<only@5>{Remarks}
+  \begin{itemize}
+  \item Order of entries in row irrelevant
+  \item Duplicates are allowed (but wasteful)
+  \item Explicit 0 entries are allowed (but wasteful)
+  \end{itemize}
+\end{block}
+
+
+\begin{alertblock}<6>{Main Limitation}
+  \begin{itemize}
+  \item Transpose, row permutation not in place.
+    \begin{itemize}      
+    \item Lazy solution: convert to triplets, work, convert back to CSR
+    \end{itemize}
+  \item $x \gets A[i,j]$ still impossible... 
+    \begin{itemize}      
+    \item Direct access to rows/iteration over rows is possible.
+    \end{itemize}
+
+  \end{itemize}
+\end{alertblock}
+\end{overlayarea}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -3994,15 +4275,6 @@ for (int i = 0; i < n; i++)               // 3nm FLOP
     \end{alertblock}
   
   \begin{exampleblock}{Sparse \texttt{GEMV}}
-    \begin{itemize}
-      \item Only $\texttt{nz} \lll nm$ non-zero coeffs
-      \item Idea: store list of $(i, j, x)$ such that $A_{ij} = x$ (and $x \neq 0)$
-        \begin{itemize}
-        \item 3 arrays: \texttt{Ai}, \texttt{Aj}, \texttt{Ax}
-        \item $k$-th coeff: $(\texttt{Ai[k]}, \texttt{Aj[k]}, \texttt{Ax[k]})$
-        \end{itemize}
-      \end{itemize}
-      \vspace*{-2ex}
       \begin{minted}[fontsize=\small]{C}
 for (int k = 0; k < nz; k++)              // 3nz FLOP
     y[Ai[k]] += alpha * Ax[k] * x[Aj[k]]; 
@@ -4011,7 +4283,7 @@ for (int k = 0; k < nz; k++)              // 3nz FLOP
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-
+\subsubsection{Iteratove methods}
 \begin{frame}
   \frametitle{Recurring problem in HPC}
 
