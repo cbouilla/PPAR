@@ -1,6 +1,6 @@
 \documentclass[xcolor={rgb,x11names,svgnames},rgb,x11names,svgnames]{beamer}
 
-%\includeonlyframes{blasdata}
+%\includeonlyframes{scan,scan-algo,scan-tree}
 
 \usepackage[T1]{fontenc}
 \usepackage{cellspace}
@@ -16,6 +16,8 @@
 \definecolor{codebg}{rgb}{0.95,0.95,0.95}
 \setminted{bgcolor=codebg}
 \usepackage{changepage}
+\usepackage[absolute,overlay]{textpos}
+
 
 \newenvironment{wider}{%
 \begin{adjustwidth}{-0.6cm}{}%
@@ -34,6 +36,8 @@
 
 \newcommand{\bigO}[1]{\ensuremath{\mathcal{O}\left( #1 \right)} }
 \newcommand{\bigOmega}[1]{\ensuremath{\Omega\left( #1 \right)} }
+\newcommand{\triste}{\includegraphics[width=0.5cm,trim=0 17mm 0 0]{triste}}
+\newcommand{\smiley}{\includegraphics[width=0.5cm,trim=0 17mm 0 0]{content}}
 
 \newcommand{\red}{\alert}
 \newcommand{\green}{\color{LimeGreen}}
@@ -1273,176 +1277,256 @@ int MPI_Waitall(int count,
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\iffalse
+
 \section{Prefix-Sum}
 
-\begin{frame}[fragile]
-\frametitle{Parallélisme de données}
+\begin{frame}[label=scan,fragile]
+\frametitle{Data Parallelism (redux)}
+\framesubtitle{Classic example: \emph{prefix-sum} (a.k.a. ``scan'')}
 
-
-\begin{block}{Exemple classique : \emph{prefix-sum} (``scan'') (en place)}
-\begin{minted}{C}
-for (int i = 1; i < n; i++)
-    A[i] = A[i] + A[i - 1];
+\begin{minted}[fontsize=\small]{C}
+void exclusive_scan(int n, double * A)
+{
+    int sum = 0;
+    for (int i = 0; i < n; i++) {
+        int tmp = A[i]; 
+        A[i] = sum; 
+        sum += tmp;                          /* n FLOP */
+    }
+}
 \end{minted}
-\end{block}
 
-\bigskip
+  \begin{center}
+      \begin{tikzpicture}[scale=0.33, >={To[sep]}]
+        \path[red,dotted,use as bounding box] (0, 0) rectangle +(32, 3);
+        
+          \fill[fill=pink]      (30, 0) rectangle +(2, 1);
+          \fill[fill=magenta]   (29, 0) rectangle +(1, 1);
+          \fill[fill=violet]    (26, 0) rectangle +(3, 1);
+          \fill[fill=blue]      (22, 0) rectangle +(4, 1);
+          \fill[fill=cyan]      (21, 0) rectangle +(1, 1);
+          \fill[fill=green]     (15, 0) rectangle +(6, 1);
+          \fill[fill=yellow]    (13, 0) rectangle +(2, 1);
+          \fill[fill=orange]    (10, 0) rectangle +(3, 1);
+          \fill[fill=red]       (7, 0)  rectangle +(3, 1);
+          \fill[fill=lightgray] (4, 0) rectangle +(3, 1);
+          \fill[fill=darkgray]  (0, 0) rectangle +(4, 1);
 
-\begin{itemize}
-\item \textbf{Dépendance de données}
-\item Chaque itération a besoin du résultat de la précédente...
-\item Changer l'algorithme   
-\end{itemize}
+         
+          % cadre
+          \draw[thick] (0, 0) rectangle +(32, 1);
+          \foreach \i in {1, ..., 31} {
+            \draw (\i, 0) -- +(0, 1);
+          }
+
+      % taille des buckets
+      \begin{onlyenv}<2>
+        \draw[<->] (30, 2) -- node[above] {$A_a$}  +(2, 0);
+        \draw[<->] (26, 2) -- node[above] {$A_8$}  +(3, 0);
+        \draw[<->] (22, 2) -- node[above] {$A_7$}  +(4, 0);
+        \draw[<->] (15, 2) -- node[above] {$A_5$}  +(6, 0);
+        \draw[<->] (13, 2) -- node[above] {$A_4$}  +(2, 0);
+        \draw[<->] (10, 2) -- node[above] {$A_3$}  +(3, 0);
+        \draw[<->] ( 7, 2) -- node[above] {$A_2$}  +(3, 0);
+        \draw[<->] ( 4, 2) -- node[above] {$A_1$}  +(3, 0);
+        \draw[<->] ( 0, 2) -- node[above] {$A_0$} +(4, 0);
+      \end{onlyenv}
+
+      % pointeurs
+      \begin{onlyenv}<3>
+        \draw[->] (30, 2.5) -- node[above=1mm] {$A_a$}  +(0, -1.4);
+        \draw[->] (26, 2.5) -- node[above=1mm] {$A_8$}  +(0, -1.4);
+        \draw[->] (21, 2.5) -- node[above=1mm] {$A_6$}  +(0, -1.4);
+        \draw[->] (15, 2.5) -- node[above=1mm] {$A_5$}  +(0, -1.4);
+        \draw[->] (13, 2.5) -- node[above=1mm] {$A_4$}  +(0, -1.4);
+        \draw[->] (10, 2.5) -- node[above=1mm] {$A_3$}  +(0, -1.4);
+        \draw[->] ( 7, 2.5) -- node[above=1mm] {$A_2$}  +(0, -1.4);
+        \draw[->] ( 4, 2.5) -- node[above=1mm] {$A_1$}  +(0, -1.4);
+        \draw[->] ( 0, 2.5) -- node[above=1mm] {$A_0$}  +(0, -1.4);
+      \end{onlyenv}
+    \end{tikzpicture}
+  \end{center}
+
+  \begin{itemize}
+  \item $A_i \gets A_0 + A_1 + \dots + A_{i-1}$
+  \item Common operation when dealing with irregular sizes
+  \item (Apparently unescapable) \textbf{data dependency}
+    \begin{itemize}
+    \item Each iteration needs the result of the previous one
+    \end{itemize}
+  \item[$\leadsto$] Change the algorithm
+  \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[fragile]
-\frametitle{\texttt{prefix-sum} : Cas de la mémoire partagée}
+% \begin{frame}[label=scan,fragile]
+%   \frametitle{\texttt{Prefix-sum}: Alternative Algorithm}
+%     \vspace*{-1ex}
 
-
-\begin{block}{Exemple classique : \emph{prefix-sum} (en place)}
-\begin{minted}[fontsize=\small]{C}
-double *B;
-
-void prefix_sum(double * A, int n)
-{
-    if (n < 2)
-        return;
-    for (int i = 0; i < n / 2; i++)
-        B[i] = A[2 * i] + A[2 * i + 1];
-    prefix_sum(B, k);
-    for (int i = 1; i < n; i += 2) {
-          A[i] = B[i / 2];
-          A[i + 1] = B[i / 2] + A[i + 1];
-    }
-}
-\end{minted}
-\end{block}
-
-
-\end{frame}
+%   \begin{wider}
+% \begin{minted}[fontsize=\small]{C}
+% void prefix_sum(int n, double * A)
+% {
+%     if (n < 2)
+%         return;
+%     double B[n / 2];           /* Don't do this at home, kids */
+%     for (int i = 0; i < n / 2; i++)
+%         B[i] = A[2 * i] + A[2 * i + 1];         /* 0.5n  FLOP */
+%     prefix_sum(n / 2, B);
+%     for (int i = 1; i < n; i += 2) {
+%         A[i] = B[i / 2];
+%         A[i + 1] = B[i / 2] + A[i + 1];         /* 0.5n  FLOP */
+%     }
+% }
+% \end{minted}
+%   \end{wider}
+%     \vspace*{-1ex}
+%   \begin{alertblock}{Complexity analysis}
+%     \vspace*{-2ex}
+%     \[
+%       T_n = n + T_{n/2} + \bigO{1} \approx n \left(1 + \frac{1}{2} + \frac{1}{4} + \frac{1}{8} + \dots \right) \approx \alert{2}n 
+%     \]
+%     \vspace*{-2ex}
+%   \end{alertblock}
+% \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-\frametitle{Algorithme MIMD-DM pour \texttt{prefix-sum}}
+\begin{frame}[label=scan,fragile=singleslide]
+  \frametitle{Distributed \texttt{Prefix-Sum}}
 
-\begin{tikzpicture}
-  \filldraw[fill=red]    (0, 0) rectangle  +(1,1);
-  \filldraw[fill=orange] (1, 0) rectangle  +(1,1);
-  \filldraw[fill=yellow] (2, 0) rectangle  +(1,1);
-  \filldraw[fill=green]  (3, 0) rectangle  +(1,1);
-  \filldraw[fill=cyan]   (4, 0) rectangle  +(1,1);
-  \filldraw[fill=blue]   (5, 0) rectangle  +(1,1);
-  \filldraw[fill=magenta] (6, 0) rectangle  +(1,1);
-  \filldraw[fill=violet] (7, 0) rectangle +(1,1);
-  \filldraw[fill=lightgray] (8, 0) rectangle +(1,1);
-  \filldraw[fill=darkgray] (9, 0) rectangle +(1,1);
-  
-  \draw[thick] (0, 0) rectangle (10, 1);
-  \foreach \i in {0.2, 0.4, ..., 9.8}
-  \draw (\i, 0) -- +(0, 1);
-\end{tikzpicture}
-
-\bigskip
-
-\begin{enumerate}
-\item $P_i$ calcule la somme $S_i$ de \emph{ses} données. \hfill \alert{[local]}
-\item Ils font (collectivement) $T \gets \texttt{prefix-sum}(S)$.
   \begin{itemize}
-  \item \texttt{MPI\_Scan}
+  \item Scenario: \mintinline{C}{exclusive_scan(...)} a block-distributed array
   \end{itemize}
-\item[$\rightarrow$] $P_i$ obtient $T_i = $ somme des données des $P_j$ (pour $j<i$).
-\item $P_i$ \texttt{prefix-sum} ses données en ajoutant $T_i$. \hfill \alert{[local]}
-\end{enumerate}
+  
+  \begin{center}
+    \begin{tikzpicture}
+      \filldraw[fill=red]    (0, 0) rectangle  +(1,1);
+      \filldraw[fill=orange] (1, 0) rectangle  +(1,1);
+      \filldraw[fill=yellow] (2, 0) rectangle  +(1,1);
+      \filldraw[fill=green]  (3, 0) rectangle  +(1,1);
+      \filldraw[fill=cyan]   (4, 0) rectangle  +(1,1);
+      \filldraw[fill=blue]   (5, 0) rectangle  +(1,1);
+      \filldraw[fill=magenta] (6, 0) rectangle  +(1,1);
+      \filldraw[fill=violet] (7, 0) rectangle +(1,1);
+      \filldraw[fill=lightgray] (8, 0) rectangle +(1,1);
+      \filldraw[fill=darkgray] (9, 0) rectangle +(1,1);
+      
+      \draw[thick] (0, 0) rectangle (10, 1);
+      \foreach \i in {0.2, 0.4, ..., 9.8} {
+        \draw (\i, 0) -- +(0, 1);
+      }
+    \end{tikzpicture}
+  \end{center}
+  
+  \begin{enumerate}
+  \item $P_i$ computes the sum $S_i$ of its own slice \hfill \alert{[local]}
+  \item Distributed algorithm for $T \gets$ \mintinline{C}{exclusive_scan(p, S)}
+    \begin{itemize}
+    \item \texttt{MPI\_Exscan}
+    \end{itemize}
+  \item[$\rightarrow$] $P_i$ gets $T_i = $ sum of \emph{all previous} slices
+  \item $P_i$ \mintinline{C}{exclusive_scan(...)} its own slice, adding $T_i$ \hfill \alert{[local]}
+  \end{enumerate}
+
+  \begin{alertblock}{Analysis}
+    \vspace*{-2ex}
+    \[
+      T =  \text{[communication]} + \alert{2}\frac{n}{p} \text{ FLOP}
+    \]
+    \vspace*{-2ex}
+  \end{alertblock}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
-\begin{frame}
-  \frametitle{Rappel : \texttt{reduce} par la méthode de l'arbre binomial}
+
+\begin{frame}<1>[label=scan-algo]
+  \frametitle{\texttt{MPI\_Exscan}}
+  
+  \begin{exampleblock}{Phase 1 : \texttt{reduce}}
+    \begin{itemize}
+    \item Input $x_i$
+    \item Receive $u_0,  u_1, \dots$ from children
+    \item Set $y_i \gets \sum u_j$. Send $x_i + y_i$ to father
+    \end{itemize}
+  \end{exampleblock}
+
+  $\rightarrow \lceil \log_2 p \rceil$ successive messages of size 1
+
+  \pause
+  
+  \begin{alertblock}{Phase 2 : \texttt{exclusive scan}}
+    \begin{enumerate}
+    \item Root: $w_i \gets 0$, otherwise receive $w_i$ from father
+      \begin{itemize}
+      \item[$=$] [sum of values of \emph{left} siblings]
+      \end{itemize}
+    \item Set $x_i \gets y_i + w_i$
+    \item Sends $w_i + u_0 + \dots + u_{j-1}$ to the $j$-th children
+      \begin{itemize}
+      \item[$\leadsto$] Prefix-sum the $u_j$'s starting from $w_i$
+      \end{itemize}
+    \end{enumerate}
+  \end{alertblock}
+
+  $\rightarrow \lceil \log_2 p \rceil$ successive messages of size 1
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=scan]
+  \frametitle{\texttt{MPI\_Reduce} Using the Binomial Tree Algorithm}
   
   \begin{center}
-    \begin{tikzpicture}[level distance=10mm, xscale=0.66, yscale=0.75]
-  \foreach \i in {0,1,2,3,4} {
-    \draw[semitransparent,gray] (-9, -4+\i) node[text=black,left] {t=\i} -- +(15, 0);
-  }
+    \begin{tikzpicture}[
+        level distance=25mm, xscale=0.7, yscale=0.75,
+        emph/.style={edge from parent/.style={thick,draw}},
+        norm/.style={edge from parent/.style={black,thin,draw}}
+      ]
 
-  \node {15}
-    child { node {7}
-      child { node {3}
-        child {node {1}
-          child {node {0}}
-        }
-        child {node at (0, -1) {2}}
-      }
-      child[missing]
-      child {node at (0,-1) {5}
-        child {node {4}}
-      }
-      child {node at (0,-2) {6} }
-    }
-    child[missing]
-    child[missing]
-    child { node at (0, -1) {11}
-      child {node {9}
-        child {node {8} }
-      }
-      child {node at (0, -1) {10} }
-    }
-    child[missing]
-    child { node at (0, -2) {13}
-      child {node {12}}
-    }
-    child[missing]
-    child { node at (0, -3) {14} }
-;
-\end{tikzpicture}
-\end{center}
+      %%% 
+      \path<1> [semitransparent,gray] (-8, -1) node[text=black,left] {t=0};
+      \path<2> [semitransparent,gray] (-8, -1) node[text=black,left] {t=1};
+      \path<3> [semitransparent,gray] (-8, -1) node[text=black,left] {t=2};
+      \path<4> [semitransparent,gray] (-8, -1) node[text=black,left] {t=3};
+      \path<5> [semitransparent,gray] (-8, -1) node[text=black,left] {t=4};
 
-
-  \begin{center}
-    \begin{tikzpicture}[level distance=10mm, xscale=0.66, yscale=0.75]
-
-      %%%
-      \path<1> [semitransparent,gray] (-9, -1) node[text=black,left] {t=0};
-      \path<2> [semitransparent,gray] (-9, -1) node[text=black,left] {t=1};
-      \path<3> [semitransparent,gray] (-9, -1) node[text=black,left] {t=2};
-      \path<4> [semitransparent,gray] (-9, -1) node[text=black,left] {t=3};
-      \path<5> [semitransparent,gray] (-9, -1) node[text=black,left] {t=4};
+      \draw (1.7, -9.4) rectangle (6, -10.5);
+      \node[gray] at (3, -10) {Legend:};
+      \node at (5, -10) {$x_i, \alert{y_i}$};
       
       \begin{scope}[every node/.style={font=\small\ttfamily}]
           \node<1> {[15]}
     child { node {[7]}
       child { node {[3]}
         child {node {[1]}
-          child {node[text=red] {[0]}}
+          child[emph] {node[red] {[0]}}
         }
-        child {node at (0, -1) {[2]}}
+        child[emph] {node[red] at (0, -1) {[2]}}
       }
       child[missing]
       child {node at (0,-1) {[5]}
-        child {node {[4]}}
+        child[emph] {node[red] {[4]}}
       }
-      child {node at (0,-2) {[6]} }
+      child[emph] {node[red] at (0,-2) {[6]} }
     }
     child[missing]
     child[missing]
     child { node at (0, -1) {[11]}
       child {node {[9]}
-        child {node {[8]} }
+        child[emph] {node[red] {[8]} }
       }
-      child {node at (0, -1) {[10]} }
+      child[emph] {node[red] at (0, -1) {[10]} }
     }
     child[missing]
     child { node at (0, -2) {[13]}
-      child {node {[12]}}
+      child[emph] {node[red] {[12]}}
     }
     child[missing]
-    child { node at (0, -3) {[14]} }
+    child[emph] { node[red] at (0, -3) {[14]} }
     ;
     
     %%%%%%
@@ -1450,127 +1534,125 @@ void prefix_sum(double * A, int n)
     \node<2> {[14:15]}
     child { node {[6:7]}
       child { node {[2:3]}
-        child {node[text=red] {[0:1]}
-          child {node[text=red] {[0]}}
+        child[emph] {node[red] {[0:1]}
+          child[norm] {node[red] {[0]}}
         }
-        child {node at (0, -1) {[2]}}
+        child {node[red] at (0, -1) {[2]}}
       }
       child[missing]
-      child {node at (0,-1) {[4:5]}
-        child {node {[4]}}
+      child[emph] {node[red] at (0,-1) {[4:5]}
+        child[norm] {node[red] {[4]}}
       }
-      child {node at (0,-2) {[6]} }
+      child {node[red] at (0,-2) {[6]} }
     }
     child[missing]
     child[missing]
     child { node at (0, -1) {[10:11]}
-      child {node {[8:9]}
-        child {node {[8]} }
+      child[emph] {node[red] {[8:9]}
+        child[norm] {node[red] {[8]} }
       }
-      child {node at (0, -1) {[10]} }
+      child {node[red] at (0, -1) {[10]} }
     }
     child[missing]
-    child { node at (0, -2) {[12:13]}
-      child {node {[12]}}
+    child[emph] { node[red] at (0, -2) {[12:13]}
+      child[norm] {node[red] {[12]}}
     }
     child[missing]
-    child { node at (0, -3) {[14]} }
+    child { node[red] at (0, -3) {[14]} }
     ;
 
     %%%%%% 
 
     \node<3> {[12:15]}
     child { node {[4:7]}
-      child { node [text=red] {[0:3]}
-        child {node[text=red] {[0:1]}
-          child {node[text=red] {[0]}}
+      child[emph] { node [red] {[0:3]}
+        child[norm] {node[red] {[0:1]}
+          child {node[red] {[0]}}
         }
-        child {node at (0, -1) {[2]}}
+        child[norm] {node[red] at (0, -1) {[2]}}
       }
       child[missing]
-      child {node at (0,-1) {[4:5]}
-        child {node {[4]}}
+      child {node[red] at (0,-1) {[4:5]}
+        child {node[red] {[4]}}
       }
-      child {node at (0,-2) {[6]} }
+      child {node[red] at (0,-2) {[6]} }
     }
     child[missing]
     child[missing]
-    child { node at (0, -1) {[8:11]}
-      child {node {[8:9]}
-        child {node {[8]} }
+    child[emph] { node[red] at (0, -1) {[8:11]}
+      child[norm] {node[red] {[8:9]}
+        child {node[red] {[8]} }
       }
-      child {node at (0, -1) {[10]} }
+      child[norm] {node[red] at (0, -1) {[10]} }
     }
     child[missing]
-    child { node at (0, -2) {[12:13]}
-      child {node {[12]}}
+    child { node[red] at (0, -2) {[12:13]}
+      child {node[red] {[12]}}
     }
     child[missing]
-    child { node at (0, -3) {[14]} }
+    child { node[red] at (0, -3) {[14]} }
     ;
 
     %%%%%% 
 
     \node<4> {[8:15]}
-    child { node[text=red] {[0:7]}
-      child { node [text=red] {[0:3]}
-        child {node[text=red] {[0:1]}
-          child {node[text=red] {[0]}}
+    child[emph] { node[red] {[0:7]}
+      child[norm] { node [red] {[0:3]}
+        child {node[red] {[0:1]}
+          child {node[red] {[0]}}
         }
-        child {node at (0, -1) {[2]}}
+        child {node[red] at (0, -1) {[2]}}
       }
       child[missing]
-      child {node at (0,-1) {[4:5]}
-        child {node {[4]}}
+      child[norm] {node[red] at (0,-1) {[4:5]}
+        child {node[red] {[4]}}
       }
-      child {node at (0,-2) {[6]} }
+      child[norm] {node[red] at (0,-2) {[6]} }
     }
     child[missing]
     child[missing]
-    child { node at (0, -1) {[8:11]}
-      child {node {[8:9]}
-        child {node {[8]} }
+    child { node[red] at (0, -1) {[8:11]}
+      child {node[red] {[8:9]}
+        child {node[red] {[8]} }
       }
-      child {node at (0, -1) {[10]} }
+      child {node[red] at (0, -1) {[10]} }
     }
     child[missing]
-    child { node at (0, -2) {[12:13]}
-      child {node {[12]}}
+    child { node[red] at (0, -2) {[12:13]}
+      child {node[red] {[12]}}
     }
     child[missing]
-    child { node at (0, -3) {[14]} }
+    child { node[red] at (0, -3) {[14]} }
     ;
 
-    %%%%%% 
-
-    \node<5>[text=red] {[0:15]}
-    child { node[text=red] {[0:7]}
-      child { node [text=red] {[0:3]}
-        child {node[text=red] {[0:1]}
-          child {node[text=red] {[0]}}
+    \node<5>[red] {[0:15]}
+    child { node[red] {[0:7]}
+      child { node [red] {[0:3]}
+        child {node[red] {[0:1]}
+          child {node[red] {[0]}}
         }
-        child {node at (0, -1) {[2]}}
+        child {node[red] at (0, -1) {[2]}}
       }
       child[missing]
-      child {node at (0,-1) {[4:5]}
-        child {node {[4]}}
+      child {node[red] at (0,-1) {[4:5]}
+        child {node[red] {[4]}}
       }
-      child {node at (0,-2) {[6]} }
+      child {node[red] at (0,-2) {[6]} }
     }
     child[missing]
     child[missing]
-    child { node at (0, -1) {[8:11]}
-      child {node {[8:9]}
-        child {node {[8]} }
+    child { node[red] at (0, -1) {[8:11]}
+      child {node[red] {[8:9]}
+        child {node[red] {[8]} }
       }
-      child {node at (0, -1) {[10]} }
+      child {node[red] at (0, -1) {[10]} }
     }
     child[missing]
-    child { node at (0, -2) {[12:13]}
-      child {node {[12]}}
+    child { node[red] at (0, -2) {[12:13]}
+      child {node[red] {[12]}}
     }
     child[missing]
-    child { node at (0, -3) {[14]} }
+    child { node[red] at (0, -3) {[14]} }
     ;
 
   \end{scope}
@@ -1580,181 +1662,231 @@ void prefix_sum(double * A, int n)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-  \frametitle{\texttt{prefix-sum} en mémoire distribuée (arbre binomial)}
-
-  \begin{exampleblock}{Phase 1 : \texttt{reduce}}
-    Chaque noeud :
-    \begin{enumerate}
-    \item Récupère (et stocke) les valeurs de ses enfants.
-    \item Calcule la somme, ajoute sa propre valeur, envoie à son père.
-    \end{enumerate}
-  \end{exampleblock}
-
-  $\rightarrow \log_2$ messages successifs.
-  
-  \medskip
-
-  \begin{alertblock}{Phase 2 : \texttt{prefix-sum}}
-    Chaque noeud :
-    \begin{enumerate}
-    \item Reçoit une valeur de son père
-      \begin{itemize}
-      \item Somme des valeurs de ses frères \emph{gauches}.
-        
-      \end{itemize}
-      
-    \item Envoie à chacun de ses fils la somme des valeurs remontées par ses
-      frères \emph{gauches}, plus la valeur reçue du père.
-    \end{enumerate}
-  \end{alertblock}
-
-    $\rightarrow \log_2$ messages successifs.
-\end{frame}
+\againframe<2>{scan-algo}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}<5->
-  \frametitle{\texttt{prefix-sum} par la méthode de l'arbre binomial}
-  
+\begin{frame}[label=scan-tree]
+  \frametitle{\texttt{MPI\_Exscan} Using the Binomial Tree Algorithm}
 
   \begin{center}
-    \begin{tikzpicture}[level distance=10mm, xscale=0.66, yscale=0.75]
+    \begin{tikzpicture}[level distance=25mm, xscale=0.7, yscale=0.75,
+      emph/.style={edge from parent/.style={red,thick,draw}},
+      norm/.style={edge from parent/.style={black,thin,draw}},
+      ]
 
+      \path[use as bounding box] (-8.5, 0) rectangle (5.5, -10);
+      
       %%%
-    \path<5> [semitransparent,gray] (-9, -1) node[text=black,left] {t=4};
-    \path<6> [semitransparent,gray] (-9, -1) node[text=black,left] {t=5};
-    \path<7> [semitransparent,gray] (-9, -1) node[text=black,left] {t=6};
-    \path<8> [semitransparent,gray] (-9, -1) node[text=black,left] {t=7};
-    
-      \begin{scope}[every node/.style={font=\small\ttfamily}]
+    \path<1> [semitransparent,gray] (-8, -1) node[text=black,left] {t=0};
+    \path<2> [semitransparent,gray] (-8, -1) node[text=black,left] {t=1};
+    \path<3> [semitransparent,gray] (-8, -1) node[text=black,left] {t=2};
+    \path<4> [semitransparent,gray] (-8, -1) node[text=black,left] {t=3};
+    \path<5> [semitransparent,gray] (-8, -1) node[text=black,left] {t=4};
+    \path<6> [semitransparent,gray] (-8, -1) node[text=black,left] {fini};
 
-    \node<5>[text=red] {[0:15]}
-    child { node[text=red] {[0:7]}
-      child { node [text=red] {[0:3]}
-        child {node[text=red] {[0:1]}
-          child {node[text=red] {[0]}}
+    \draw (1.7, -9.4) rectangle (6, -10.5);
+    \node[gray] at (3, -10) {Legend:};
+    \node at (5, -10) {$x_i, \alert{y_i}$};
+
+    \begin{scope}[every node/.style={font=\small\ttfamily}]  
+
+    \node<1> {[0:14]}          % initial state
+    child { node[red] {[0:7]}
+      child { node[red] {[0:3]}
+        child {node[red] {[0:1]}
+          child {node[red] {[0]}}
         }
-        child {node at (0, -1) {[2]}}
+        child {node[red] at (0, -1) {[2]}}
       }
       child[missing]
-      child {node at (0,-1) {[4:5]}
-        child {node {[4]}}
+      child {node[red] at (0,-1) {[4:5]}
+        child {node[red] {[4]}}
       }
-      child {node at (0,-2) {[6]} }
+      child {node[red] at (0,-2) {[6]} }
     }
     child[missing]
     child[missing]
-    child { node at (0, -1) {[8:11]}
-      child {node {[8:9]}
-        child {node {[8]} }
+    child { node[red] at (0, -1) {[8:11]}
+      child {node[red] {[8:9]}
+        child {node[red] {[8]} }
       }
-      child {node at (0, -1) {[10]} }
+      child {node[red] at (0, -1) {[10]} }
     }
     child[missing]
-    child { node at (0, -2) {[12:13]}
-      child {node {[12]}}
+    child { node[red] at (0, -2) {[12:13]}
+      child {node[red] {[12]}}
     }
     child[missing]
-    child { node at (0, -3) {[14]} }
+    child { node[red] at (0, -3) {[14]} }
     ;
 
 
-        \node<6>[text=red] {[0:15]}
-    child { node[text=red] {[0:7]}
-      child { node [text=red] {[0:3]}
-        child {node[text=red] {[0:1]}
-          child {node[text=red] {[0]}}
+    \node<2> {[0:14]}  % t==5
+    child[emph] { node[red] {[0:7]}
+      child[norm] { node[red]  {[0:3]}
+        child {node[red]{[0:1]}
+          child {node[red]{[0]}}
         }
-        child {node[text=red] at (0, -1) {[0:2]}}
+        child {node[red]at (0, -1) {[2]}}
       }
       child[missing]
-      child {node[text=red] at (0,-1) {[0:5]}
-        child {node {[4]}}
+      child[norm] {node[red]at (0,-1) {[4:5]}
+        child {node[red]{[4]}}
       }
-      child {node at (0,-2) {[6]} }
+      child[norm] {node[red]at (0,-2) {[6]} }
+      edge from parent node[sloped, above] {$\emptyset$}
     }
     child[missing]
     child[missing]
-    child { node[text=red] at (0, -1) {[0:11]}
-      child {node {[8:9]}
-        child {node {[8]} }
+    child { node[red]at (0, -1) {[8:11]}
+      child {node[red]{[8:9]}
+        child {node[red]{[8]} }
       }
-      child {node at (0, -1) {[10]} }
+      child {node[red]at (0, -1) {[10]} }
     }
     child[missing]
-    child { node at (0, -2) {[12:13]}
-      child {node {[12]}}
+    child { node[red]at (0, -2) {[12:13]}
+      child {node[red]{[12]}}
     }
     child[missing]
-    child { node at (0, -3) {[14]} }
+    child { node[red]at (0, -3) {[14]} }
     ;
 
-    \node<7>[text=red] {[0:15]}
-    child { node[text=red] {[0:7]}
-      child { node [text=red] {[0:3]}
-        child {node[text=red] {[0:1]}
-          child {node[text=red] {[0]}}
+
+    \node<3> {[0:14]}  % t==6
+    child { node {[0:6]}
+      child[emph] { node[red] {[0:3]}
+        child[norm] {node[red]{[0:1]}
+          child {node[red]{[0]}}
         }
-        child {node[text=red] at (0, -1) {[0:2]}}
+        child[norm] {node[red]at (0, -1) {[2]}}
+        edge from parent node[sloped,above] {$\emptyset$}
       }
       child[missing]
-      child {node[text=red] at (0,-1) {[0:5]}
-        child {node[text=red] {[0:4]}}
+      child {node[red]at (0,-1) {[4:5]}
+        child {node[red]{[4]}}
       }
-      child {node[text=red] at (0,-2) {[0:6]} }
+      child[norm] {node[red]at (0,-2) {[6]} }
     }
     child[missing]
     child[missing]
-    child { node[text=red] at (0, -1) {[0:11]}
-      child {node[text=red] {[0:9]}
-        child {node {[8]} }
+    child[emph] { node[red]at (0, -1) {[8:11]}
+      child[norm] {node[red]{[8:9]}
+        child {node[red]{[8]} }
       }
-      child {node at (0, -1) {[10]} }
+      child[norm] {node[red]at (0, -1) {[10]} }
+      edge from parent node[below,sloped] {[0:7]}      
     }
     child[missing]
-    child { node[text=red] at (0, -2) {[0:13]}
-      child {node {[12]}}
+    child { node[red]at (0, -2) {[12:13]}
+      child {node[red]{[12]}}
     }
     child[missing]
-    child { node at (0, -3) {[14]} }
+    child { node[red]at (0, -3) {[14]} }
     ;
 
-    \node<8>[text=red] {[0:15]}
-    child { node[text=red] {[0:7]}
-      child { node [text=red] {[0:3]}
-        child {node[text=red] {[0:1]}
-          child {node[text=red] {[0]}}
+
+    \node<4> {[0:14]}   % t == 7
+    child { node {[0:7]}
+      child { node {[0:2]}
+        child[emph] {node[red]{[0:1]}
+          child[norm] {node[red]{[0]}}
+          edge from parent node[above,sloped] {$\emptyset$}
         }
-        child {node[text=red] at (0, -1) {[0:2]}}
+        child[norm] {node[red]at (0, -1) {[2]} }
       }
       child[missing]
-      child {node[text=red] at (0,-1) {[0:5]}
-        child {node[text=red] {[0:4]}}
+      child[emph] { node[red]at (0,-1) {[4:5]}
+        child[norm] {node[red]{[4]}}
+        edge from parent node[below,sloped] {[0:3]} 
       }
-      child {node[text=red] at (0,-2) {[0:6]} }
+      child {node[red]at (0,-2) {[6]}}
     }
     child[missing]
     child[missing]
-    child { node[text=red] at (0, -1) {[0:11]}
-      child {node[text=red] {[0:9]}
-        child {node[text=red] {[0:8]} }
+    child[norm] { node at (0, -1) {[0:10]} 
+      child[emph] {node[red]{[8:9]}
+        child[norm] {node[red]{[8]} }
+        edge from parent node[sloped,above] {[0:7]}
       }
-      child {node[text=red] at (0, -1) {[0:10]} }
+      child[norm] {node[red]at (0, -1) {[10]} }
     }
     child[missing]
-    child { node[text=red] at (0, -2) {[0:13]}
-      child {node[text=red] {[0:12]}}
+    child[emph] { node[red]at (0, -2) {[12:13]}
+      child[norm] {node[red]{[12]}}
+      edge from parent node[sloped,below] {[0:11]}
     }
     child[missing]
-    child { node[text=red] at (0, -3) {[0:14]} }
+    child { node[red]at (0, -3) {[14]} }
+    ;
+
+
+    \node<5> {[0:14]}   % t == 8
+    child { node {[0:6]}
+      child { node {[0:2]}
+        child {node {[0]}
+          child[emph] {node[red] {[0]} edge from parent node[sloped,below] {$\emptyset$} }
+        }
+        child[emph] {node[red]at (0, -1) {[2]} edge from parent node[sloped,above] {[0:1]} }
+      }
+      child[missing]
+      child {node at (0,-1) {[0:4]}
+        child[emph] {node[red]{[4]} edge from parent node[sloped,below] {[0:3]}}
+      }
+      child[emph] {node[red]at (0,-2) {[6]} edge from parent node[sloped,above] {[0:5]}}
+    }
+    child[missing]
+    child[missing]
+    child { node at (0, -1) {[0:10]}
+      child {node {[0:9]}
+        child[emph] {node[red]{[8]} edge from parent node[sloped,above] {[0:7]} }
+      }
+      child[emph] {node[red]at (0, -1) {[10]} edge from parent node[sloped,above] {[0:9]} }
+    }
+    child[missing]
+    child { node at (0, -2) {[0:12]}
+      child[emph] {node[red]{[12]} edge from parent node[sloped,above] {[0:11]} }
+    }
+    child[missing]
+    child[emph] { node[red]at (0, -3) {[14]} edge from parent node[sloped,above] {[0:13]} }
+    ;
+
+    \node<6> {[0:14]}  %final state
+    child { node {[0:6]}
+      child { node {[0:2]}
+        child {node {[0]}
+          child {node {$\emptyset$}}
+        }
+        child {node at (0, -1) {[0:1]}}
+      }
+      child[missing]
+      child {node at (0,-1) {[0:4]}
+        child {node {[0:3]}}
+      }
+      child {node at (0,-2) {[0:5]} }
+    }
+    child[missing]
+    child[missing]
+    child { node at (0, -1) {[0:11]}
+      child {node {[0:8]}
+        child {node {[0:7]} }
+      }
+      child {node at (0, -1) {[0:9]} }
+    }
+    child[missing]
+    child { node at (0, -2) {[0:12]}
+      child {node {[0:11]}}
+    }
+    child[missing]
+    child { node at (0, -3) {[0:13]} }
     ;
 
   \end{scope}
 \end{tikzpicture}
 \end{center}
 \end{frame}
-\fi
+
 
 \section{Linear Algebra}
 
@@ -1796,8 +1928,9 @@ void prefix_sum(double * A, int n)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Dense}
+\subsubsection{BLAS interface and data representation}
 
-\begin{frame}
+\begin{frame}[label=blas]
   \frametitle{BLAS}
 
   % how to write fast software?
@@ -1830,7 +1963,7 @@ void prefix_sum(double * A, int n)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
+\begin{frame}[label=blas]
   \frametitle{BLAS Levels}
 
   \[
@@ -1852,7 +1985,7 @@ void prefix_sum(double * A, int n)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
+\begin{frame}[label=blas]
   \frametitle{BLAS Levels}
 
   \[
@@ -1887,7 +2020,7 @@ void prefix_sum(double * A, int n)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
+\begin{frame}[label=blas]
   \frametitle{BLAS Levels}
 
   \[
@@ -1915,7 +2048,7 @@ void prefix_sum(double * A, int n)
     \item Rank-$k$ symmetric update (\texttt{xSYRK})
       \begin{itemize}
       \item $C \gets \alpha AA^t + \beta C$ 
-      \item Symmetric $C$
+      \item Symmetric $C$ (otherwise it is just \texttt{xGEMM})
       \end{itemize}
     \end{itemize}
   \end{block}
@@ -1923,19 +2056,45 @@ void prefix_sum(double * A, int n)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[label=blasdata]
+\begin{frame}[label=blasdata,fragile=singleslide]
   \frametitle{Data Representation}
 
-  \begin{alertblock}{Matrices represented as \textbf{\alert{1D arrays}}}
+  \begin{exampleblock}{Matrices represented as \textbf{\alert{1D arrays}}}
+    \vspace*{-2ex}
+    \[
+      \begin{pmatrix}
+        0 & 1 & 2 & 3 \\
+        4 & 5 & 6 & 7 \\
+        8 & 9 & a & b
+      \end{pmatrix}
+    \]
+    \vspace*{-2ex}
     \begin{itemize}
+    \item Memory: \mintinline{C}{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb]}
     \item \textbf{Never ever} as array of pointers to arrays
     \end{itemize}
-  \end{alertblock}
-
-  \begin{block}{Two possible orderings}
+  \end{exampleblock}
+  
+  \begin{alertblock}{\mintinline{C}{double **A} is \textbf{banished}}
     \begin{itemize}
-    \item In memory: \texttt{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b]}
-    \item Row-major order (C)
+    \item Can write \mintinline{C}{A[i][j]} \smiley
+    \item Accessing \mintinline{C}{A[i + 1][j]} is \textbf{costly} \triste (indirection)
+    \item Pointers take space \triste
+    \item \mintinline{C}{malloc()} takes time (how much?) \triste
+    \item Allocation complex and error-prone \triste
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=blasdata]
+  \frametitle{Data Representation (continued)}
+
+  \begin{block}{Flat arrays: two possible orderings}
+    \begin{itemize}
+    \item Memory: \mintinline{C}{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb]}
+    \item Row-major order (C, Pascal)
       \[
         \begin{pmatrix}
           0 & 1 & 2 & 3 \\
@@ -1944,7 +2103,7 @@ void prefix_sum(double * A, int n)
         \end{pmatrix}
       \]
       
-    \item Column-major order (Fortran)
+    \item Column-major order (Fortran, matlab, julia, R)
       \[
         \begin{pmatrix}
           0 & 3 & 6 & 9 \\
@@ -1955,6 +2114,7 @@ void prefix_sum(double * A, int n)
     \end{itemize}
   \end{block}
 \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -2058,219 +2218,930 @@ void prefix_sum(double * A, int n)
   \end{columns}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{xGER}
 
-\begin{frame}
-  \frametitle{Solving Actual Problems}
+\begin{frame}[label=ger,fragile]
+  \frametitle{Double-Precision Rank-1 update (\mintinline{C}{DGER})}
+  \framesubtitle{$A \gets A + \alpha x y^t$}
 
-  \begin{center}
-    \begin{tikzpicture}[yscale=0.5,xscale=0.66,every node/.style={anchor=south east,font=\bfseries}]
-      \node[red] at (0, 5) {L};
-      \node[red] at (0, 4) {L};
-      \node[blue] at (0, 3) {L};
-      \node[blue] at (0, 1) {L};
-      \node[blue] at (0, 0) {L};
-      \node[blue] at (0, 2) {L};
-      
-      \node[red] at (1, 5) {A};
-      \node[red] at (1, 4) {-A};
-      \node[blue]  at (1, 3) {A};
-      \node[blue]  at (1, 2) {-A};
-      \node[blue] at (1, 1) {A};
-      \node[blue] at (1, 0) {-A};
-
-      \node[blue]  at (2, 5) {P};
-      \node[blue]  at (2, 4) {P};
-      \node[red] at (2, 3) {P};
-      \node[red] at (2, 2) {P};
-      \node[blue] at (2, 1) {-P};
-      \node[blue] at (2, 0) {-P};
-
-      \node[blue]  at (3, 5) {A};
-      \node[blue]  at (3, 4) {-A};
-      \node[red] at (3, 3) {A};
-      \node[red] at (3, 2) {-A};
-      \node[blue] at (3, 1) {A};
-      \node[blue] at (3, 0) {-A};
-
-      \node[blue] at (4, 5) {C};
-      \node[blue] at (4, 4) {C};
-      \node[blue] at (4, 3) {-C};
-      \node[blue]  at (4, 2) {-C};
-      \node[red]  at (4, 1) {C};
-      \node[red] at (4, 0) {C};
-
-      \node[blue] at (5, 5) {K};
-      \node[blue] at (5, 4) {-K};
-      \node[blue] at (5, 3) {-K};
-      \node[blue]  at (5, 2) {K};
-      \node[red]  at (5, 1) {K};
-      \node[red] at (5, 0) {-K};
-
-    \end{tikzpicture}
-  \end{center}
+  \vspace*{-2ex}
   
-  \begin{exampleblock}{\textbf{LAPACK}: Linear Algebra PACKage}
+  \begin{overlayarea}{12cm}{6.5cm}
+    \begin{onlyenv}<1>
+      \begin{wider}
+  \begin{minted}[fontsize=\footnotesize]{C}
+void dGER(int m, int n, double alpha, double *x, int incx,
+          double *y, int incy, double *A, int ldA)
+{
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++)
+            A[i * ldA + j] += alpha * x[i * incx] * y[j * incy];
+}
+  \end{minted}
+\end{wider}
+\end{onlyenv}
+
+\begin{onlyenv}<2>
+  \begin{wider}
+    \begin{minted}[fontsize=\footnotesize]{C}
+void dGER(int m, int n, double alpha, double *x, int incx,
+          double *y, int incy, double *A, int ldA)
+{
+    int ix = 0, iA = 0;
+    for (int i = 0; i < m; i++) {
+        double tmp = alpha * x[ix];
+        int jy = 0;
+        for (int j = 0; j < n; j++) {
+            A[iA + j] += tmp * y[jy];
+            jy += incy;
+        }
+        ix += incx;
+        iA += ldA;    
+    }
+}
+        \end{minted}
+      \end{wider}
+    \end{onlyenv}
+  \end{overlayarea}
+%%%% 
+
+  \begin{onlyenv}<1>
     \begin{itemize}
-    \item Development started in the 1990's (still active)
-    \item Built upon the BLAS (Fortran: \alert{column-major})
-    \item Solve linear systems, least-squares, eigenvalues, etc.
-    \item \textbf{Main algorithmic idea}: \red{use level-3 BLAS}
+    \item $3mn$ integer multiplications, $2mn + m$ integer additions
+    \item $3mn$ FLOP
+    \item $4mn$ memory accesses
+    \end{itemize}
+  \end{onlyenv}
+
+  \begin{onlyenv}<2>
+    \begin{itemize}
+    \item \alert{0} integer multiplications, $2mn + 2m$ integer additions
+    \item $\alert{2}nm + m$ FLOP
+    \item $\alert{3}mn + m$ memory accesses
+    \end{itemize}
+  \end{onlyenv}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=block-cyclic,fragile=singleslide]
+\frametitle{1D Block-Cyclic Distribution}
+
+\begin{tikzpicture}
+  \path[use as bounding box] (0, -0.75) rectangle (10, 1.5);
+  \draw[thick] (0, 0) rectangle (10, 1);
+
+  
+  \draw[<->] (7.8, 1.25) -- node[above] {$n_b$} +(0.6, 0);
+%  \draw[<->] (0, 2) -- node[above] {$n$} +(10, 0);
+  \draw[decorate,decoration={brace,mirror}] (0, -0.25) -- node[below=1mm] {$p$} +(9*0.6, 0);
+
+  \clip (0, 0) rectangle (10, 1);
+  \foreach \i in {0, 5.4, 10.8} {
+    \filldraw[fill=red]       (\i,       0) rectangle  +(0.6,1);
+    \filldraw[fill=orange]    (\i + 0.6, 0) rectangle  +(0.6,1);
+    \filldraw[fill=yellow]    (\i + 1.2, 0) rectangle  +(0.6,1);
+    \filldraw[fill=green]     (\i + 1.8, 0) rectangle  +(0.6,1);
+    \filldraw[fill=cyan]      (\i + 2.4, 0) rectangle  +(0.6,1);
+    \filldraw[fill=blue]      (\i + 3.0, 0) rectangle  +(0.6,1);
+    \filldraw[fill=magenta]   (\i + 3.6, 0) rectangle  +(0.6,1);
+    \filldraw[fill=violet]    (\i + 4.2, 0) rectangle  +(0.6,1);
+    \filldraw[fill=lightgray] (\i + 4.8, 0) rectangle  +(0.6,1);
+    \filldraw[fill=darkgray]  (\i + 5.4, 0) rectangle  +(0.6,1);
+  }
+  \draw[thick] (0, 0) rectangle (10, 1);
+  \foreach \i in {0.2, 0.4, ..., 9.8}
+  \draw (\i, 0) -- +(0, 1);
+\end{tikzpicture}
+
+\begin{itemize}
+\item 3 parameters: $(n, n_b, p)$
+\item Element $i$ belongs to process $\lfloor i / n_b \rfloor \bmod p$
+\end{itemize}
+
+\vspace{-2ex}
+
+\begin{wider}
+\begin{minted}[fontsize=\footnotesize]{C}
+/* returns the number of items I have */
+int my_size(int n, int nb, int p, int rank)
+{
+    int nblocks = n / nb;                          /* #full blocks */
+    int res = (nblocks / p) * nb;                    /* lower-bound */
+    int extrablocks = nblocks % p;
+    if (rank < extrablocks)               /* I have an extra block */
+        res += nb;
+    if (rank == extrablocks)              /* I have the last block */
+          res += n % nb;
+    return res;
+}
+\end{minted}
+\end{wider}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=block-cyclic]
+\frametitle{2D Block-Cyclic Distribution}
+
+\begin{columns}
+  \begin{column}{6cm}
+
+\begin{tikzpicture}[scale=0.5]
+  \filldraw[fill=red]    (0, 8) rectangle  +(3, 2);
+  \filldraw[fill=green]  (3, 8) rectangle  +(3, 2);
+  \filldraw[fill=red]    (6, 8) rectangle  +(3, 2);
+  \filldraw[fill=green]  (9, 8) rectangle  +(1, 2);
+
+  \filldraw[fill=orange] (0, 6) rectangle  +(3, 2);
+  \filldraw[fill=cyan]   (3, 6) rectangle  +(3, 2);
+  \filldraw[fill=orange] (6, 6) rectangle  +(3, 2);
+  \filldraw[fill=cyan]   (9, 6) rectangle  +(1, 2);
+
+  \filldraw[fill=yellow]  (0, 4) rectangle  +(3, 2);
+  \filldraw[fill=magenta] (3, 4) rectangle  +(3, 2);
+  \filldraw[fill=yellow]  (6, 4) rectangle  +(3, 2);
+  \filldraw[fill=magenta] (9, 4) rectangle  +(1, 2);
+  
+  \filldraw[fill=red]    (0, 2) rectangle  +(3, 2);
+  \filldraw[fill=green]  (3, 2) rectangle  +(3, 2);
+  \filldraw[fill=red]    (6, 2) rectangle  +(3, 2);
+  \filldraw[fill=green]  (9, 2) rectangle  +(1, 2);
+  
+  \filldraw[fill=orange] (0, 0) rectangle  +(3, 2);
+  \filldraw[fill=cyan]   (3, 0) rectangle  +(3, 2);
+  \filldraw[fill=orange] (6, 0) rectangle  +(3, 2);
+  \filldraw[fill=cyan]   (9, 0) rectangle  +(1, 2);
+
+  \foreach \i in {0, ..., 9} {
+    \fill[pattern=north west lines] (\i, 9-\i) rectangle +(1, 1);
+  }
+  \draw[thick] (0, 0) rectangle (10, 10);
+  \foreach \i in {1, 2, ..., 9} {
+    \draw (\i, 0) -- +(0, 10);
+    \draw (0, \i) -- +(10, 0);
+  }
+
+  \foreach \i in {2, 4, ..., 8} {
+    \draw[thick] (0, \i) -- +(10, 0);
+  }
+  \foreach \i in {3, 6, 9} {
+    \draw[thick] (\i, 0) -- +(0, 10);
+  }
+
+  \foreach \i in {0, 1, ..., 9} {
+    \node[anchor=south west,font=\scriptsize] at (\i, 10) {\i};
+    \node[anchor=north east,font=\scriptsize] at (0, 10-\i) {\i};
+  }
+
+
+\end{tikzpicture}
+\end{column}
+
+\begin{column}{6cm}
+  \begin{itemize}
+  \item Matrix: $m \times n$ 
+  \item Process grid: $P \times Q$
+  \item Block size: $v \times h$
+  \end{itemize}
+
+  \begin{exampleblock}{Special cases}
+    \begin{itemize}
+    \item By block
       \begin{itemize}
-      \item High \red{arithmetic intensity}
-      \item Significant performance gain over naive code
+      \item $v = m / P$
+      \item $h = n / Q$
+      \end{itemize}
+    
+    
+    \item Purely Cyclic
+      \begin{itemize}
+      \item $v = 1$
+      \item $h = 1$
+      \end{itemize}
+
+    \item 1D
+      \begin{itemize}
+      \item $h = n$ or $v = m$
       \end{itemize}
     \end{itemize}
-  \end{exampleblock}  
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-\begin{frame}
-  \frametitle{LU Factorization}
-
-  \begin{center}
-    \begin{tikzpicture}
-      \useasboundingbox (-0.5,-0.3) rectangle (8.25,2.5);
-      
-      % L en haut
-      \begin{scope}[xshift=3cm]
-        \tikzmat{0,0}{2.2,2.2}
-        \foreach \i in {0, 0.2, ..., 2}
-        \path (\i,2-\i) rectangle node {\scalebox{0.55}{1}} +(0.2,0.2);
-        \filldraw[fill=cyan] (0,0) -- ++(0, 2)  -- ++(2,-2) -- cycle;
-        \node at (0.5, 0.5) {L};
-      \end{scope}
-      
-      % U en haut
-      \begin{scope}[xshift=5.5cm]
-        \tikzmat{0,0}{2.2,2.2}
-        \draw[fill=LimeGreen] (0,2.2) -- ++(2.2,0) -- ++(0,-2.2) -- cycle;
-        \node at (1.5, 1.5) {U};
-      \end{scope}
-      
-      \node at (2.6,1) {$=$};
-    
-      % matrice grise en haut
-      \begin{scope}[xshift=0cm]
-        \tikzmat{0,0}{2.2,2.2}
-        \filldraw[fill=Gray!70] (0,0) rectangle node{A} +(2.2,2.2);
-      \end{scope}
-    \end{tikzpicture}
-  \end{center}
-
-  \bigskip
+  \end{exampleblock}
   
-  Main tool to solve $Ax = b$ when $A$ is invertible
-
+\end{column}
+\end{columns}
 \end{frame}
 
-%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[label=lu]
-  \frametitle{LU Factorization}
-%  \framesubtitle{Right-looking Algorithm}
+\begin{frame}[label=block-cyclic, fragile]
+  \frametitle{2D Block-Cyclic Distribution}
 
   \begin{columns}
-    \begin{column}{5cm}
-      \begin{tikzpicture}
-        \draw[red,dotted,use as bounding box] (0, 0) rectangle (5, 5);
-    \tikzmat{0,0}{5,5}
-    \filldraw[fill=Gray!70] (0, 0) rectangle (5,5);
+    \begin{column}{5.5cm}
+  \begin{tikzpicture}[scale=0.5]
+    \path[use as bounding box] (-0.5, 2) rectangle (11, 15);
 
-    \node<1> at (2.5, 2.5) {$A$};
+    \filldraw[fill=red]     (0, 10) rectangle +(6, 4);
+    \filldraw[fill=green]   (7, 10) rectangle +(4, 4);
+    \filldraw[fill=orange]  (0, 5) rectangle  +(6, 4);
+    \filldraw[fill=cyan]    (7, 5) rectangle  +(4, 4);
+    \filldraw[fill=yellow]  (0, 2) rectangle  +(6, 2);
+    \filldraw[fill=magenta] (7, 2) rectangle  +(4, 2);
 
-    \node<2> at (1.25, 3.75) {$A_{00}$};
-    \node<2> at (1.25, 1.25) {$A_{10}$};
+    \fill[pattern=north west lines] (0, 13) rectangle +(1, 1);
+    \fill[pattern=north west lines] (1, 12) rectangle +(1, 1);
+    \fill[pattern=north west lines] (2, 8) rectangle +(1, 1);
+    \fill[pattern=north west lines] (7, 7) rectangle +(1, 1);
+    \fill[pattern=north west lines] (8, 3) rectangle +(1, 1);
+    \fill[pattern=north west lines] (9, 2) rectangle +(1, 1);
+    \fill[pattern=north west lines] (3, 11) rectangle +(1, 1);
+    \fill[pattern=north west lines] (4, 10) rectangle +(1, 1);
+    \fill[pattern=north west lines] (5,  6) rectangle +(1, 1);
+    \fill[pattern=north west lines] (10,  5) rectangle +(1, 1);
 
-    \node<2-6> at (3.75, 1.25) (a11) {$A_{11}$};
-    \node<8> at (3.75, 1.25) (b) {$A_{11} - L_{10} U_{01}$};
+      \foreach \q in {1, 2} {
+        \begin{scope}[xshift = 0, yshift=\q*5cm]
+          \draw[thick] (0, 0) rectangle (6, 4);
+          \foreach \i in {1, 2, ..., 5} {
+            \draw (\i, 0) -- +(0, 4);
+          }
+          \foreach \i in {1, 2, 3} {
+            \draw (0, \i) -- +(6, 0);
+          }
+          \draw[thick] (0, 2) -- +(6, 0);
+          \draw[thick] (0, 4) -- +(6, 0);
+          \draw[thick] (3, 0) -- +(0, 4);
+        \end{scope}
+      }
 
-    \node<2-4> at (3.75, 3.75) {$A_{01}$};
+      \begin{scope}[xshift = 0, yshift=2cm]
+        \draw[thick] (0, 0) rectangle (6, 2);
+        \foreach \i in {1, 2, ..., 5} {
+          \draw (\i, 0) -- +(0, 2);
+        }
+        \draw (0, 1) -- +(6, 0);
+        \draw[thick] (3, 0) -- +(0, 2);
+      \end{scope}
+      
+      
+      \foreach \q in {1, 2} {
+        \begin{scope}[xshift = 7cm, yshift=\q*5cm]
+          \draw[thick] (0, 0) rectangle (4, 4);
+          \foreach \i in {1, 2, 3} {
+            \draw (\i, 0) -- +(0, 4);
+          }
+          \foreach \i in {1, 2, 3} {
+            \draw (0, \i) -- +(4, 0);
+          }
+          \draw[thick] (0, 2) -- +(4, 0);
+          \draw[thick] (0, 4) -- +(4, 0);
+          \draw[thick] (3, 0) -- +(0, 4);
 
-    \draw<3>[pattern=north west lines] (0,0) rectangle +(2.5, 5);
-    \draw<5>[pattern=north west lines] (2.5, 2.5) rectangle +(2.5, 2.5);
-    \draw<7,9>[pattern=north west lines] (2.5 , 0) rectangle +(2.5, 2.5);
+        \end{scope}
+      }
+      \begin{scope}[xshift = 7cm, yshift=2cm]
+        \draw[thick] (0, 0) rectangle (4, 2);
+        \foreach \i in {1, 2, 3} {
+          \draw (\i, 0) -- +(0, 2);
+        }
+        \draw (0, 1) -- +(4, 0);
+        \draw[thick] (3, 0) -- +(0, 2);
+      \end{scope}
+
+
+    \node[anchor=south west,font=\scriptsize] at (0, 14) {0};
+    \node[anchor=south west,font=\scriptsize] at (1, 14) {1};
+    \node[anchor=south west,font=\scriptsize] at (2, 14) {2};
+    \node[anchor=south west,font=\scriptsize] at (3, 14) {6};
+    \node[anchor=south west,font=\scriptsize] at (4, 14) {7};
+    \node[anchor=south west,font=\scriptsize] at (5, 14) {8};
+
+    \node[anchor=south west,font=\scriptsize] at (7, 14)  {3};
+    \node[anchor=south west,font=\scriptsize] at (8, 14)  {4};
+    \node[anchor=south west,font=\scriptsize] at (9, 14)  {5};
+    \node[anchor=south west,font=\scriptsize] at (10, 14) {9};
     
-    \filldraw<4->[fill=cyan] (0,5) -- ++(2.5, -2.5) -- (2.5, 0) -- (0, 0) -- cycle;
-    \filldraw<4-5>[fill=LimeGreen] (0,5) -- (2.5, 2.5) -- (2.5, 5) -- cycle;
-    \filldraw<6->[fill=LimeGreen] (0,5) -- ++(5, 0) -- (5, 2.5) -- (2.5, 2.5) -- cycle;
-    
-    \node<4-> at (1.25, 1.25) (l10) {$L_{10}$};
-    \node<4-> at (0.75, 3.25) (l00) {$L_{00}$};
-    \node<4-> at (1.75, 4.25) {$U_{00}$};
-    \node<6-> at (3.75, 3.75) (u01) {$U_{01}$};
+    \node[anchor=north east,font=\scriptsize] at (0, 14) {0};
+    \node[anchor=north east,font=\scriptsize] at (0, 13) {1};
+    \node[anchor=north east,font=\scriptsize] at (0, 12) {6};
+    \node[anchor=north east,font=\scriptsize] at (0, 11) {7};
 
-    \draw<5>[red,ultra thick, ->] (l00) edge (3.4, 3.75);    
-    \draw<7>[red,ultra thick, ->] (u01) edge (a11);    
-    \draw<7>[red,ultra thick, ->] (l10) edge (a11);    
+    \node[anchor=north east,font=\scriptsize] at (0, 9) {2};
+    \node[anchor=north east,font=\scriptsize] at (0, 8) {3};
+    \node[anchor=north east,font=\scriptsize] at (0, 7) {8};
+    \node[anchor=north east,font=\scriptsize] at (0, 6) {9};
 
-    
-    \filldraw<10>[fill=cyan] (2.5, 2.5) -- (5, 0) -- (2.5, 0) -- cycle;
-    \filldraw<10>[fill=LimeGreen] (2.5, 2.5) -- (5, 2.5) -- (5, 0) -- cycle;
-    \node<10> at (3.25, 0.75) {$L_{11}$};
-    \node<10> at (4.25, 1.75) {$U_{11}$};
-
-
-      \draw<2->[red, ultra thick, dashed] (-0.2, 2.5) -- (5.2, 2.5);
-      \draw<2->[red, ultra thick, dashed] (2.5, -0.2) -- (2.5, 5.2);
+    \node[anchor=north east,font=\scriptsize] at (0, 4) {4};
+    \node[anchor=north east,font=\scriptsize] at (0, 3) {5};
   \end{tikzpicture}
 \end{column}
-\begin{column}{5.5cm}
 
- \begin{block}{Recursive algorithm}
-   \begin{enumerate}
-   \item<3-> Factorize left half
-   \item<5-> Solve $L_{00} U_{01} = A_{01}$
-     \begin{itemize}
-     \item level-3 \texttt{TRSM}
-     \end{itemize}
-     
-   \item<7-> $A_{11} \gets A_{11} - L_{10} U_{01}$
-     \begin{itemize}
-     \item level-3 \texttt{GEMM}
-     \end{itemize}
-   \item<9-> Factorize $A_{11} - L_{10} U_{01}$
-     
-   \end{enumerate}
- \end{block}
+\begin{column}{6.5cm}
+  \begin{itemize}
+  \item Rows distributed block-cyclically 
+  \item Cols distributed block-cyclically 
+  \item[$\leadsto$] \alert{6} parameters
+    \begin{itemize}
+    \item $(m, n, v, h, P, Q)$
+    \end{itemize}
+    \medskip
 
+  \item Each process has a ``local'' matrix
+    \begin{itemize}
+    \item Its blocks stacked together
+    \item With a stride!
+    \end{itemize}
+  \item Not the same size everywhere!
+    \begin{itemize}
+    \item {\footnotesize \mintinline{C}{my_size(m, v, p, rank)}} rows
+    \item {\footnotesize\mintinline{C}{my_size(n, h, q, rank)}} cols
+    \end{itemize}
+  \end{itemize}
 \end{column}
 \end{columns}
 
-\medskip
+  \begin{alertblock}{Exercise for next week}
+    Write a function that compute the \textbf{trace} (sum of diagonal elements)
+    of a block-cyclically distributed matrix.
+  \end{alertblock}
 
-\[
-  \begin{pmatrix}
-       A_{00} & A_{01} \\
-       A_{10} & A_{11} 
-     \end{pmatrix}
-     =
-     \begin{pmatrix}
-       L_{00} &  \\
-       L_{10} & L_{11} 
-     \end{pmatrix}
-     \begin{pmatrix}
-       U_{00} & U_{01} \\
-       & U_{11} 
-     \end{pmatrix}
-   \]
+\end{frame}
 
-   \vspace{-0.5cm}
-   
-   \begin{align*}     
-     L_{00} U_{01} &= A_{01} \\
-     L_{11} U_{11} &= A_{11} - L_{10} U_{01}
-   \end{align*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=block-cyclic, fragile]
+  \frametitle{\mintinline{C}{xGER} in Block-Cyclic Distribution}
+
+  \begin{columns}
+    \begin{column}{7cm}
+  \begin{tikzpicture}[scale=0.5]
+    \path[use as bounding box] (-0.5, -1) rectangle (14, 15);
+    \filldraw<2->[thick, fill=lightgray]     (0, -1) rectangle +(6, 1);
+    \filldraw<2->[thick, fill=lightgray]     (7, -1) rectangle +(4, 1);
+    \filldraw<2->[thick, fill=violet]     (13, 2) rectangle +(1, 2);
+    \filldraw<2->[thick, fill=violet]     (13, 5) rectangle +(1, 4);
+    \filldraw<2->[thick, fill=violet]     (13, 10) rectangle +(1, 4);
+
+    
+    
+    \foreach \i in {3, 6, 7, 8, 11, 12, 13} {
+      \draw<2->[white] (13, \i) -- +(1, 0);
+    }
+    \draw<2->[white,thick] (13, 7) -- +(1, 0);
+    \draw<2->[white,thick] (13, 12) -- +(1, 0);
+    \foreach \i in {1, 2, 3, 4, 5, 8, 9, 10} {
+      \draw<2-> (\i, -1) -- +(0, 1);
+    }
+    \draw<2->[thick] ( 3, -1) -- +(0, 1);
+    \draw<2->[thick] (10, -1) -- +(0, 1);
+
+    \filldraw[fill=red]     (0, 10) rectangle +(6, 4);
+    \filldraw[fill=green]   (7, 10) rectangle +(4, 4);
+    \filldraw[fill=orange]  (0, 5) rectangle  +(6, 4);
+    \filldraw[fill=cyan]    (7, 5) rectangle  +(4, 4);
+    \filldraw[fill=yellow]  (0, 2) rectangle  +(6, 2);
+    \filldraw[fill=magenta] (7, 2) rectangle  +(4, 2);
+
+      \foreach \q in {1, 2} {
+        \begin{scope}[xshift = 0, yshift=\q*5cm]
+          \draw[thick] (0, 0) rectangle (6, 4);
+          \foreach \i in {1, 2, ..., 5} {
+            \draw (\i, 0) -- +(0, 4);
+          }
+          \foreach \i in {1, 2, 3} {
+            \draw (0, \i) -- +(6, 0);
+          }
+          \draw[thick] (0, 2) -- +(6, 0);
+          \draw[thick] (0, 4) -- +(6, 0);
+          \draw[thick] (3, 0) -- +(0, 4);
+        \end{scope}
+      }
+
+      \begin{scope}[xshift = 0, yshift=2cm]
+        \draw[thick] (0, 0) rectangle (6, 2);
+        \foreach \i in {1, 2, ..., 5} {
+          \draw (\i, 0) -- +(0, 2);
+        }
+        \draw (0, 1) -- +(6, 0);
+        \draw[thick] (3, 0) -- +(0, 2);
+      \end{scope}
+      
+      
+      \foreach \q in {1, 2} {
+        \begin{scope}[xshift = 7cm, yshift=\q*5cm]
+          \draw[thick] (0, 0) rectangle (4, 4);
+          \foreach \i in {1, 2, 3} {
+            \draw (\i, 0) -- +(0, 4);
+          }
+          \foreach \i in {1, 2, 3} {
+            \draw (0, \i) -- +(4, 0);
+          }
+          \draw[thick] (0, 2) -- +(4, 0);
+          \draw[thick] (0, 4) -- +(4, 0);
+          \draw[thick] (3, 0) -- +(0, 4);
+
+        \end{scope}
+      }
+      \begin{scope}[xshift = 7cm, yshift=2cm]
+        \draw[thick] (0, 0) rectangle (4, 2);
+        \foreach \i in {1, 2, 3} {
+          \draw (\i, 0) -- +(0, 2);
+        }
+        \draw (0, 1) -- +(4, 0);
+        \draw[thick] (3, 0) -- +(0, 2);
+      \end{scope}
+
+
+    \node[anchor=south west,font=\scriptsize] at (0, 14) {0};
+    \node[anchor=south west,font=\scriptsize] at (1, 14) {1};
+    \node[anchor=south west,font=\scriptsize] at (2, 14) {2};
+    \node[anchor=south west,font=\scriptsize] at (3, 14) {6};
+    \node[anchor=south west,font=\scriptsize] at (4, 14) {7};
+    \node[anchor=south west,font=\scriptsize] at (5, 14) {8};
+
+    \node[anchor=south west,font=\scriptsize] at (7, 14)  {3};
+    \node[anchor=south west,font=\scriptsize] at (8, 14)  {4};
+    \node[anchor=south west,font=\scriptsize] at (9, 14)  {5};
+    \node[anchor=south west,font=\scriptsize] at (10, 14) {9};
+    
+    \node[anchor=north east,font=\scriptsize] at (0, 14) {0};
+    \node[anchor=north east,font=\scriptsize] at (0, 13) {1};
+    \node[anchor=north east,font=\scriptsize] at (0, 12) {6};
+    \node[anchor=north east,font=\scriptsize] at (0, 11) {7};
+
+    \node[anchor=north east,font=\scriptsize] at (0, 9) {2};
+    \node[anchor=north east,font=\scriptsize] at (0, 8) {3};
+    \node[anchor=north east,font=\scriptsize] at (0, 7) {8};
+    \node[anchor=north east,font=\scriptsize] at (0, 6) {9};
+
+    \node[anchor=north east,font=\scriptsize] at (0, 4) {4};
+    \node[anchor=north east,font=\scriptsize] at (0, 3) {5};
+
+    \draw<3>[ultra thick, ->] (13, 2.5) -- (11, 2.5);
+    \draw<3>[ultra thick, ->] (13, 3.5) -- (6, 3.5);
+    \draw<3>[ultra thick, ->] (13, 7.5) -- (11, 7.5);
+    \draw<3>[ultra thick, ->] (13, 8.5) -- (6, 8.5);
+    \draw<3>[ultra thick, ->] (13, 12.5) -- (11, 12.5);
+    \draw<3>[ultra thick, ->] (13, 13.5) -- (6, 13.5);
+    \draw<3>[ultra thick, ->] (0.5, 0) -- (0.5, 10);
+    \draw<3>[ultra thick, ->] (1.5  , 0) -- (1.5, 5);
+    \draw<3>[ultra thick, ->] (2.5, 0) -- (2.5, 2);
+    \draw<3>[ultra thick, ->] (7.5, 0) -- (7.5, 10);
+    \draw<3>[ultra thick, ->] (8.5  , 0) -- (8.5, 5);
+    \draw<3>[ultra thick, ->] (9.5, 0) -- (9.5, 2);
+  \end{tikzpicture}
+\end{column}
+
+\begin{column}{5cm}
+  \begin{itemize}
+  \item $A \gets A + \alpha x y^t$
+  \item $x$ and $y$ block-cyclically distributed
+
+    \medskip
+    
+  \item \alert{replicate} $x$ / $y$ on process rows / cols
+    \begin{itemize}
+    \item Question: where are $x$ and $y$ at the beginning?
+    \end{itemize}
+  \item Then local \mintinline{C}{xGER}
+  \item ``Easy'' \smiley
+  \end{itemize}
+\end{column}
+\end{columns}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[label=trsm]
-  \frametitle{Level-3 Triangular Solve}
+\subsubsection{GEMM}
+
+\begin{frame}[label=gemm]
+  \frametitle{Level-3 General Matrix-Matrix Product (\mintinline{C}{xGEMM})}
+
+  \begin{center}
+    \begin{tikzpicture}[scale=0.75]
+      \begin{scope}
+        \tikzmat{0,0}{5, 7}
+        \filldraw[fill=red] (0, 0) rectangle node {$C$} +(5, 7);
+      \end{scope}
+      \node at (5.7, 3.5) {+=};
+      \begin{scope}[xshift=6.4cm]
+        \tikzmat{0,0}{3, 7}
+        \filldraw[fill=cyan] (0, 0) rectangle node[] {$A$} +(3, 7);
+      \end{scope}
+      \begin{scope}[xshift=9.8cm, yshift=4cm]
+        \tikzmat{0,0}{5,3}
+        \filldraw[fill=green] (0, 0) rectangle node {$B$} +(5, 3);
+      \end{scope}
+
+      
+    \end{tikzpicture}
+  \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=gemm,fragile]
+  \frametitle{Level-3 General Matrix-Matrix Product (\mintinline{C}{xGEMM})}
+
+  \begin{center}
+    \begin{tikzpicture}[scale=0.75]
+      \path[use as bounding box] (-5, 0) rectangle (8, 11);
+      \node[anchor=west] at (-5, 10) {$\displaystyle C_{ij} \gets C_{ij} + \sum_{k} A_{ik} B_{kj}$};
+      \node[anchor=west] at (-5, 9) {$\displaystyle C_{ij} \gets C_{ij} + $ \mintinline{C}{xDOT(A[i,:], B[:,j])}};
+
+      \begin{scope}[xshift=4cm] % C
+        \tikzmat{0,0}{5, 7}
+        \filldraw[fill=red] (0, 0) rectangle +(5, 7);
+        \foreach \j in {0.5, 1, ..., 6.5} {
+          \draw (0, \j) -- +(5, 0);
+        }
+        \foreach \i in {0.5, 1, ..., 4.5} {
+          \draw (\i, 0) -- +(0, 7); 
+        }
+        % square blocks
+        \foreach \j in {1, ..., 6} {
+          \draw<2>[very thick] (0, \j) -- +(5, 0);
+        }
+        \foreach \i in {1, ..., 4} {
+          \draw<2->[very thick] (\i, 0) -- +(0, 7); 
+        }
+        % rectangular blocks
+        \foreach \j in {1, 2.5, ..., 6} {
+          \draw<3->[very thick] (0, \j) -- +(5, 0); 
+        }
+        % mega square blocks
+        \foreach \j in {1, 4} {
+          \draw<4>[line width=1mm] (0, \j) -- +(5, 0); 
+        }
+        \foreach \i in {3} {
+          \draw<4>[line width=1mm] (\i, 0) -- +(0, 7); 
+        }
+      \end{scope}
+
+      \begin{scope} % A
+        \tikzmat{0,0}{3, 7}
+        \filldraw[fill=cyan] (0, 0) rectangle +(3, 7);
+        \foreach \j in {0.5, 1, ..., 6.5} {
+          \draw[] (0, \j) -- +(3, 0); 
+        }
+        % square blocks
+        \foreach \j in {1, ..., 6} {
+          \draw<2>[very thick] (0, \j) -- +(3, 0);
+        }
+        \foreach \i in {1, 2} {
+          \draw<2->[very thick] (\i, 0) -- +(0, 7); 
+        }
+        % rectangular blocks
+        \foreach \j in {1, 2.5, ..., 6} {
+          \draw<3->[very thick] (0, \j) -- +(3, 0); 
+        }
+        % mega blocks
+        \foreach \j in {1, 4} {
+          \draw<4>[line width=1mm] (0, \j) -- +(3, 0); 
+        }
+      \end{scope}
+      \begin{scope}[xshift=4cm, yshift=8cm] % B
+        \tikzmat{0,0}{5,3}
+        \filldraw[fill=green] (0, 0) rectangle +(5, 3);
+        \foreach \i in {0.5, 1, ..., 4.5} {
+          \draw (\i, 0) -- +(0, 3); 
+        }
+        % square blocks
+        \foreach \j in {1, ..., 2} {
+          \draw<2>[very thick] (0, \j) -- +(5, 0);
+        }
+        \foreach \i in {1, ..., 4} {
+          \draw<2->[very thick] (\i, 0) -- +(0, 3); 
+        }
+        % rectangular blocks
+        \foreach \j in {1.5} {
+          \draw<3->[very thick] (0, \j) -- +(5, 0); 
+        }
+        % mega blocks
+        \foreach \i in {3} {
+          \draw<4>[line width=1mm] (\i, 0) -- +(0, 3); 
+        }
+      \end{scope}
+    \end{tikzpicture}
+  \end{center}
+
+  \begin{textblock}{5}(0.75,6)
+    \begin{block}{Algorithm for $P_{ij}$}
+      \begin{itemize}
+      \item Allgather $A[i,:]$ \\ on process row $i$
+      \item Allgather $B[:,j]$ \\ on process col $j$
+      \item \only<1>{\texttt{xDOT(...)}} \only<2,4>{\texttt{xGEMM(...)} \smiley} \only<3>{\sout{\texttt{xGEMM(...)}} \triste}
+      \item<only@3> \sout{pipeline} \triste
+      \item<only@2> Store 3 blocks \smiley
+      \item<only@4> Store \alert{6} blocks
+      \item<only@2,4> Pipeline \smiley
+        \begin{itemize}
+        \item<only@2,4> complex \triste
+        \end{itemize}
+      \item<only@1,3> \alert{Store full row/col}
+      \end{itemize}
+    \end{block}
+  \end{textblock}
+  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=gemm]
+  \frametitle{Level-3 General Matrix-Matrix Product (\mintinline{C}{xGEMM})}
+
+
+  \begin{textblock}{5}(0.75,7)
+    \begin{block}{Algorithm for $P_{ij}$}
+      \begin{itemize}
+      \item<only@1,2> Repeat $k$ times:
+      \item<only@3-> Repeat $k / \alert{b}$ times:
+      \item Broadcast $A[:,k]$ 
+      \item Broadcast $B[k,:]$ 
+      \item \only<1,2>{\mintinline{C}{xGER(...)}} \only<3->{\mintinline{C}{xGEMM(...)} \smiley}
+      \item Pipeline \smiley
+        \begin{itemize}
+        \item Simpler \smiley
+        \end{itemize}
+      \end{itemize}
+    \end{block}
+  \end{textblock}
+  
+  
+  \begin{center}
+    \begin{tikzpicture}[scale=0.75]
+      \path[use as bounding box] (-5, 0) rectangle (8, 11);
+      \node[anchor=west] at (-5, 10) {$\displaystyle C \gets C + \sum_{k} A_{k} B_{k}$};
+      \node[anchor=west] at (-5, 9) {$\displaystyle C \gets C + $ \mintinline{C}{xGER(A[:,k], B[k:])}};
+
+      \begin{scope}[xshift=4cm] % C
+        \tikzmat{0,0}{5, 7}
+        \filldraw[fill=red] (0, 0) rectangle +(5, 7);
+        % % rectangular blocks
+        % \foreach \i in {1, ..., 4} {
+        %   \draw<3->[very thick] (\i, 0) -- +(0, 7); 
+        % }
+        % \foreach \j in {1, 2, ..., 6} {
+        %   \draw<3,4>[very thick] (0, \j) -- +(5, 0); 
+        % }
+        % \foreach \j in {1, 2.5, ..., 6} {
+        %   \draw<5>[very thick] (0, \j) -- +(5, 0); 
+        % }
+        % % mega square blocks
+        % \foreach \j in {1, 4} {
+        %   \draw<5>[line width=1mm] (0, \j) -- +(5, 0); 
+        % }
+        % \foreach \i in {3} {
+        %   \draw<5>[line width=1mm] (\i, 0) -- +(0, 7); 
+        % }
+      \end{scope}
+
+      \begin{scope}[] % A
+        \tikzmat{0,0}{3, 7}
+        \filldraw<1,3,5>[fill=cyan] (0, 0) rectangle +(3, 7);
+        \filldraw<2>[fill=cyan] (0, 0) rectangle +(0.5, 7);
+        \filldraw<2>[fill=cyan,nearly transparent] (0.5, 0) rectangle +(2.5, 7);
+        \filldraw<4>[fill=cyan] (0, 0) rectangle +(1, 7);
+        \filldraw<4>[fill=cyan,nearly transparent] (1, 0) rectangle +(2, 7);
+
+        \foreach \i in {0.5, 1, ..., 2.5} {
+          \draw (\i, 0) -- +(0, 7); 
+        }
+        % rectangular blocks
+        \foreach \i in {1, 2} {
+          \draw<3->[very thick] (\i, 0) -- +(0, 7); 
+        }
+        \foreach \j in {1, 2, ..., 6} {
+          \draw<3,4>[very thick] (0, \j) -- +(3, 0); 
+        }
+        \foreach \j in {1, 2.5, ..., 6} {
+          \draw<5>[very thick] (0, \j) -- +(3, 0); 
+        }
+        % mega blocks
+        \foreach \j in {1, 4} {
+          \draw<5>[line width=1mm] (0, \j) -- +(3, 0); 
+        }
+      \end{scope}
+
+      \begin{scope}[xshift=4cm, yshift=8cm] % B
+        \tikzmat{0,0}{5,3}
+        \filldraw<1,3,5>[fill=green] (0, 0) rectangle +(5, 3);
+        \filldraw<2>[fill=green] (0, 2.5) rectangle +(5, 0.5);
+        \filldraw<2>[fill=green, nearly transparent] (0, 0) rectangle +(5, 2.5);
+        \filldraw<4>[fill=green] (0, 2) rectangle +(5, 1);
+        \filldraw<4>[fill=green, nearly transparent] (0, 0) rectangle +(5, 2);
+        \foreach \j in {0.5, 1, ..., 2.5} {
+          \draw (0, \j) -- +(5, 0); 
+        }
+        % rectangular blocks
+        \foreach \i in {1, ..., 4} {
+          \draw<3->[very thick] (\i, 0) -- +(0, 3); 
+        }
+        \foreach \j in {1, 2} {
+          \draw<3,4>[very thick] (0, \j) -- +(5, 0); 
+        }
+        \foreach \j in {1.5} {
+          \draw<5>[very thick] (0, \j) -- +(5, 0); 
+        }
+        % mega blocks
+        \foreach \i in {3} {
+          \draw<5>[line width=1mm] (\i, 0) -- +(0, 3); 
+        }      \end{scope}
+
+      % bcast
+      \foreach \i in {1.5, 3.5, 5.5} {
+        \draw<2>[cyan,ultra thick,->] (0.5, \i) -- +(8 - 0.6*\i, 0); 
+        \draw<4>[cyan,ultra thick,->] (1, \i) -- +(7.5 - 0.6*\i, 0); 
+      }
+      \foreach \i in {0.5, 2.5, 4.5} {
+        \draw<2>[green,ultra thick,->] (4+\i, 10.5) -- +(0, -3.5 - 1.25*\i); 
+        \draw<4>[green,ultra thick,->] (4+\i, 10) -- +(0, -3 - 1.25*\i); 
+      }
+    \end{tikzpicture}
+  \end{center}
+\end{frame}
+
+
+
+% \begin{frame}[label=gemm]
+%   \frametitle{Level-3 General Matrix-Matrix Product (\mintinline{C}{xGEMM})}
+
+%   \begin{center}
+%     \begin{tikzpicture}[scale=0.75]
+%       \begin{scope}[xshift=4cm]
+%         \tikzmat{0,0}{5, 7}
+
+%         \begin{scope}
+%           \clip (0, 0) rectangle +(5, 7);
+%           \foreach \i in {0, 2, 4, 6} {
+%             \foreach \j in {0, 3, 6} {
+%               \filldraw[fill=red]             (\i,   \j)   rectangle +(1, 1);
+%               \filldraw[fill=red!50!white]    (\i,   \j+1) rectangle +(1, 1);
+%               \filldraw[fill=orange]          (\i  , \j+2) rectangle +(1, 1);
+%               \filldraw[fill=orange!50!white] (\i+1, \j)   rectangle +(1, 1);
+%               \filldraw[fill=yellow]          (\i+1, \j+1) rectangle +(1, 1);
+%               \filldraw[fill=yellow!50!white] (\i+1, \j+2) rectangle +(1, 1);
+%             }
+%           }
+%         \end{scope}
+%         \foreach \j in {0.5, 1, ..., 6.5} {
+%           \draw (0, \j) -- +(5, 0);
+%         }
+%         \foreach \i in {0.5, 1, ..., 4.5} {
+%           \draw (\i, 0) -- +(0, 7); 
+%         }
+%       \end{scope}
+
+%       \begin{scope}[]
+%         \tikzmat{0,0}{3, 7}
+%         \begin{scope}
+%           \clip (0, 0) rectangle +(3, 7);
+%           \foreach \i in {0, 2, 4, 6} {
+%             \foreach \j in {0, 3, 6} {
+%               \filldraw[fill=blue]          (\i,   \j)   rectangle +(1, 1);
+%               \filldraw[fill=blue!50!white] (\i,   \j+1) rectangle +(1, 1);
+%               \filldraw[fill=teal]          (\i,   \j+2) rectangle +(1, 1);
+%               \filldraw[fill=teal!50!white] (\i+1, \j)   rectangle +(1, 1);
+%               \filldraw[fill=cyan]          (\i+1, \j+1) rectangle +(1, 1);
+%               \filldraw[fill=cyan!50!white] (\i+1, \j+2) rectangle +(1, 1);
+%             }
+%           }
+%         \end{scope}
+%         \foreach \i in {0.5, 1, ..., 2.5} {
+%           \draw (\i, 0) -- +(0, 7);
+%         }        
+%         \foreach \j in {0.5, 1, ..., 6.5} {
+%           \draw (0, \j) -- +(3, 0); 
+%         }
+%       \end{scope}
+%       \begin{scope}[xshift=4cm, yshift=8cm]
+%         \tikzmat{0,0}{5,3}
+%         \begin{scope}
+%           \clip (0, 0) rectangle +(5, 3);
+%           \foreach \i in {0, 2, 4, 6} {
+%             \foreach \j in {0, 3, 6} {
+%               \filldraw[fill=green]              (\i,   \j)   rectangle +(1, 1);
+%               \filldraw[fill=green!50!white]     (\i,   \j+1) rectangle +(1, 1);
+%               \filldraw[fill=lime]               (\i,   \j+2) rectangle +(1, 1);
+%               \filldraw[fill=lime!50!white]      (\i+1, \j)   rectangle +(1, 1);
+%               \filldraw[fill=lightgray]          (\i+1, \j+1) rectangle +(1, 1);
+%               \filldraw[fill=lightgray!50!white] (\i+1, \j+2) rectangle +(1, 1);
+%             }
+%           }
+%         \end{scope}
+%         \foreach \i in {0.5, 1, ..., 4.5} {
+%           \draw (\i, 0) -- +(0, 3); 
+%         }
+%         \foreach \j in {0.5, 1, ..., 2.5} {
+%           \draw (0, \j) -- +(5, 0); 
+%         }
+%       \end{scope}
+      
+%     \end{tikzpicture}
+%   \end{center}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=gemm]
+  \frametitle{Level-3 General Matrix-Matrix Product (\mintinline{C}{xGEMM})}
+
+  \begin{center}
+    \begin{tikzpicture}[scale=0.75]
+      \draw<2>[dashed] (0.5, 7) |- (4, 10.5);
+      \draw<2>[dashed] (1.5, 7) |- (4, 9.5);
+      \draw<2>[dashed] (2.5, 7) |- (4, 8.5);
+
+      \begin{scope}[xshift=4cm]
+        \tikzmat{0,0}{5, 7}
+
+        \begin{scope}
+          \clip (0, 0) rectangle +(5, 7);
+          \foreach \i in {0, 2, 4, 6} {
+            \foreach \j in {0, 3, 6} {
+              \filldraw[fill=red]             (\i,   \j)   rectangle +(1, 1);
+              \filldraw<1>[fill=red!50!white]    (\i,   \j+1) rectangle +(1, 1);
+              \filldraw<1>[fill=orange]          (\i  , \j+2) rectangle +(1, 1);
+              \filldraw<1>[fill=orange!50!white] (\i+1, \j)   rectangle +(1, 1);
+              \filldraw<1>[fill=yellow]          (\i+1, \j+1) rectangle +(1, 1);
+              \filldraw<1>[fill=yellow!50!white] (\i+1, \j+2) rectangle +(1, 1);
+            }
+          }
+        \end{scope}
+        \foreach \j in {0.5, 1, ..., 6.5} {
+          \draw (0, \j) -- +(5, 0);
+        }
+        \foreach \i in {0.5, 1, ..., 4.5} {
+          \draw (\i, 0) -- +(0, 7); 
+        }
+      \end{scope}
+
+      \begin{scope}[]
+        \tikzmat{0,0}{3, 7}
+        \begin{scope}
+          \clip (0, 0) rectangle +(3, 7);
+          \foreach \i in {0, 2, 4, 6} {
+            \foreach \j in {0, 3, 6} {
+              \filldraw[fill=blue]          (\i,   \j)   rectangle +(1, 1);
+              \filldraw<1>[fill=blue!50!white] (\i,   \j+1) rectangle +(1, 1);
+              \filldraw<1>[fill=teal]          (\i,   \j+2) rectangle +(1, 1);
+              \filldraw<1>[fill=teal!50!white] (\i+1, \j)   rectangle +(1, 1);
+              \filldraw<1>[fill=cyan]          (\i+1, \j+1) rectangle +(1, 1);
+              \filldraw<1>[fill=cyan!50!white] (\i+1, \j+2) rectangle +(1, 1);
+            }
+          }
+        \end{scope}
+        \filldraw<2>[fill=blue!50!white,opacity=0.1] (1, 6) rectangle +(1, 1);
+
+        \foreach \i in {0.5, 1, ..., 2.5} {
+          \draw (\i, 0) -- +(0, 7);
+        }        
+        \foreach \j in {0.5, 1, ..., 6.5} {
+          \draw (0, \j) -- +(3, 0); 
+        }
+      \end{scope}
+      \begin{scope}[xshift=4cm, yshift=8cm]
+        \tikzmat{0,0}{5,3}
+        \begin{scope}
+          \clip (0, 0) rectangle +(5, 3);
+          \foreach \i in {0, 2, 4, 6} {
+            \foreach \j in {0, 3, 6} {
+              \filldraw<1>[fill=green]              (\i,   \j)   rectangle +(1, 1);
+              \filldraw<1>[fill=green!50!white]     (\i,   \j+1) rectangle +(1, 1);
+              \filldraw[fill=lime]               (\i,   \j+2) rectangle +(1, 1);
+              \filldraw<1>[fill=lime!50!white]      (\i+1, \j)   rectangle +(1, 1);
+              \filldraw<1>[fill=lightgray]          (\i+1, \j+1) rectangle +(1, 1);
+              \filldraw<1>[fill=lightgray!50!white] (\i+1, \j+2) rectangle +(1, 1);
+            }
+          }
+        \end{scope}
+        \filldraw<2>[fill=green,opacity=0.1]             (0,   0)   rectangle +(1, 1);
+        \filldraw<2>[fill=green!50!white,opacity=0.1]     (0,   1) rectangle +(1, 1);
+
+        \foreach \i in {0.5, 1, ..., 4.5} {
+          \draw (\i, 0) -- +(0, 3); 
+        }
+        \foreach \j in {0.5, 1, ..., 2.5} {
+          \draw (0, \j) -- +(5, 0); 
+        }
+      \end{scope}
+      
+    \end{tikzpicture}
+  \end{center}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{TRSM}
+
+\begin{frame}[label=trsm,fragile]
+  \frametitle{Level-3 Triangular Solve (\mintinline{C}{xTRSM})}
 
   \begin{center}
       \begin{tikzpicture}[scale=0.8]
@@ -2278,7 +3149,129 @@ void prefix_sum(double * A, int n)
 
         \begin{scope}[xshift=-5.3cm]
           \tikzmat{0,0}{5,5}
-          \filldraw[fill=cyan] (0, 0) -- (0, 5) -- (5, 0) -- cycle;
+          \filldraw[fill=cyan] (0, 0) -- (0, 4.8) -- (4.8, 0) -- cycle;
+          \foreach \i in {0, 0.2, ..., 4.8} {
+            \path (\i,4.8-\i) rectangle node {\scalebox{0.55}{1}} +(0.2,0.2);
+          }
+          
+          \node<1> at (1.25, 1.25) {$L$};
+
+          \coordinate (l0) at (0.1, 2.5);
+          \node<2-> at (-0.5, 2.5) {$\ell_0$};
+          \node<2-> at (1.25, 1.25)  (l1) {$L_{1}$};
+          
+          % découpage rouge
+          \draw<2->[red] (-0.2, 4.8) -- +(5.4, 0);
+          \draw<2->[red] (0.2, -0.2) -- +(0, 5.4);
+        \end{scope}
+
+        
+        \tikzmat{0,0}{5,5}
+        \filldraw[fill=Gray!70] (0, 0) rectangle (5,5);
+
+        \node<1> at (2.5, 2.5) {$B$};
+        \node<2> at (2.5, 5.25) (b0) {$b_{0}$};
+        \node<3-> at (2.5, 5.25) (x0) {$x_{0}$};
+
+        \node<2-3> at (2.5, 2.4)  (b1) {$B_{1}$};
+        \node<5> at (2.5, 2.4) (b) {$B_{1} - \ell_{0} x_{0}$};
+        
+        \draw<4>[pattern=north west lines] (0, 0) rectangle +(5, 4.8);
+        \draw<6>[pattern=north west lines] (0, 0) rectangle +(5, 4.8);
+        
+        \filldraw<3->[fill=yellow] (0, 4.8) rectangle +(5, 0.2);
+        \filldraw<7->[fill=yellow] (0, 0) rectangle +(5, 4.8);
+
+        \node<7-> at (2.5, 2.4) (x1) {$X_{1}$};
+                
+        % découpage rouge
+        \draw<2->[red] (-0.2, 4.8) -- +(5.4, 0);
+
+        % GER
+        \draw<4>[red,ultra thick, ->] (x0) edge (b1);    
+        \draw<4>[red,ultra thick] (l0) edge[->] (b1);
+
+        % appel récursif
+        \draw<6>[red,ultra thick, ->] (l1) edge (b1);    
+      \end{tikzpicture}
+    \end{center}
+    
+  \begin{columns}
+    \begin{column}{5cm}
+\[
+     \begin{pmatrix}
+       1 &  \\
+       \ell_{0} & L_{1} 
+     \end{pmatrix}
+     \begin{pmatrix}
+       x_{0} \\
+       X_{1}  
+     \end{pmatrix}
+     =
+     \begin{pmatrix}
+     b_{0} \\
+     B_{1} \\
+   \end{pmatrix}
+ \]
+
+   \vspace{-0.5cm}
+   
+   \begin{align*}     
+     x_{0} &= b_{0} \\
+     L_{1} X_1 &= B_{1} - \ell_{0} x_{0}
+   \end{align*}
+      
+    \end{column}
+    \begin{column}{5.5cm}
+
+ \begin{block}{\emph{Iterative} algorithm}
+   \begin{enumerate}
+   \item<4-> $B_{1} \gets B_{1} - \ell_{0} x_{0}$
+     \begin{itemize}
+     \item level-2 \mintinline{C}{xGER}
+     \end{itemize}
+     
+   \item<6-> Solve $L_{1} X_1 = B_{1} - \ell_{0} x_{0}$
+     \begin{itemize}
+     \item level-3 \mintinline{C}{xTRSM}
+     \end{itemize}
+   \end{enumerate}
+ \end{block}
+
+\end{column}
+\end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=trsm,fragile]
+  \frametitle{Level-3 Triangular Solve (\mintinline{C}{xTRSM})}
+  \framesubtitle{Complexity Analysis}
+  
+  \begin{itemize}
+  \item \mintinline{C}{xGER} runs in time $T_{ger} \leq \alpha m n$.
+  \item \mintinline{C}{xTRSM(m, n) == xGER(m, n) + ... + xGER(1, n)}
+  \item $T_{trsm} \leq \frac{\alpha}{2} m^2 n$
+  \end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\begin{frame}[label=trsm]
+  \frametitle{\textbf{Blocked} Level-3 Triangular Solve  (\mintinline{C}{xTRSM})}
+
+  \begin{center}
+      \begin{tikzpicture}[scale=0.8]
+        \useasboundingbox (-5.3, 0.4) rectangle (5, 4.8);
+
+        \begin{scope}[xshift=-5.3cm]
+          \tikzmat{0,0}{5,5}
+          \filldraw[fill=cyan] (0, 0) -- (0, 4.8) -- (4.8, 0) -- cycle;
+          \foreach \i in {0, 0.2, ..., 4.8} {
+            \path (\i,4.8-\i) rectangle node {\scalebox{0.55}{1}} +(0.2,0.2);
+          }
+          
           \node<1> at (1.25, 1.25) {$L$};
 
           \node<2-> at (1.25, 1.25) (l10) {$L_{10}$};
@@ -2356,7 +3349,7 @@ void prefix_sum(double * A, int n)
     \end{column}
     \begin{column}{5.5cm}
 
- \begin{block}{Recursive algorithm}
+ \begin{block}{\emph{Blocked} algorithm}
    \begin{enumerate}
    \item<3-> Solve $L_{00} X_{0} = B_{0}$
      \begin{itemize}
@@ -2378,6 +3371,269 @@ void prefix_sum(double * A, int n)
 \end{column}
 \end{columns}
 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=trsm,fragile]
+  \frametitle{\textbf{Blocked} Level-3 Triangular Solve (\mintinline{C}{xTRSM})}
+  \framesubtitle{Complexity Analysis}
+  
+  \begin{itemize}
+  \item \mintinline{C}{xGER} runs in time $T_{ger} \leq \alpha m n$
+  \item \mintinline{C}{xGEMM} runs in time $T_{gemm} \leq \beta m n k$
+  \item (unblocked) \mintinline{C}{xTRSM(m, n)} runs in time $T \leq \alpha m^2 n / 2$
+  \item If $m \leq m_0$, use unblocked algorithm \hfill (too small)
+    \begin{itemize}
+    \item $T_{m} = \frac{\alpha}{2} {m}^2 n$
+    \end{itemize}
+
+  \item Otherwise, use recursive blocked algorithm
+    \begin{itemize}
+    \item $T_{m} = 2 T_{m/2} + \beta\left(\frac{m}{2}\right)^2 n + \bigO{1}$
+    \end{itemize}
+
+  \end{itemize}
+
+  \begin{block}{Asymptotic performance}
+    \begin{itemize}
+    \item Assume $T_m = \gamma m^2 n$ \hfill (as in unblocked case)
+    \item $\gamma m^2 n = 2\gamma\left(\frac{m}{2}\right)^2 n + \beta\left(\frac{m}{2}\right)^2 n + \bigO{1}$
+    \item $\gamma = \beta / 2$ \hfill (for large $m$)
+    \end{itemize}
+  \end{block}
+  
+\end{frame}
+
+
+\subsubsection{LAPACK and LU}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=lapack]
+  \frametitle{Solving Actual Problems}
+
+  \begin{center}
+    \begin{tikzpicture}[yscale=0.5,xscale=0.66,every node/.style={anchor=south east,font=\bfseries}]
+      \node[red] at (0, 5) {L};
+      \node[red] at (0, 4) {L};
+      \node[blue] at (0, 3) {L};
+      \node[blue] at (0, 1) {L};
+      \node[blue] at (0, 0) {L};
+      \node[blue] at (0, 2) {L};
+      
+      \node[red] at (1, 5) {A};
+      \node[red] at (1, 4) {-A};
+      \node[blue]  at (1, 3) {A};
+      \node[blue]  at (1, 2) {-A};
+      \node[blue] at (1, 1) {A};
+      \node[blue] at (1, 0) {-A};
+
+      \node[blue]  at (2, 5) {P};
+      \node[blue]  at (2, 4) {P};
+      \node[red] at (2, 3) {P};
+      \node[red] at (2, 2) {P};
+      \node[blue] at (2, 1) {-P};
+      \node[blue] at (2, 0) {-P};
+
+      \node[blue]  at (3, 5) {A};
+      \node[blue]  at (3, 4) {-A};
+      \node[red] at (3, 3) {A};
+      \node[red] at (3, 2) {-A};
+      \node[blue] at (3, 1) {A};
+      \node[blue] at (3, 0) {-A};
+
+      \node[blue] at (4, 5) {C};
+      \node[blue] at (4, 4) {C};
+      \node[blue] at (4, 3) {-C};
+      \node[blue]  at (4, 2) {-C};
+      \node[red]  at (4, 1) {C};
+      \node[red] at (4, 0) {C};
+
+      \node[blue] at (5, 5) {K};
+      \node[blue] at (5, 4) {-K};
+      \node[blue] at (5, 3) {-K};
+      \node[blue]  at (5, 2) {K};
+      \node[red]  at (5, 1) {K};
+      \node[red] at (5, 0) {-K};
+
+    \end{tikzpicture}
+  \end{center}
+  
+  \begin{exampleblock}{\textbf{LAPACK}: Linear Algebra PACKage}
+    \begin{itemize}
+    \item Development started in the 1990's (still active)
+    \item Built upon the BLAS (Fortran: \alert{column-major})
+    \item Solve linear systems, least-squares, eigenvalues, etc.
+    \item \textbf{Main algorithmic idea}: \red{use level-3 BLAS}
+      \begin{itemize}
+      \item High \red{arithmetic intensity}
+      \item Significant performance gain over naive code
+      \end{itemize}
+    \end{itemize}
+  \end{exampleblock}  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{frame}[label=lu,fragile=singleslide]
+  \frametitle{LU Factorization}
+
+  \begin{center}
+    \begin{tikzpicture}[scale=1.25]
+      \useasboundingbox (-0.5,-0.3) rectangle (8.25,2.5);
+      
+      % L en haut
+      \begin{scope}[xshift=3cm]
+        \tikzmat{0,0}{2.2,2.2}
+        \foreach \i in {0, 0.1, ..., 2.1}
+        \path (\i,2-\i) rectangle node {\scalebox{0.45}{1}} +(0.2,0.2);
+        \filldraw[fill=cyan] (0,0) -- ++(0, 2.1)  -- ++(2.1,-2.1) -- cycle;
+        \node at (0.5, 0.5) {L};
+      \end{scope}
+      
+      % U en haut
+      \begin{scope}[xshift=5.5cm]
+        \tikzmat{0,0}{2.2,2.2}
+        \draw[fill=LimeGreen] (0,2.2) -- ++(2.2,0) -- ++(0,-2.2) -- cycle;
+        \node at (1.5, 1.5) {U};
+      \end{scope}
+      
+      \node at (2.6,1) {$=$};
+    
+      % matrice grise en haut
+      \begin{scope}[xshift=0cm]
+        \tikzmat{0,0}{2.2,2.2}
+        \filldraw[fill=Gray!70] (0,0) rectangle node{A} +(2.2,2.2);
+      \end{scope}
+    \end{tikzpicture}
+  \end{center}
+
+  \bigskip
+  
+  \begin{itemize}
+  \item   Main tool to solve $Ax = b$ when $A$ is invertible
+  \item \textbf{DISCLAIMER}:
+    \begin{itemize}
+    \item This presentation ignores \alert{pivoting}
+    \item \alert{Pivoting} is required for numerical stability
+    \item In parallel, \alert{pivoting} is a pain in the \verb|[---REDACTED---]|
+    \end{itemize}
+  \end{itemize}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=lu]
+  \frametitle{LU Factorization}
+
+  \begin{columns}
+    \begin{column}{5cm}
+      \begin{tikzpicture}
+        \draw[red,dotted,use as bounding box] (0, 0) rectangle (5, 5);
+    \tikzmat{0,0}{5,5}
+    \filldraw[fill=Gray!70] (0, 0) rectangle (5,5);
+
+    \node<1> at (2.5, 2.5) {$A$};
+
+    \node<2> at (1.25, 3.75) {$A_{00}$};
+    \node<2-4> at (1.25, 1.25) {$A_{10}$};
+
+    \node<2-6> at (3.75, 1.25) (a11) {$A_{11}$};
+    \node<8> at (3.75, 1.25) (b) {$A_{11} - L_{10} U_{01}$};
+
+    \node<2-4> at (3.75, 3.75) {$A_{01}$};
+
+    \draw<3>[pattern=north west lines] (0,2.5) rectangle +(2.5, 2.5);
+    \draw<5>[pattern=north west lines] (2.5, 2.5) rectangle +(2.5, 2.5);
+    \draw<5>[pattern=north west lines] (0, 0) rectangle +(2.5, 2.5);
+
+    \draw<7,9>[pattern=north west lines] (2.5 , 0) rectangle +(2.5, 2.5);
+    
+    \filldraw<4->[fill=cyan] (0,5) -- (2.5, 2.5) -- (0, 2.5)  -- cycle;
+    \filldraw<6->[fill=cyan] (0,0) rectangle +(2.5, 2.5);
+
+    \filldraw<4-5>[fill=LimeGreen] (0,5) -- (2.5, 2.5) -- (2.5, 5) -- cycle;
+    \filldraw<6->[fill=LimeGreen] (0,5) -- ++(5, 0) -- (5, 2.5) -- (2.5, 2.5) -- cycle;
+    
+    \node<6-> at (1.25, 1.25) (l10) {$L_{10}$};
+    \node<4-> at (0.75, 3.25) (l00) {$L_{00}$};
+    \node<4-> at (1.75, 4.25) (u00) {$U_{00}$};
+    \node<6-> at (3.75, 3.75) (u01) {$U_{01}$};
+
+    \draw<5>[red,ultra thick, ->] (l00) edge (3.4, 3.75);    
+    \draw<5>[red,ultra thick, ->] (u00) edge (1.25, 1.25);    
+
+    \draw<7>[red,ultra thick, ->] (u01) edge (a11);    
+    \draw<7>[red,ultra thick, ->] (l10) edge (a11);    
+
+    
+    \filldraw<10>[fill=cyan] (2.5, 2.5) -- (5, 0) -- (2.5, 0) -- cycle;
+    \filldraw<10>[fill=LimeGreen] (2.5, 2.5) -- (5, 2.5) -- (5, 0) -- cycle;
+    \node<10> at (3.25, 0.75) {$L_{11}$};
+    \node<10> at (4.25, 1.75) {$U_{11}$};
+
+
+      \draw<2->[red, ultra thick, dashed] (-0.2, 2.5) -- (5.2, 2.5);
+      \draw<2->[red, ultra thick, dashed] (2.5, -0.2) -- (2.5, 5.2);
+  \end{tikzpicture}
+\end{column}
+\begin{column}{5.5cm}
+
+ \begin{block}{Recursive algorithm}
+   \begin{enumerate}
+   \item<3-> Factorize $A_{00}$
+   \item<5-> Solve $L_{10} U_{00} = A_{10}$
+     \begin{itemize}
+     \item level-3 \texttt{TRSM}
+     \end{itemize}
+
+   \item<5-> Solve $L_{00} U_{01} = A_{01}$
+     \begin{itemize}
+     \item level-3 \texttt{TRSM}
+     \end{itemize}
+     
+   \item<7-> $A_{11} \gets A_{11} - L_{10} U_{01}$
+     \begin{itemize}
+     \item level-3 \texttt{GEMM}
+     \end{itemize}
+     
+   \item<9-> Factorize $A_{11} - L_{10} U_{01}$     
+   \end{enumerate}
+ \end{block}
+
+\end{column}
+\end{columns}
+
+\medskip
+
+\begin{visibleenv}<2->
+\[
+  \begin{pmatrix}
+       A_{00} & A_{01} \\
+       A_{10} & A_{11} 
+     \end{pmatrix}
+     =
+     \begin{pmatrix}
+       L_{00} &  \\
+       L_{10} & L_{11} 
+     \end{pmatrix}
+     \begin{pmatrix}
+       U_{00} & U_{01} \\
+       & U_{11} 
+     \end{pmatrix}
+   \]
+
+%   \vspace{-0.5cm}
+   
+   \begin{align*}     
+     L_{00} U_{00} &= A_{00} & L_{00} U_{01} &= A_{01} \\
+     L_{10} U_{00} &= A_{10} & L_{11} U_{11} &= A_{11} - L_{10} U_{01}\\
+   \end{align*}
+ \end{visibleenv}
 \end{frame}
 
 
@@ -3390,28 +4646,28 @@ int MPI_Reduce_scatter_block(void* sendbuf, void* recvbuf,
 \begin{frame}[label=2d]
   \frametitle{Analysis}
 
-  Process grid of size $v \times h$
+  Process grid of size $p = P \times Q$
   
   \begin{center}
     \begin{tabular}{|c||c|c|}
       \hline
       & Sequential & Distributed \\
       \hline\hline
-      \texttt{GEMV}                 & $3 d n^2 / C$ & $3 d n^2 / (vhC)$ \\
+      \texttt{GEMV}                 & $3 d n^2 / C$ & $3 d n^2 / (pC)$ \\
       \hline
-      \texttt{MPI\_Allgather}       & 0             & $n / (hD)$ \\
+      \texttt{MPI\_Allgather}       & 0             & $n / (PD)$ \\
       \hline
-      \texttt{MPI\_reduce\_scatter} & 0             & $n / (vD)$ \\
+      \texttt{MPI\_reduce\_scatter} & 0             & $n / (QD)$ \\
       \hline
-      \texttt{MPI\_sendrecv}        & 0             & $n / (vhD)$ \\
+      \texttt{MPI\_sendrecv}        & 0             & $n / (pD)$ \\
       \hline
     \end{tabular}
   \end{center}
 
-  Assume $v = h = \sqrt{p}$ and \alert{ignore latencies}:
+  Assume $P = Q = \sqrt{p}$ and \alert{ignore latencies}:
   
   \[
-    \mathrm{Speedup} = \frac{d n^2}{C} / (\frac{d n^2}{pC} + \frac{n}{D\sqrt{p}})
+    \mathrm{Speedup} = \frac{d n^2}{C} / \left(\frac{d n^2}{pC} + \frac{n}{D\sqrt{p}}\right)
   \]
 
   \begin{alertblock}{Progress}
