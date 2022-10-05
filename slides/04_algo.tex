@@ -1,6 +1,6 @@
 \documentclass[xcolor={rgb,x11names,svgnames},rgb,x11names,svgnames]{beamer}
 
-%\includeonlyframes{scan,scan-algo,scan-tree}
+%\includeonlyframes{lu,sca-lu}
 
 \usepackage[T1]{fontenc}
 \usepackage{cellspace}
@@ -1482,8 +1482,8 @@ void exclusive_scan(double acc, int n, double * A)
   \begin{center}
     \begin{tikzpicture}[
         level distance=25mm, xscale=0.7, yscale=0.75,
-        emph/.style={edge from parent/.style={thick,draw}},
-        norm/.style={edge from parent/.style={black,thin,draw}}
+        emph/.style={edge from parent/.style={draw, <-, very thick}},
+        norm/.style={edge from parent/.style={draw, thin}}
       ]
 
       %%% 
@@ -1670,8 +1670,8 @@ void exclusive_scan(double acc, int n, double * A)
 
   \begin{center}
     \begin{tikzpicture}[level distance=25mm, xscale=0.7, yscale=0.75,
-      emph/.style={edge from parent/.style={black,thick,draw}},
-      norm/.style={edge from parent/.style={black,thin,draw}},
+      emph/.style={edge from parent/.style={draw, ->, very thick}},
+      norm/.style={edge from parent/.style={draw, thin}},
       ]
 
       \path[use as bounding box] (-8.5, 0) rectangle (5.5, -10);
@@ -1721,7 +1721,7 @@ void exclusive_scan(double acc, int n, double * A)
     ;
 
 
-    \node<2> {[0:14]}  % t==5
+    \node<2> {[0:14]}  % t==1
     child[emph] { node[red] {[0:7]}
       child[norm] { node[red]  {[0:3]}
         child {node[red]{[0:1]}
@@ -1753,7 +1753,7 @@ void exclusive_scan(double acc, int n, double * A)
     ;
 
 
-    \node<3> {[0:14]}  % t==6
+    \node<3> {[0:14]}  % t==2
     child { node {[0:6]}
       child[emph] { node[red] {[0:3]}
         child[norm] {node[red]{[0:1]}
@@ -1786,7 +1786,7 @@ void exclusive_scan(double acc, int n, double * A)
     ;
 
 
-    \node<4> {[0:14]}   % t == 7
+    \node<4> {[0:14]}   % t == 3
     child { node {[0:7]}
       child { node {[0:2]}
         child[emph] {node[red]{[0:1]}
@@ -1821,7 +1821,7 @@ void exclusive_scan(double acc, int n, double * A)
     ;
 
 
-    \node<5> {[0:14]}   % t == 8
+    \node<5> {[0:14]}   % t == 4
     child { node {[0:6]}
       child { node {[0:2]}
         child {node {[0]}
@@ -1838,7 +1838,7 @@ void exclusive_scan(double acc, int n, double * A)
     child[missing]
     child[missing]
     child { node at (0, -1) {[0:10]}
-      child {node {[0:9]}
+      child {node {[0:8]}
         child[emph] {node[red]{[8]} edge from parent node[sloped,above] {[0:7]} }
       }
       child[emph] {node[red]at (0, -1) {[10]} edge from parent node[sloped,above] {[0:9]} }
@@ -2220,6 +2220,38 @@ void exclusive_scan(double acc, int n, double * A)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{xGER}
+
+\begin{frame}[label=ger,fragile]
+  \frametitle{Rank-1 update (\mintinline{C}{xGER})}
+  \framesubtitle{$A \gets A + \alpha x y^t$}
+
+  \begin{center}
+    \begin{tikzpicture}[scale=0.75]
+      \begin{scope}
+        \tikzmat{0,0}{5, 7}
+        \filldraw[fill=red] (0, 0) rectangle node {$A$} +(5, 7);
+      \end{scope}
+      \node at (5.7, 3.5) {+=};
+      \begin{onlyenv}<1>
+      \begin{scope}[xshift=6.4cm]
+        \tikzmat{0,0}{0.5, 7}
+        \filldraw[fill=cyan] (0, 0) rectangle node[font=\small] {$x$} +(0.5, 7);
+      \end{scope}
+      \begin{scope}[xshift=7.2cm, yshift=6.5cm]
+        \tikzmat{0,0}{5,0.5}
+        \filldraw[fill=green] (0, 0) rectangle node[font=\small] {$y^t$} +(5, 0.5);
+      \end{scope}
+      \end{onlyenv}
+      \begin{onlyenv}<2->
+        \tikzmat{6.4,0}{11.4,7}
+        \shade[left color=green, right color=cyan, shading angle=45] (6.4, 0) rectangle +(5, 7);
+        \path<2> (6.4, 0) rectangle node[font=\small] {$xy^t$} +(5, 7);
+        \path<3> (6.4, 0) rectangle node[font=\small] {$x_iy_j$} +(5, 7);
+      \end{onlyenv}
+    \end{tikzpicture}
+  \end{center}
+\end{frame}
+
 
 \begin{frame}[label=ger,fragile]
   \frametitle{Double-Precision Rank-1 update (\mintinline{C}{DGER})}
@@ -3528,6 +3560,7 @@ int my_size(int n, int nb, int p, int rank)
 
 \begin{frame}[label=lu]
   \frametitle{LU Factorization}
+%  \framesubtitle{Right-looking Algorithm}
 
   \begin{columns}
     \begin{column}{5cm}
@@ -3539,33 +3572,27 @@ int my_size(int n, int nb, int p, int rank)
     \node<1> at (2.5, 2.5) {$A$};
 
     \node<2> at (1.25, 3.75) {$A_{00}$};
-    \node<2-4> at (1.25, 1.25) {$A_{10}$};
+    \node<2> at (1.25, 1.25) {$A_{10}$};
 
     \node<2-6> at (3.75, 1.25) (a11) {$A_{11}$};
     \node<8> at (3.75, 1.25) (b) {$A_{11} - L_{10} U_{01}$};
 
     \node<2-4> at (3.75, 3.75) {$A_{01}$};
 
-    \draw<3>[pattern=north west lines] (0,2.5) rectangle +(2.5, 2.5);
+    \draw<3>[pattern=north west lines] (0,0) rectangle +(2.5, 5);
     \draw<5>[pattern=north west lines] (2.5, 2.5) rectangle +(2.5, 2.5);
-    \draw<5>[pattern=north west lines] (0, 0) rectangle +(2.5, 2.5);
-
     \draw<7,9>[pattern=north west lines] (2.5 , 0) rectangle +(2.5, 2.5);
     
-    \filldraw<4->[fill=cyan] (0,5) -- (2.5, 2.5) -- (0, 2.5)  -- cycle;
-    \filldraw<6->[fill=cyan] (0,0) rectangle +(2.5, 2.5);
-
+    \filldraw<4->[fill=cyan] (0,5) -- ++(2.5, -2.5) -- (2.5, 0) -- (0, 0) -- cycle;
     \filldraw<4-5>[fill=LimeGreen] (0,5) -- (2.5, 2.5) -- (2.5, 5) -- cycle;
     \filldraw<6->[fill=LimeGreen] (0,5) -- ++(5, 0) -- (5, 2.5) -- (2.5, 2.5) -- cycle;
     
-    \node<6-> at (1.25, 1.25) (l10) {$L_{10}$};
+    \node<4-> at (1.25, 1.25) (l10) {$L_{10}$};
     \node<4-> at (0.75, 3.25) (l00) {$L_{00}$};
-    \node<4-> at (1.75, 4.25) (u00) {$U_{00}$};
+    \node<4-> at (1.75, 4.25) {$U_{00}$};
     \node<6-> at (3.75, 3.75) (u01) {$U_{01}$};
 
     \draw<5>[red,ultra thick, ->] (l00) edge (3.4, 3.75);    
-    \draw<5>[red,ultra thick, ->] (u00) edge (1.25, 1.25);    
-
     \draw<7>[red,ultra thick, ->] (u01) edge (a11);    
     \draw<7>[red,ultra thick, ->] (l10) edge (a11);    
 
@@ -3584,12 +3611,7 @@ int my_size(int n, int nb, int p, int rank)
 
  \begin{block}{Recursive algorithm}
    \begin{enumerate}
-   \item<3-> Factorize $A_{00}$
-   \item<5-> Solve $L_{10} U_{00} = A_{10}$
-     \begin{itemize}
-     \item level-3 \texttt{TRSM}
-     \end{itemize}
-
+   \item<3-> Factorize left half
    \item<5-> Solve $L_{00} U_{01} = A_{01}$
      \begin{itemize}
      \item level-3 \texttt{TRSM}
@@ -3599,8 +3621,8 @@ int my_size(int n, int nb, int p, int rank)
      \begin{itemize}
      \item level-3 \texttt{GEMM}
      \end{itemize}
+   \item<9-> Factorize $A_{11} - L_{10} U_{01}$
      
-   \item<9-> Factorize $A_{11} - L_{10} U_{01}$     
    \end{enumerate}
  \end{block}
 
@@ -3626,11 +3648,11 @@ int my_size(int n, int nb, int p, int rank)
      \end{pmatrix}
    \]
 
-%   \vspace{-0.5cm}
+   \vspace{-0.5cm}
    
    \begin{align*}     
-     L_{00} U_{00} &= A_{00} & L_{00} U_{01} &= A_{01} \\
-     L_{10} U_{00} &= A_{10} & L_{11} U_{11} &= A_{11} - L_{10} U_{01}\\
+     L_{00} U_{01} &= A_{01} \\
+     L_{11} U_{11} &= A_{11} - L_{10} U_{01}
    \end{align*}
  \end{visibleenv}
 \end{frame}
@@ -3638,7 +3660,7 @@ int my_size(int n, int nb, int p, int rank)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
+\begin{frame}[label=sca-lu]
   \frametitle{Distributed LU Factorization}
 
   \begin{columns}
