@@ -1,6 +1,9 @@
 \documentclass[xcolor={rgb,x11names,svgnames},rgb,x11names,svgnames]{beamer}
 
-%\includeonlyframes{lu,sca-lu}
+% début ---> prefix-sum exclu = 50 min
+% prefix-sum + dense LA = 2h
+
+% \includeonlyframes{lu,sca-lu}
 
 \usepackage[T1]{fontenc}
 \usepackage{cellspace}
@@ -1868,7 +1871,7 @@ void exclusive_scan(double acc, int n, double * A)
     }
     child[missing]
     child[missing]
-    child { node at (0, -1) {[0:11]}
+    child { node at (0, -1) {[0:10]}
       child {node {[0:8]}
         child {node {[0:7]} }
       }
