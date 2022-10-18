@@ -1,6 +1,8 @@
 \documentclass[xcolor={x11names,svgnames},x11names,svgnames]{beamer}
 \setbeamerfont{note page}{size=\tiny} % default = small 
 
+%\includeonlyframes{rcu}
+
 \newcommand{\heading}{\frametitle}
 
 \usecolortheme{rose}
@@ -10,7 +12,7 @@
 \usepackage{amsmath, amssymb, amsthm}
 \usepackage{epsfig}
 \usepackage[utf8]{inputenc}
-\usepackage[french]{babel}
+%\usepackage[french]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[normalem]{ulem}   
 \usepackage{framed}   
@@ -19,6 +21,9 @@
 \usepackage{psfrag}
 \usepackage{alltt}
 \usepackage{minted}
+\definecolor{codebg}{rgb}{0.95,0.95,0.95}
+\setminted{bgcolor=codebg}
+
 \usepackage{tikz}
 \usetikzlibrary{positioning}
 \usetikzlibrary{calc}
@@ -83,7 +88,7 @@
 \author[C.~Bouillaguet]{Charles Bouillaguet \newline
   {\small \texttt{charles.bouillaguet@lip6.fr}}}
 
-\title{OpenMP suite}
+\title{Advanced OpenMP}
 
 \begin{document}
 
@@ -93,165 +98,11 @@
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]
-  \frametitle{Retour sur un exemple}
-
-%  \small
-  \begin{columns}[t]
-  \column{5.5cm}
-\begin{block}{Programme}
-\begin{minted}{C}
-#include <stdio.h>
-  
-int main()
-{
-  int c = 0;
-  #pragma omp parallel for
-  for (int i = 0; i < 100000; i++) { 
-       c++; 
-  }
-  printf("c=%d\n", c);
-}
-\end{minted}
-\end{block}
-    
-    
-    \column{4.5cm}
-\begin{block}{Exécution}    
-\footnotesize
-\begin{verbatim}
-$ ./a.out
-c=15074
-\end{verbatim}
-\end{block}    
-  \end{columns}
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile]
-  \frametitle{Entrelacement des incrémentations}
-  \framesubtitle{Architectures \emph{Load-Store}}
-
-  \bigskip
-  
-  \begin{center}
-    \begin{tikzpicture}
-      \path[red,dotted,use as bounding box] (-2,-1.5) rectangle (8,3);
-
-      % "RAM"
-      \begin{scope}[yshift=1.75cm, every node/.style={anchor=base}]
-        \path (1, 0.4) -- node[above=2mm] {RAM} (5, 0.4);
-        \draw[thick] (1, -0.2) rectangle (5, 0.4);
-        \node<1-10> at (3, 0) {$c = 42$};
-        \node<11-12> at (3, 0) {$c = 43$};
-        \node<13>[text=red] at (3, 0) {$c = 43$};
-      \end{scope}
-
-      \node (CPU1) at (0, 0) {\includegraphics[width=2cm]{cpu_clipart.png}};
-      \node<3-6>[draw,anchor=east,font=\scriptsize] at (-1.5, 0) {\texttt{\%rax = 42}};
-      \node<7->[draw,anchor=east,font=\scriptsize] at (-1.5, 0) {\texttt{\%rax = 43}};
-      
-      \node (CPU2) at (6, 0) {\includegraphics[width=2cm]{cpu_clipart.png}};
-      \node<5-8>[draw,anchor=west,font=\scriptsize] at (7.5, 0) {\texttt{\%rax = 42}};
-      \node<9->[draw,anchor=west,font=\scriptsize] at (7.5, 0) {\texttt{\%rax = 43}};
-
-
-      % flèches RAM <--> CPU
-      \draw<2>[thick,<-] (CPU1) |- (0.9, 1.85);
-      \draw<10>[thick,->] (CPU1) |- (0.9, 1.85);
-
-      \draw<4>[thick,<-] (CPU2) |- (5.1, 1.85);
-      \draw<12>[thick,->] (CPU2) |- (5.1, 1.85);
-
-
-      \node<6> at (0, -1.3) {\texttt{add \%rax, 1}};
-      \node<8> at (6, -1.3) {\texttt{add \%rax, 1}};
-\end{tikzpicture}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[fragile]
-
-  \begin{columns}[t]
-  \column{5.5cm}
-  \centering\includegraphics[width=1cm]{triste.png}
-
-  \begin{block}{Mauvais}
-\begin{minted}{C}
-#include <stdio.h>
-  
-int main()
-{
-  int c = 0;
-  #pragma omp parallel for
-  for (int i = 0; i < 100000; i++) { 
-
-    c++; 
-  }
-  printf("c=%d\n", c);
-}
-\end{minted}
-\end{block}
-    
-    
-    \column{5.5cm}
-    \centering\includegraphics[width=1cm]{content.png}
-
-  \begin{block}{Bon}
-\begin{minted}{C}
-#include <stdio.h>
-  
-int main()
-{
-  int c = 0;
-  #pragma omp parallel for
-  for (int i = 0; i < 100000; i++) { 
-    #pragma omp atomic update
-    c++; 
-  }
-  printf("c=%d\n", c);
-}
-\end{minted}
-\end{block}
-  \end{columns}
-
-  \begin{alertblock}{Architectures \emph{load-store} :}
-    \texttt{x++}, \texttt{x += 10}, etc. ne \textbf{sont pas atomiques}.
-  \end{alertblock}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=golden_rule]
-%  \frametitle{}
-
-  \begin{center}
-    \Huge \bf \alert{Règle d'or de la \\ programmation multithreads}
-  \end{center}
-
-  \bigskip
-  
-  {\Large \textbf{Tous} les accès potentiellement conflictuels${}^*$ aux variables partagées doivent être protégés (\texttt{atomic}, \texttt{critical}, ...).}
-
-  \bigskip
-
-  $*$ au moins l'un d'entre eux est une écriture.  
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \section{Atomic vs Reduce}
 
-
 \begin{frame}[fragile]
-  \frametitle{\texttt{\#pragma omp atomic} n'est pas la panacée}
-  \framesubtitle{Exemple : somme des éléments d'un tableau}
+  \frametitle{\texttt{atomic} is not a Panacea}
+  \framesubtitle{Example: sum of an array}
 
 \begin{minted}{C}
 int sum = 0;
@@ -298,16 +149,17 @@ for (int i = 0; i < n; i++)
 
 \vspace{1cm}
   
-\normalsize (2 $\times$ Xeon Gold 6152 (\og Skylake\fg{}) à 22 coeurs)
+\normalsize (2 $\times$ Xeon Gold 6152 (``Skylake'') with 22 cores)
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[fragile]
-  \frametitle{Histogramme (par ex. \texttt{numpy.histogram})}
+\begin{frame}[fragile=singleslide]
+  \frametitle{Histogram (E.g. \texttt{numpy.histogram})}
 
 
   \begin{block}{Plan A}
+    \vspace*{-1ex}
 \begin{minted}{C}
 void histogram(u32 A[], u64 n, u64 buckets, u64 H[])
 {
@@ -322,6 +174,7 @@ void histogram(u32 A[], u64 n, u64 buckets, u64 H[])
   \end{block}
 
     \begin{block}{Plan B}
+    \vspace*{-1ex}
 \begin{minted}{C}
 void histogram(u32 A[], u64 n, u64 buckets, u64 H[])
 {
@@ -336,10 +189,10 @@ void histogram(u32 A[], u64 n, u64 buckets, u64 H[])
 
 \end{frame}
 
-%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=histogram_curve]
-  \frametitle{Exemple : histogramme}
+  \frametitle{Histogram}
 
   \begin{tikzpicture}
     \node at (0, 0) {\includegraphics[width=\textwidth]{histogram.pdf}};
@@ -349,6 +202,35 @@ void histogram(u32 A[], u64 n, u64 buckets, u64 H[])
   \end{tikzpicture}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{The Sad Truth}
+
+    \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \includegraphics[width=\textwidth]{triste.png}
+    \end{column}
+    \begin{column}{.9\textwidth}
+
+      
+  \begin{itemize}
+  \item Barrier $\rightarrow$ waiting
+  \item Critical $\rightarrow$ serialization
+  \item Atomic~  $\rightarrow$ slower than normal memory accesses
+  \end{itemize}
+
+\end{column}
+\end{columns}
+
+\bigskip
+  
+  Synchronization $\rightarrow$ limits scalability
+
+  \bigskip
+
+  $\Longrightarrow$ important role of data locality
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -361,14 +243,17 @@ void histogram(u32 A[], u64 n, u64 buckets, u64 H[])
   \scalebox{1.1}{You \textbf{must} follow the rule}
 
   \pause
-  \bigskip
+  \vspace{1cm}
   
   \scalebox{1.1}{Or else...}
 
   \pause
-  \bigskip
+  \vspace{1cm}
   
   \scalebox{1.1}You will be living \\
+
+  \bigskip
+
   In a \textbf{world   of \alert{PAIN}}
 \end{center}
 \end{frame}
@@ -386,49 +271,20 @@ void histogram(u32 A[], u64 n, u64 buckets, u64 H[])
   \url{https://xkcd.com/292/}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{La triste vérité...}
-
-    \begin{columns}[c]
-    \begin{column}{.1\textwidth}
-      \includegraphics[width=\textwidth]{triste.png}
-    \end{column}
-    \begin{column}{.9\textwidth}
-
-      
-  \begin{itemize}
-  \item Barrière $\rightarrow$ attente
-  \item Critical $\rightarrow$ séquentialisation
-  \item Atomic~  $\rightarrow$ plus lent qu'un accès normal
-  \end{itemize}
-
-\end{column}
-\end{columns}
-
-\bigskip
-  
-  Synchronisation $\rightarrow$ limite le passage à l'échelle.
-
-  \bigskip
-
-  $\Longrightarrow$ rôle important de la localité des données.
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=guru_switch]
-  \begin{exampleblock}{Tout le monde en passe inévitablement par là}
+  \begin{exampleblock}{Everyone inevitably goes through this}
     \begin{itemize}
-    \item Bon, mais alors si on évite \texttt{i++}, ça va aller, non ?
-    \item J'ai lu dans la doc de mon CPU que les lectures/écritures alignées étaient atomiques ; si on se tient à ça, ça va aller ?
+    \item Okay, but then if I avoid \mintinline{C}{i++}, it's okay, right?
+    \item I read in my CPU doc that aligned reads/writes are atomic; if we stick to that, we'll be fine, right?
     \end{itemize}
   \end{exampleblock}
 
   \pause\bigskip
-  \begin{alertblock}{Crise d'adolescence}
-    Laissons tomber la règle d'or.
+  \begin{alertblock}{Teenage crisis}
+    Let's drop the golden rule
   \end{alertblock}
 
   \pause\bigskip
@@ -446,7 +302,8 @@ void histogram(u32 A[], u64 n, u64 buckets, u64 H[])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile, label=peterson_code]
-  \begin{block}{Le \emph{Peterson Lock} (1981)}
+  \begin{block}{\emph{Peterson Lock} (1981)}
+    \vspace*{-2ex}
 \begin{minted}{C}
 bool flag[2];
 int turn;
@@ -454,24 +311,24 @@ int turn;
 void lock()
 {
     int i = omp_get_thread_num();
-    flag[i] = true;                      // I'm interested
-    turn   = 1 - i;                      // you go first
+    flag[i] = 1;                         // I'm interested
+    turn = 1 - i;                        // you go first
     while (turn != i && flag[1-i]) {};   // wait 'til he's not interested
 }                                        //    or its my turn
 
 void unlock() 
 {
     int i = omp_get_thread_num();
-    flag[i] = false;                     // I'm not interested
+    flag[i] = 0;                         // I'm not interested
 }
 \end{minted}
 \end{block}
 
 \begin{alertblock}{CLAIMS}
   \begin{itemize}
-  \item Exclusion mutuelle
-  \item Pas de \emph{deadlock}
-  \item Starvation-free
+  \item Mutual exclusion
+  \item \emph{Deadlock}-free
+  \item \emph{Starvation}-free
   \end{itemize}
 \end{alertblock}
 \end{frame}
@@ -486,18 +343,18 @@ void unlock()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[label=peterson_report1, fragile]
+\begin{frame}[label=peterson_report1, fragile=singleslide]
 
-  \begin{block}{Guru problem \#1: \bfseries Trahison du compilateur}
+  \begin{block}{Guru problem \#1: \textbf{Compiler treachery}}
     \begin{itemize}
-      \item On avait :
+      \item We had:
     \begin{minted}{C}
     turn = 1 - i;                      // you go first
     while (turn != i && flag[1-i]) {}; // wait
 \end{minted}
 
-\item L'optimiseur \og sait\fg{} que \texttt{turn != i}
-\item Donc ceci devient :
+\item The optimizer ``knows'' that \mintinline{C}{turn != i}
+\item This then becomes:
   \begin{minted}{C}
 void lock()
 {
@@ -506,8 +363,8 @@ void lock()
     while (flag[1-i]) {};                // wait
 }
 \end{minted}
-\item Les deux threads appellent \texttt{lock()} en même temps...
-\item ... \texttt{flag[0] == flag[1] == true} ...
+\item Both threads call \mintinline{C}{lock()} at the same time...
+\item ... \mintinline{C}{flag[0] == flag[1] == true} ...
 \item Deadlock.
 \end{itemize}
 \end{block}
@@ -515,13 +372,13 @@ void lock()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[label=peterson_report2, fragile]
+\begin{frame}[label=peterson_report2, fragile=singleslide]
 
-  \begin{block}{Guru problem \#2: \bfseries ???}
+  \begin{block}{Guru problem \#2: \textbf{???}}
     \begin{itemize}
-    \item Défaut d'exclusion mutuelle
-    \item Les deux threads pénètrent simultanément dans la section critique
-    \item Comment est-ce possible ?
+    \item Mutual exclusion failure
+    \item Both threads present in the critical section simultaneously
+    \item How is this possible?
     \end{itemize}
   \end{block}
 \end{frame}
@@ -530,28 +387,28 @@ void lock()
 
 
 \begin{frame}[label=order]
-  \frametitle{Relations d'ordre sur les accès à la mémoire}
+  \frametitle{Order Relations Between Concurrent Memory Accesses}
   
   \setlength{\leftmargini}{-2mm}
   \begin{itemize}
-    \item Accès mémoire :  
+    \item Memory Accesses
       \begin{align*}
-        W_i(x)a &: \text{$T_i$ écrit la valeur $a$ dans la variable $x$} \\
-        R_i(x)b &: \text{$T_i$ lit la variable $x$ et la valeur $b$}
+        W_i(x)a &: \text{$T_i$ writes value $a$ in variable $x$} \\
+        R_i(x)b &: \text{$T_i$ reads variable $x$ and gets value $b$}
       \end{align*}
 
-    \item \og \emph{Program Order}\fg{} :
+    \item \emph{Program Order}:
       \begin{align*}
-        x \po y &: \text{le code demande qu'on fasse $x$ d'abord et $y$ après}
+        x \po y &: \text{code states that $x$ is done first and $y$ after}
       \end{align*}
 
-    \item \og \emph{Extended Communication Order}\fg{} :
+    \item \emph{Extended Communication Order}:
       \[
       \begin{array}{rcll}
-        W(x)a &\rf &R(x)a &: \text{la lecture renvoie la valeur écrite}\\
-        W(x)a &\mo& W(x)b &: \text{l'écriture de $a$ a lieu avant celle de $b$}\\
-        R(x)a &\rb& W(x)b &: \text{la lecture a lieu avant l'écriture}\\
-              &   &       & \quad\text{par définition, } \rb = (\rf)^{-1} ; \mo
+        W(x)a &\rf &R(x)a &: \text{the read gets the written value}\\
+        W(x)a &\mo& W(x)b &: \text{$a$ is written before $b$}\\
+        R(x)a &\rb& W(x)b &: \text{The read takes place before $b$ is written in $x$}\\
+              &   &       & \quad\text{by definition, } \rb = (\rf)^{-1} ; \mo
       \end{array}
     \]
   \end{itemize}
@@ -576,25 +433,21 @@ void lock()
 \end{tikzpicture}
 \end{center}
 \end{onlyenv}
-
-% \begin{theorem}<3>
-%   Sequential Consistency $\Longleftrightarrow$ pas de cycles avec $\po \cup \rf \cup \co \cup \fr$.
-% \end{theorem}
 \end{overlayarea}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=order2]
-  \frametitle{Relations d'ordre entre accès à la mémoire}
+  \frametitle{Order Relations Between Concurrent Memory Accesses}
  
    { \small
       \[
       \begin{array}{rcll}
-        W(x)a &\rf &R(x)a &: \text{la lecture renvoie la valeur écrite}\\
-        W(x)a &\mo& W(x)b &: \text{l'écriture de $a$ a lieu avant celle de $b$}\\
-        R(x)a &\rb& W(x)b &: \text{la lecture a lieu avant l'écriture} \\
-              &   &       & \quad\text{par définition, } \rb = (\rf)^{-1} ; \mo
+        W(x)a &\rf &R(x)a &: \text{the read gets the written value}\\
+        W(x)a &\mo& W(x)b &: \text{$a$ is written before $b$}\\
+        R(x)a &\rb& W(x)b &: \text{The read takes place before $b$ is written in $x$}\\
+              &   &       & \quad\text{by definition, } \rb = (\rf)^{-1} ; \mo
       \end{array}
     \]
 }
@@ -602,9 +455,9 @@ void lock()
 
     \begin{block}{Intuition}
     \begin{itemize}
-    \item En principe, $\rf, \mo, \rb$ ne peuvent pas \og contredire\fg{} $\po$
-    \item On ne lit pas de valeur \og périmée\fg{} ($\rb$ à l'envers)
-    \item<2-> Pas de lecture \og depuis le futur\fg{} ($\rf$ à l'envers)
+    \item In principle, $\rf, \mo, \rb$ cannot ``contradict'' $\po$
+    \item Cannot read ``outdated'' values ($\rb$ backwards)
+    \item<2-> Cannot read ``from the future'' ($\rf$ backwards)
     \end{itemize}
   \end{block}
 
@@ -649,24 +502,25 @@ void lock()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=order2]
-  \frametitle{Relations d'ordre entre accès à la mémoire} 
+  \frametitle{Order Relations Between Concurrent Memory Accesses}
+
    { \small
       \[
       \begin{array}{rcll}
-        W(x)a &\rf &R(x)a &: \text{la lecture renvoie la valeur écrite}\\
-        W(x)a &\mo& W(x)b &: \text{l'écriture de $a$ a lieu avant celle de $b$}\\
-        R(x)a &\rb& W(x)b &: \text{la lecture a lieu avant l'écriture} \\
-              &   &       & \quad\text{par définition, } \rb = (\rf)^{-1} ; \mo
+        W(x)a &\rf &R(x)a &: \text{the read gets the written value}\\
+        W(x)a &\mo& W(x)b &: \text{$a$ is written before $b$}\\
+        R(x)a &\rb& W(x)b &: \text{The read takes place before $b$ is written in $x$}\\
+              &   &       & \quad\text{by definition, } \rb = (\rf)^{-1} ; \mo
       \end{array}
     \]
 }
     \medskip
 
-    En séquentiel : $\rf \subseteq \po$, $\mo \subseteq \po$ et $\rb \subseteq \po$
+    Sequentially : $\rf \subseteq \po\quad$, $\quad\mo \subseteq \po\quad$ and $\quad\rb \subseteq \po$
 
     \medskip
     
-    \begin{alertblock}{C'est faux en parallèle}
+    \begin{alertblock}{This is not true in parallel}
 \begin{center}
 \begin{tikzpicture}[>=latex,scale=0.9]
 \foreach \i in {0,1}
@@ -688,34 +542,33 @@ void lock()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{La Sequential Consistency}
+\section{Sequential Consistency}
 
 \begin{frame}[label=seq_cst]
-  \frametitle{La \emph{Sequential Consistency}}
+  \frametitle{Sequential Consistency}
 
   \begin{exampleblock}{Intuition}
-    Tout se passe comme si les accès mémoires étaient exécutées
-    \emph{séquentiellement} (dans un ordre qu'on ne connaît pas forcément).
+    Everything happens as if memory accesses were executed \emph{sequentially} (in some order that we do not necessarily know).
   \end{exampleblock}
 
   \pause
   
   \begin{definition}[Sequential Consistency]
-    Un système parallèle est \alert{séquentiellement consistant} si, pour
-    chacune des exécutions possibles des threads auxquelles il peut aboutir, on
-    peut construire un \alert{historique} $H$ :
+    A parallel system us \alert{sequentially consistent} if, for each
+    of the possible executions of the threads to which it can lead, we 
+    can build a \alert{history} $H$:
     \begin{itemize}
-    \item séquence totalement ordonnée
-    \item contient une et une seule fois chaque accès mémoire
-    \item compatible avec le code des threads (respecte $\po$)
-    \item lecture de la dernière valeur écrite
+    \item Totally ordered sequence
+    \item Contains each memory access (only once)
+    \item Compatible with the code of each thread (respects $\po$)
+    \item Reading $x$ gives the last value written in $x$
     \end{itemize}
   \end{definition}
 
   \small
   
 \begin{theorem}
-   Sequential Consistency $\Longleftrightarrow$ pas de cycles avec $\po \cup \rf \cup \mo \cup \rb$.
+   Sequential Consistency $\Longleftrightarrow$ no cycles with $\po \cup \rf \cup \mo \cup \rb$.
  \end{theorem}
 \end{frame}
 
@@ -727,48 +580,46 @@ void lock()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=peterson_thm]
-  \frametitle{Correction du \emph{Peterson Lock}}
+  \frametitle{Correctness of the \emph{Peterson Lock}}
 
   \begin{exampleblock}{\emph{Sequential Consistency}}
-    Tout se passe comme si les accès mémoires étaient exécutées
-    \emph{séquentiellement} (dans un ordre qu'on ne connaît pas forcément).
+    Everything happens as if memory accesses were executed \emph{sequentially} (in some order that we do not necessarily know).
   \end{exampleblock}
 
   \begin{theorem}
-    Si la mémoire est séquentiellement consistante, alors le \emph{Peterson
-      lock} garantit l'exclusion mutuelle.
+    If the memory is sequentially consistent, then the \emph{Peterson lock} guarantees mutual exclusion.
   \end{theorem}
 
   \bigskip
 
-  Preuve : ...
+  Proof: ...
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[label=peterson_proof]
+\begin{frame}[label=peterson_proof,fragile=singleslide]
   \setlength{\leftmargini}{-3mm}
   \small
   \begin{itemize}
-  \item Absurde : $T_0$ et $T_1$ appellent \texttt{lock()}, entrent dans la section critique.
-  \item État initial : \mintinline{C}{flag[0] = false; flag[1] = false;}
-  \item D'après le code :
+  \item Suppose not: both $T_0$ and $T_1$ call \mintinline{C}{lock()}, enter the critical section
+  \item Initial state: \mintinline{C}{flag[0] = false; flag[1] = false;}
+  \item Code requires that:
   \footnotesize
   \begin{align*}
     T_0 &: W_0(\mintinline{C}{flag[0]}) \mintinline{C}{true} \po  W_0(\mintinline{C}{turn}) 1 \po  R_0(\mintinline{C}{turn})? \po R_0(\mintinline{C}{flag[1]})? \po CS_0 \\
     T_1 &: W_1(\mintinline{C}{flag[1]}) \mintinline{C}{true} \po  W_1(\mintinline{C}{turn}) 0 \po R_1(\mintinline{C}{turn})? \po R_1(\mintinline{C}{flag[0]})? \po CS_1
   \end{align*}
-\item \small Supposons que $T_0$ écrive \texttt{turn} en dernier :
+\item \small Suppose that $T_0$ writes \texttt{turn} last:
   \footnotesize
   \[
     W_1(\mintinline{C}{turn}) 0 \mo W_0(\mintinline{C}{turn}) 1.
   \]
-\item \small $T_0$ sort de la boucle, et $\texttt{turn == 1}$, donc forcément :
+\item \small $T_0$ exits the loop, and $\texttt{turn == 1}$, then necessarily:
   \footnotesize
   \[
     W_0(\mintinline{C}{turn}) 1 \po  R_0(\mintinline{C}{turn}) 1 \po R_0(\mintinline{C}{flag[1]}) \mintinline{C}{false}.
   \]
-\item \small Si on met tout ceci bout-à-bout :
+\item \small Put all this together:
   \begin{tikzpicture}[every node/.style={font=\footnotesize, inner sep=1pt}]
     \path[use as bounding box] (0, -0.75) rectangle (11, 1.5);
     \node[anchor=west] at (-0.15, 1) (Winit) { $W_{init}(\mintinline{C}{flag[1]}) \mintinline{C}{false}$ };
@@ -790,20 +641,20 @@ void lock()
     \draw[Purple,->] (Rflag.south) -- +(0, -0.5) -| node[below,near start] {$\scriptstyle \texttt{rb}$} (Wflag.south);
   \end{tikzpicture}
 
-\item \small Cycle $\Rightarrow$ non-SC $\Rightarrow$ Contradiction !
+\item \small Cycle $\Rightarrow$ non-SC $\Rightarrow$ Contradiction!
 \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[label=peterson_report1, fragile]
+\begin{frame}[label=peterson_report1]
 
-  \begin{block}{Guru problem \#2: \bfseries défaut de \emph{sequential consistency}}
+  \begin{block}{Guru problem \#2: \textbf{lack of \emph{sequential consistency}}}
 
     \begin{itemize}
-    \item Preuve : sequential consistency $\Rightarrow$ mutual exclusion
+    \item Proof: sequential consistency $\Rightarrow$ mutual exclusion
     \item Observation : \sout{mutual exclusion}
-    \item Conséquence : 
+    \item \textit{Ergo}: 
     \end{itemize}
     
     \begin{columns}[c]
@@ -812,9 +663,9 @@ void lock()
     \end{column}
     \begin{column}{.9\textwidth}
       \begin{itemize}
-      \item Mon laptop n'est pas séquentiellement consistent...
+      \item My laptop is not sequentially consistent...
         \pause
-      \item Le tien ne l'est pas non plus !
+      \item Yours is not either!
       \end{itemize}
     \end{column}
   \end{columns}
@@ -822,13 +673,12 @@ void lock()
 \end{block}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}[fragile, label=cpu_not_cs]
-  \frametitle{Les CPU ne sont pas séquentiellement consistents !}
-  \framesubtitle{La \emph{Sequential Consistency} est coûteuse}
+  \frametitle{CPUs are not sequentially consistent!}
+  \framesubtitle{\emph{Sequential Consistency} is \alert{costly}}
   \begin{center}
     \begin{tikzpicture}
       \path[red,dotted,use as bounding box] (-2,-5) rectangle (8,2);
@@ -849,7 +699,7 @@ void lock()
       \node<1-2>[draw,anchor=west] at (7.5, 0) {$z = 0$};
       \node<3->[draw,anchor=west] at (7.5, 0) {$z = ?$};
 
-      \draw[very thick] (CPU1) edge[<->] node[above] {temps $\geq \tau$} (CPU2);
+      \draw[very thick] (CPU1) edge[<->] node[above] {time $\geq \tau$} (CPU2);
       \draw[thick,<->] (CPU1) |- (0.9, 1.85);
       \draw[thick,<->] (CPU2) |- (5.1, 1.85);
 
@@ -888,11 +738,11 @@ void lock()
   % preuve du délai.
   \begin{onlyenv}<5>
     \begin{scope}[xshift=3cm,yshift=-2.5cm]
-      \node at (0, 0) {$r$ : temps min. pour faire une lecture};
-      \node at (0, -0.5) {$w$ : temps min. pour faire une écriture};
+      \node at (0, 0) {$r$ : min. time to do a read};
+      \node at (0, -0.5) {$w$ : min. time to do a write};
 
       \node[text=red] at (0, -1.5) {\emph{Sequential Consistency} $\Longrightarrow$ $r + w \geq \tau$};
-      \node[font=\footnotesize] at (0, -2) {L'un doit bien lire l'écriture de l'autre...};
+      \node[font=\footnotesize] at (0, -2) {One must read a write from the other...};
     \end{scope}
     \draw[very thick, red, <->] (1.15, -0.5)  -- node[below] {$w$} (3, -0.5);
     \draw[very thick, red, <->] (4.85, -0.5) -- node[below] {$r$} (4, -0.5);
@@ -904,7 +754,7 @@ void lock()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=tso]
-  \frametitle{Le \emph{Store Buffering}}
+  \frametitle{\emph{Store Buffering}}
   
   \centering
   \includegraphics[width=\textwidth]{tso}
@@ -918,19 +768,19 @@ void lock()
 %%%%%
 
 \begin{frame}[label=tso]
-  \frametitle{Architectures avec \emph{Total Store Ordering}}
-  \framesubtitle{x86 et SPARC}
+  \frametitle{Architectures with \emph{Total Store Ordering}}
+  \framesubtitle{x86 and SPARC}
   
-  \begin{block}{Chaque thread \alert{matériel} possède un \textbf{Store Buffer}}
+  \begin{block}{Each \alert{hardware} thread has a \textbf{Store Buffer}}
     \begin{itemize}
-    \item Mes écritures sont placées en attente dans mon \emph{Store Buffer}
-    \item C'est une file (on ne double pas !)
-    \item Je \emph{vois} mes écritures tout de suite
-    \item Mon \emph{Store Buffer} \alert{sera} \og vidangé\fg{} vers la mémoire... à terme
-    \item À ce moment-là :
+    \item My writes are enqueued in my \emph{Store Buffer}
+    \item FIFO queue
+    \item I \emph{see} the effects of my writes immediately
+    \item My \emph{Store Buffer} \alert{will} be ``flushed'' to the memory... later
+    \item At that time:
       \begin{itemize}
-      \item  \emph{Tous les autres threads} voient mes écritures.
-      \item Ils les voient dans le même ordre.
+      \item  \emph{All the other threads} ``see'' my writes
+      \item They see them in the same order (the order I did them)
       \end{itemize}
     \end{itemize}
   \end{block}
@@ -939,11 +789,11 @@ void lock()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}[fragile, label=peterson_code_tso]
-  \frametitle{Échec du \emph{Peterson Lock} en présence de \emph{Store Buffering}}
+  \frametitle{\emph{Peterson Lock} Failure in the presence of \emph{Store Buffering}}
 
   \begin{columns}
     \begin{column}{0.5\textwidth}
-      \begin{block}{Le \og \emph{Peterson Lock}\fg{}}
+      \begin{block}{Peterson Lock}
 \begin{minted}{C}
 bool flag[2];
 int victim;
@@ -1004,10 +854,8 @@ void lock()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%
-
 \begin{frame}[fragile, label=tso_mp]
-  \frametitle{Le \emph{Message Passing} }
+  \frametitle{\emph{Message Passing} }
   
   \begin{columns}
     \begin{column}{0.5\textwidth}
@@ -1016,13 +864,13 @@ void lock()
 void produce(void *payload)
 {          
     msg = payload;
-    flag = true;
+    flag = 1;
 }
 \end{minted}
       \end{block}
     \end{column}  
     \begin{column}{0.5\textwidth}
-      \begin{block}{\emph{Receiver}}
+      \begin{block}{\emph{Consumer}}
 \begin{minted}{C}
 void * receive()
 {  
@@ -1044,7 +892,7 @@ void * receive()
 
         \begin{column}{.9\textwidth}
           \begin{itemize}        \small
-          \item Fonctionne en cas de  \emph{Total Store Ordering}
+          \item Works with  \emph{Total Store Ordering}
           \item x86, SPARC, \dots
           \end{itemize}
         \end{column}
@@ -1060,8 +908,8 @@ void * receive()
         
         \begin{column}{.9\textwidth}
           \begin{itemize}        \small
-          \item Ne fonctionne pas sur ARM, POWER, ...
-          \item Les threads ne \emph{voient} pas les écritures dans le même ordre !
+          \item Fails on ARM, POWER, ...
+          \item Threads do \alert{not necessarily} \emph{see} the writes in the same order!
           \end{itemize}
         \end{column}
       \end{columns}  
@@ -1099,56 +947,41 @@ void * receive()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \begin{frame}[label=omp_memory_model]
-\frametitle{Modèle mémoire dans OpenMP}
+  \frametitle{The OpenMP Memory Model}
 
-% \normalsize
-% \setlength{\leftmargini}{0mm}
-% \begin{itemize}
-% \item Les processeurs ont des modèles mémoires \alert{relachés} (\og \textit{relaxed}\fg{})
-%   \begin{itemize}
-%   \item Question de performance
-%   \end{itemize}
-%   \item[$\Rightarrow$] OpenMP s'adapte
-% \end{itemize}
+  Threads have access to the same memory, but...
 
-Bien sûr les threads ont accès à la mémoire partagée, mais...
-
-
-\begin{alertblock}{Un thread a une \textbf{vue temporaire privée} de la mémoire}
+\begin{alertblock}{Each thread has a \textbf{private temporary view} of the memory}
   \begin{itemize}
-  \item Pas forcément synchronisée en permanence.
+  \item Not necessarily always synchronized
 
-  \item Une lecture \textbf{peut} provenir de la vue temporaire privée.
+  \item A read \textbf{may} come from the private temporary view
     
-  \item Une écriture \textbf{peut} rester dans la vue temporaire privée.
+  \item A write \textbf{may} stay inside the private temporary view
 
-  \item Synchronisation (implicite) lors de:
+  \item (Implicit) synchronizations on:
     \begin{itemize}
     \item \texttt{\#pragma omp barrier}
-    \item sortie de \texttt{\#pragma omp for/sections/single}
-    \item entrée/sortie de \texttt{\#pragma omp parallel/critical/atomic}
+    \item Exit of \texttt{\#pragma omp for/sections/single}
+    \item Entry/exit of \texttt{\#pragma omp parallel/critical/atomic}
     \item \emph{Task Scheduling Points}
     \end{itemize}
 
-  \item Synchronisation (explicite) avec \texttt{\#pragma omp flush}
+  \item (Explicit) synchronizations with \texttt{\#pragma omp flush}
   \end{itemize}
 \end{alertblock}
 
-  \begin{exampleblock}{Opérations atomiques (\texttt{\#pragma omp atomic})}
-    \begin{itemize}
-    \item Obéissent à la \emph{sequential consistency}
-    \end{itemize}
-  \end{exampleblock}
-
+\begin{itemize}
+\item Various reasons, including compilers and the hardware itself
+\item Atomic operations are \textbf{sequentially consistent}
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=pram]
-  \frametitle{Représentation schématique}
+  \frametitle{Visual Representation}
   
   \centering
   \includegraphics[height=8cm]{pram_archi.pdf}
@@ -1159,18 +992,115 @@ Bien sûr les threads ont accès à la mémoire partagée, mais...
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Quizz}
+
+  Initially, $x = y = 0$.
+
+  \begin{center}
+  \begin{tikzpicture}[>=latex,yscale=0.7]
+    \path[use as bounding box] (-1, -2) rectangle (7, 4);
+    \node<1-2> at (0, 2) (Rx0) {$R_0(x) 0$};
+    \node<3> at (0, 4) (Rx0) {$R_0(x) 0$};
+
+    \node<1-2> at (0, 0) (Ry0) {$R_0(y) 1$};
+    \node<3> at (0, -2) (Ry0) {$R_0(y) 1$};
+
+    \node<1-2> at (3, 2) (Wx) {$W_1(x) 1$};
+    \node<3> at (3, 3) (Wx) {$W_1(x) 1$};
+
+    \node<1-2> at (3, 0) (Wy) {$W_1(y) 1$};
+    \node<3> at (3, -1) (Wy) {$W_1(y) 1$};
+    
+    \node at (6, 2) (Rx1) {$R_2(x) 1$};    
+    \node at (6, 0) (Ry1) {$R_3(y) 0$};
+
+    \begin{scope}[every node/.style={font={\ttfamily\small}}]
+    \draw (Rx0) edge[->] node[right] {po} (Ry0);
+    \draw (Rx1) edge[->] node[right] {po} (Ry1);
+    \draw (Wx) edge[->] node[right] {po}  (Wy);
+
+    \draw<2->[Green] (Wx) edge[->] node[above] {rf} (Rx1);
+    \draw<2->[Green] (Wy) edge[->] node[above] {rf} (Ry0);
+    \draw<2->[Purple] (Rx0) edge[->] node[above] {rb} (Wx);
+    \draw<2->[Purple] (Ry1) edge[->] node[above] {rb} (Wy);
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+
+  \begin{block}{Possible?}
+  \begin{enumerate}
+  \item No, it is contradictory
+  \item No, because it is not sequentially consistent
+  \item Yes, possible on ARM and POWER CPUs but not on x86
+  \item<alert@3-> Yes, it is sequentially consistent
+  \end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Quizz (harder)}
+
+  Initially, $x = y = 0$.
+
+  \begin{center}
+  \begin{tikzpicture}[>=latex,yscale=0.7]
+    \path[use as bounding box] (-1, -2) rectangle (7, 4);
+    \node at (0, 2) (Ry0) {$R_0(y) 1$};
+    \node at (0, 0) (Rx0) {$R_0(x) 0$};
+    \node at (3, 2) (Wx) {$W_1(x) 1$};
+    \node at (3, 0) (Wy) {$W_1(y) 1$};    
+    \node at (6, 2) (Rx1) {$R_2(x) 1$};    
+    \node at (6, 0) (Ry1) {$R_3(y) 0$};
+
+    \begin{scope}[every node/.style={font={\ttfamily\small}}]
+    \draw (Ry0) edge[->] node[right] {po} (Rx0);
+    \draw (Rx1) edge[->] node[right] {po} (Ry1);
+    \draw (Wx) edge[->] node[right] {po}  (Wy);
+
+    \draw<2->[Green] (Wx) edge[->] node[above] {rf} (Rx1);
+    \draw<2->[Green] (Wy) edge[->] node[above, very near end] {rf} (Ry0);
+    \draw<2->[Purple] (Rx0) edge[->] node[above, very near end] {rb} (Wx);
+    \draw<2->[Purple] (Ry1) edge[->] node[above] {rb} (Wy);
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+
+  \begin{block}{Possible ?}
+  \begin{enumerate}
+  \item No, it is contradictory
+  \item No, because it is not sequentially consistent
+  \item<alert@3-> Yes, possible on ARM and POWER but not on x86
+  \item Yes, it is sequentially consistent
+  \end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \againframe<3>{guru_switch}
-\againframe{golden_rule}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[label=golden_rule]
+  \begin{center}
+    \Huge \bf \alert{Golden rule of \\ multi-thread programming }
+  \end{center}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \bigskip
+  
+  {\Large \textbf{ALL} potentially conflicting accesses${}^*$
+    to \textbf{shared} variables \alert{\textbf{MUST}} be protected (\texttt{atomic},
+    \texttt{critical}, ...).}
 
-\section{Modifier les algos pour éviter les conflits}
+  \bigskip
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  $*$ at least one of them is a write
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Modifier les algos pour éviter les conflits}
 
@@ -1182,7 +1112,7 @@ Bien sûr les threads ont accès à la mémoire partagée, mais...
 
       
 \begin{frame}[fragile,label=radix]
-  \frametitle{Exemple : Bucket Sort}
+  \frametitle{Case Study: Bucket Sort}
 
 %int C[256];
 %for (int i = 0; i < 256; i++)
@@ -1337,8 +1267,8 @@ for (int i = 0; i < N; i++) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile,label=radix_code]
-  \frametitle{Exemple : Bucket Sort}
-  \framesubtitle{Parallélisation directe naïve}
+  \frametitle{Case Study: Bucket Sort}
+  \framesubtitle{Direct Naïve Parallelization}
 
     \begin{columns}[c]
     \begin{column}{.6\textwidth}
@@ -1436,7 +1366,7 @@ for (int i = 0; i < N; i++) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=idea1]
-  \frametitle{Idée générale n\textdegree 1 : \textbf{réorganiser}}
+  \frametitle{General Principle n\textdegree 1: \textbf{reorganize}}
 
   \begin{columns}[c]
     \begin{column}{.1\textwidth}
@@ -1446,7 +1376,7 @@ for (int i = 0; i < N; i++) {
     
     \begin{column}{.9\textwidth}
       \begin{itemize}
-      \item Faire un (tout) petit peu de calculs en plus...
+      \item Do a (tiny) bit of extra computation...
       \end{itemize}
     \end{column}
   \end{columns}
@@ -1461,7 +1391,7 @@ for (int i = 0; i < N; i++) {
     
     \begin{column}{.9\textwidth}
       \begin{itemize}
-      \item ... Pour éliminer complètement les conflits
+      \item ... to completely eliminate conflits
       \end{itemize}
     \end{column}
   \end{columns}  
@@ -1473,7 +1403,7 @@ for (int i = 0; i < N; i++) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=radix_noconflict]
-  \frametitle{Exemple : Bucket Sort}
+  \frametitle{Case Study: Bucket Sort}
 
       \begin{tikzpicture}[scale=0.25, >={To[sep]}]
         \path[red,dotted,use as bounding box] (-1, 0) rectangle +(26, 32);
@@ -1582,7 +1512,7 @@ for (int i = 0; i < N; i++) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=radix_noconflict_table]
-  \frametitle{Exemple : Bucket Sort}
+  \frametitle{Case Study: Bucket Sort}
 
       \begin{tikzpicture}[scale=0.25, >={To[sep]}]
         \path[red,dotted,use as bounding box] (-1, 0) rectangle +(26, 32);
@@ -1613,13 +1543,13 @@ for (int i = 0; i < N; i++) {
         \begin{scope}[xshift=13.5cm, yshift=10cm]
           % légendes
           \node[anchor=north east] at (3, 18.75) {$C_i[x] =$};
-          \node<1-3>[anchor=north west,align=left] at (3, 19) {\#Élements de catégorie $x$ \\ vus par le thread $i$};
-          \node<4-7>[anchor=north west,align=left] at (3, 19) {\#Élements de catégorie $x$ \\ vus par les threads $< i$};
-          \node<8->[anchor=north west,align=left] at (3, 18.8) {Indice du début du bucket $x$ \\ pour le threads $i$};
+          \node<1-3>[anchor=north west,align=left] at (3, 19) {\#items of kind $x$ \\ seen by thread $i$};
+          \node<4-7>[anchor=north west,align=left] at (3, 19) {\#items of kind $x$ \\ seen by threads $< i$};
+          \node<8->[anchor=north west,align=left] at (3, 18.8) {Start indice of kind $x$ \\ for thread $i$};
           
           % légende en bas
-          \node<2-4>[align=center] at (12, -6) {Taille de chaque bucket};
-          \node<6->[align=center] at (12, -6) {Indice du début de chaque bucket\\(\#Élements dans les buckets précédents)};
+          \node<2-4>[align=center] at (12, -6) {Size of each bucket};
+          \node<6->[align=center] at (12, -6) {Start indice of each bucket\\(\#items in previous buckets)};
           
           \foreach \i in {0, 1, 2, 3} {
             \draw[thick] (0, 2*\i) -- +(24, 0);
@@ -1677,7 +1607,7 @@ for (int i = 0; i < N; i++) {
             \draw<7>[very thick,->,red] (3+2*\i, -1) -- +(0, 9.2);
           }
           \node<3,5>[red] at (28, 4) {Prefix-Sum};
-          \node<2,7>[red] at (28, 4) {Somme};
+          \node<2,7>[red] at (28, 4) {Sum};
 
           % prefix-sum finale sur les tailles de buckets
           \draw<5>[very thick,decorate,decoration={snake},->,red] (2, -1) -- +(21.75, -0);
@@ -1689,7 +1619,7 @@ for (int i = 0; i < N; i++) {
 %%%%%%%%%%%%%%
 
 \begin{frame}[label=radix_code, fragile]
-  \frametitle{Exemple : Bucket Sort}
+  \frametitle{Case Study: Bucket Sort}
 
   \begin{columns}
     \begin{column}{0.5\textwidth}
@@ -1761,7 +1691,7 @@ for (int i = 0; i < M; i++) {
 %%%%%%%%%%%%%%%
   
 \begin{frame}[label=radix_curve]
-  \frametitle{Exemple : Bucket Sort}
+  \frametitle{Case Study: Bucket Sort}
 
   \begin{tikzpicture}
     \node at (0, 0) {\includegraphics[width=\textwidth]{bucket.pdf}};
@@ -1774,26 +1704,385 @@ for (int i = 0; i < M; i++) {
 %%%%%%%%%%%%
 
 \begin{frame}[label=radix_code]
-  \frametitle{Un tableau d'entiers à trier ?}
+  \frametitle{An array of integers to sort?}
   
     \begin{center}
       \Huge \bf \alert{Pro Tip}
   \end{center}
 
-  \begin{exampleblock}{Algorithme de tri parallèle efficace}
+  \begin{exampleblock}{Practical parallel sorting algorithm}
     \begin{itemize}
-  \item \emph{Parallel Bucket Sort} sur les 8 bits de poids forts
-  \item Pour $0 \leq i < 2^8$, faire (en parallèle) :
+  \item \emph{Parallel Bucket Sort} on the 8 most significant bits
+  \item For $0 \leq i < 2^8$, do (in parallel) :
     \begin{itemize}
-    \item Trier le $i$-ème Bucket (avec un tri séquentiel normal)
+    \item Sort the $i$-th Bucket (using a normal sequential sort)
     \end{itemize}
   \end{itemize}
 \end{exampleblock}
-  
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Tricks transactionnels}
+
+\begin{frame}[label=transactions]
+  \frametitle{Parallel Transactions}
+
+  \textbf{Read} $A[i_1], A[i_2], \dots$ $\rightarrow$ \textbf{Compute} $\rightarrow$ \textbf{Write} $A[k_1], A[k_2], \dots$.
+
+  \medskip
+
+  \begin{block}{Obstacle to ``atomic'' execution:}
+    \begin{itemize}
+    \item The read data was modified before the writes
+    \item Result of the computation is ``outdated''
+    \end{itemize}
+  \end{block}
+  
+  \begin{overlayarea}{\textwidth}{4cm}
+  \begin{alertblock}<only@1>{\textbf{Pessimistic approach} (``\textit{Ask for Permission}'')}
+    \begin{itemize}
+    \item ``Lock'' read data
+    \item Read/Acquire locks $\rightarrow$ Compute $\rightarrow$ Write $\rightarrow$ Release locks
+      \begin{itemize}
+      \item Prevent \textbf{potential} modification by other threads
+      \end{itemize}
+    \item Assume that conflict \textbf{WILL} take place
+    \item Useless overhead in the absence of conflict
+    \end{itemize}
+  \end{alertblock}
+
+  \begin{exampleblock}<only@2>{\textbf{Optimistic Approach} (``\textit{Shoot First, Ask Questions Later}'')}
+    \begin{itemize}
+    \item Read (\alert{without precaution!!!}) $\rightarrow$ Compute $\rightarrow$ \textbf{Commit}:
+      \begin{itemize}
+      \item Check freshness of read data,
+      \item If OK (=unmodified), write; otherwise, restart from the beginning
+      \end{itemize}
+    \item Assume that conflict \textbf{WILL NOT} take place
+    \item Lost work in case of conflict
+    \end{itemize}
+  \end{exampleblock}    
+\end{overlayarea}
+\end{frame}
+
+% technique de versioning : couplages sans cycles alternants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=idea1]
+  \frametitle{General Principle: \textbf{Analyze Conflict Frequency}}
+
+  \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \vspace{1mm}
+      \includegraphics[width=\textwidth]{triste.png}
+    \end{column}
+    
+    \begin{column}{.9\textwidth}
+      \begin{itemize}
+      \item Take the risk to waste a little bit of computation...
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  \vspace{1cm}
+  
+  \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \vspace{3mm}
+      \includegraphics[width=\textwidth]{Content.png}
+    \end{column}
+    
+    \begin{column}{.9\textwidth}
+      \begin{itemize}
+      \item ... To reduce the cost of handling conflicts
+      \end{itemize}
+    \end{column}
+  \end{columns}  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=versioning]
+  \frametitle{Generic Technique: \emph{Versioning}}
+
+  \begin{itemize}
+  \item Shared data structure, with a \alert{version number}
+  \item $v = 0$ initially (\alert{odd} during writes)
+  \end{itemize}
+
+  \begin{alertblock}{Writer}
+    \begin{enumerate}
+    \item Enter critical section; increment $v$
+    \item Do the writes
+    \item increment $v$; exit critical section 
+    \end{enumerate}
+  \end{alertblock}
+
+  \begin{exampleblock}{Reader}
+    \begin{enumerate}
+    \item $v_{before} \gets v$
+    \item Do the reads
+    \item $v_{after} \gets v$
+    \item If $v_{before}$ is odd or $v_{before} \neq v_{after}$, retry
+    \end{enumerate}
+  \end{exampleblock}  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%% 
+
+\begin{frame}
+  \frametitle{Generic Technique: \emph{Versioning}}
+
+    \begin{center}
+      \begin{tikzpicture}[scale=0.9, every node/.style={font=\small}]
+        \foreach \i in {0, 1, 2, 3} {
+          \node at (-0.5, 0.5 + \i)  {$T_\i$};
+        }
+        \node at (-0.5, -0.5)  {$T_w$};
+        \draw[dashed] (3, -1.5) -- +(0, 5.75);
+        \draw[dashed] (8, -1.5) -- +(0, 5.75);
+        
+  % lectures avant
+  \draw[fill=white] (0.5, 1) rectangle node {reads} +(1, 0.75);
+  \draw[fill=white] (0.75, 3) rectangle node {reads} +(1, 0.75);  
+  
+  % lecture échouent 
+  \draw[fill=gray] (2, 0) rectangle node {reads} +(4, 0.75);
+  \draw[fill=gray] (2.5, 1) rectangle node {reads} +(5, 0.75);
+  \draw[fill=gray] (1, 2) rectangle node {reads} +(3, 0.75);
+  \draw[fill=gray] (2.5, 3) rectangle node {reads} +(2, 0.75);
+  \draw[fill=gray] (7, 0) rectangle node {reads} +(2, 0.75);
+  \draw[fill=gray] (5, 2) rectangle node {reads} +(1, 0.75);
+  \draw[fill=gray] (7, 2) rectangle node {reads} +(3, 0.75);
+  \draw[fill=gray] (5, 3) rectangle node {reads} +(4, 0.75);
+
+  % lectures après
+  \draw[fill=white] (9.5, 0) rectangle node {reads} +(1, 0.75);  
+  \draw[fill=white] (8.5, 1) rectangle node {reads} +(1, 0.75);
+  \draw[fill=white] (10.5, 2) rectangle node {reads} +(1, 0.75);  
+  \draw[fill=white] (10, 3) rectangle node {reads} +(1, 0.75);
+
+  % thread écrivain
+  \draw[fill=yellow] (3.25, -1) rectangle node[] {write} +(4.5, 0.75);
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+\item Writers have priority over readers
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=rcu]
+  \frametitle{Generic Technique: \emph{Read-Copy-Update}}
+
+  \begin{itemize}
+  \item Shared data structure, readers access via a pointer
+  \item Readers grab the pointer, read, call \mintinline{C}{rcu_quiescent_state()}
+  \item Writers make new copy, atomically update the pointer
+  \item \alert{Cannot} release old copy right now (readers still read it) 
+  \end{itemize}
+
+\medskip
+  
+\begin{tikzpicture}[scale=0.8,every node/.style={font=\scriptsize}]
+  \foreach \i in {0, 1, 2, 3} {
+    \node at (-1.5, 0.5 + \i)  {$T_\i$};
+  }
+  \node at (-1.5, -0.5)  {$T_w$};
+  \draw[dashed] (3, -1) -- +(0, 5.5);
+  \draw[dashed] (8, -1) -- +(0, 5.5);
+
+  
+  % lecture anciennes
+  \draw[fill=gray] (2, 0) rectangle node {reads} +(4, 0.75);
+  \draw[red,ultra thick] (6.25, 0) -- +(0, 0.75);
+  
+  \draw[fill=gray] (0.5, 1) rectangle node {reads} +(1, 0.75);
+  \draw[red,ultra thick] (1.75, 1) -- +(0, 0.75);
+
+  \draw[fill=gray] (2.5, 1) rectangle node {reads} +(5, 0.75);
+  \draw[red,ultra thick] (7.75, 1) -- +(0, 0.75);
+
+  \draw[fill=gray] (1, 2) rectangle node {reads} +(3, 0.75);
+  \draw[red,ultra thick] (4.25, 2) -- +(0, 0.75);
+
+  \draw[fill=gray] (0.75, 3) rectangle node {reads} +(1, 0.75);
+  \draw[red,ultra thick] (2, 3) -- +(0, 0.75);
+
+  \draw[fill=gray] (2.5, 3) rectangle node {reads} +(2, 0.75);
+  \draw[red,ultra thick] (4.75, 3) -- +(0, 0.75);
+
+  % lecture nouvelles
+  \draw[fill=white] (7, 0) rectangle node {reads} +(2, 0.75);
+  \draw[red,ultra thick] (9.25, 0) -- +(0, 0.75);
+
+  \draw[fill=white] (5, 2) rectangle node {reads} +(1, 0.75);
+  \draw[red,ultra thick] (6.25, 2) -- +(0, 0.75);
+
+  \draw[fill=white] (7, 2) rectangle node {reads} +(3, 0.75);
+  \draw[red,ultra thick] (10.25, 2) -- +(0, 0.75);
+
+  \draw[fill=white] (5, 3) rectangle node {reads} +(4, 0.75);
+  \draw[red,ultra thick] (9.25, 3) -- +(0, 0.75);
+
+  % thread écrivain
+  \draw[fill=orange] (-1, -1) rectangle node[align=center] {prepare new version} +(3.75, 0.75);
+  \draw[fill=yellow] (3.25, -1) rectangle node[font=\scriptsize\ttfamily] {rcu\_synchronize()} +(4.5, 0.75);
+  \draw[fill=Green] (8.25, -1) rectangle node[align=center] {Destroy old version} +(4, 0.75);
+  
+  % commentaires en dessous
+  \draw[<->] (3, -1.25) -- node[below] {grace period} +(5, 0);
+  \node[anchor=north, align=center, inner sep=1pt] at (2, -2)  (pub) {new version\\ published};
+  \draw[->, ultra thick] (pub) edge (2.9, -1.1);
+
+  % commentaire haut droite
+  \node[anchor=south east, inner sep=1pt] at (12.5, 4)  (quiet) {\texttt{rcu\_quiescent\_state()}};
+  \draw[->, ultra thick] (quiet)  edge (10.26, 2.9);
+\end{tikzpicture}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide,label=rcu]
+\begin{minted}{C}
+int tid = omp_get_num_thread();
+int N = omp_get_max_threads();
+int gc = 1;                      
+int rc[N];  // {0, ..., 0} 
+\end{minted}
+
+\begin{columns}[T]
+\begin{column}{0.4\textwidth}
+  \vspace*{-1ex}
+  \begin{minted}{C}
+void rcu_quiescent_state()
+{
+  #pragma omp atomic write
+  rc[tid] = gc;
+}
+
+void rcu_thread_offline()
+{
+  #pragma omp atomic write
+  rc[tid] = 0;
+}
+
+void rcu_thread_online()
+{
+  #pragma omp atomic write
+  rc[tid] = gc;
+}
+\end{minted}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+  \vspace*{-1ex}
+\begin{minted}[]{C}
+void rcu_synchronize()
+{
+  bool was_online = (rc[tid] > 0);
+  if (was_online)
+    rcu_thread_offline();
+  #pragma omp critical
+  {
+    #pragma omp atomic update
+    gc++;
+    for (int i = 0; i < N; i++)
+      for (;;) {
+        int s;
+        #pragma omp atomic read
+        s = rc[i];
+        if (s == 0 || s == gc)
+          break;
+      }
+  }
+  if (was_online)
+    rcu_thread_online();
+}
+\end{minted}
+\end{column}
+\end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Support Hardware pour la concurrence}
+
+\begin{frame}[fragile=singleslide, label=rtm]
+  \frametitle{Transactional Memory}
+
+  \begin{itemize}
+  \item Similar problems in database servers
+  \item Many concurrent transactions management techniques
+  \end{itemize}
+
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+  \begin{alertblock}{(very) modern CPUs:\\ \textbf{transactional memory}}
+    \vspace*{-2ex}
+    \begin{minted}{C}
+#include <immintrin.h>
+unsigned int status = _xbegin();
+if (status == _XBEGIN_STARTED) {
+    // Access shared data ...
+    if (problem)    // give up ?
+        _xabort(0); 
+    // Access more shared data ...
+    _xend();
+    /* <-------- Success !!! */
+} else { /* <--- Failure */
+    if (status & _XABORT_EXPLICIT)
+        ...
+    if (status & _XABORT_CONFLICT)
+        ...    
+    if (status & _XABORT_CAPACITY)
+        ...
+}
+\end{minted}
+  \end{alertblock}
+\end{column}
+\begin{column}{0.6\textwidth}
+  \begin{itemize}
+  \item \mintinline{C}{_xbegin()} starts a transaction
+    \begin{itemize}
+    \item Returns \mintinline{C}{_XBEGIN_STARTED}
+    \item Flush the cache...
+    \end{itemize}
+  \item \mintinline{C}{_xend()} attemps to ``commit''
+    \begin{itemize}
+    \item OK $\rightarrow$ execution continues
+    \end{itemize}
+  \item \mintinline{C}{_xabort(cst)} aborts transaction
+
+  \item \alert{In case of failure}:
+    \begin{itemize}
+    \item Returns after \mintinline{C}{_xbegin()}
+    \item Error code (conflict, resources, ...)
+    \end{itemize}
+
+  \item Still not a panacea
+    \begin{itemize}
+    \item Non-negligible cost
+    \item False positives, ...
+    \end{itemize}
+
+  \item See also \texttt{TinySTM} library
+  \end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\end{document}
+
+
 
 \subsection{Sparse LU}
 
@@ -2124,472 +2413,6 @@ for (int i = 0; i < M; i++) {
 
 %%%%%%%%%%%%%%%%%
 
-\section{Tricks transactionnels}
-
-\begin{frame}[label=transactions]
-  \frametitle{Transactions parallèles}
-
-  \textbf{lecture} $A[i_1], A[i_2], \dots$ $\rightarrow$ \textbf{calcul} $\rightarrow$ \textbf{écriture} $A[k_1], A[k_2], \dots$.
-
-  \medskip
-
-  \begin{block}{Obstacle à l'exécution \og atomique\fg{} :}
-    \begin{itemize}
-    \item Les données lues ont été modifiées avant l'écriture.
-    \item Résultat du calcul \og périmé\fg{}.
-    \end{itemize}
-  \end{block}
-  
-  \begin{overlayarea}{\textwidth}{4cm}
-  \begin{alertblock}<only@1>{\textbf{Approche pessimiste} (\og \textit{Ask for Permission}\fg{})}
-    \begin{itemize}
-    \item \og Verrouiller\fg{} les données lues.
-    \item Lecture/Verrouillage $\rightarrow$ Calcul $\rightarrow$ écriture $\rightarrow$ déverrouillage
-      \begin{itemize}
-      \item Bloque modification \textbf{potentielle} par un autre thread.
-      \end{itemize}
-    \item Faire comme si le conflit \textbf{ALLAIT} avoir lieu.
-    \item Surcoût inutile en l'absence de conflit.
-    \end{itemize}
-  \end{alertblock}
-
-  \begin{exampleblock}<only@2>{\textbf{Approche optimiste} (\og \textit{Shoot First, Ask Questions Later}\fg{})}
-    \begin{itemize}
-    \item Lire (\alert{sans précaution !!!}) $\rightarrow$ Calcul $\rightarrow$ \textbf{Commit} (atomique) :
-      \begin{itemize}
-      \item Vérifier la fraîcheur des données lues,
-      \item Si OK, effectuer l'écriture ; sinon, tout recommencer.
-      \end{itemize}
-    \item Faire comme si le conflit \textbf{N'ALLAIT PAS} avoir lieu.
-    \item Travail perdu en cas de conflit.
-    \end{itemize}
-  \end{exampleblock}    
-\end{overlayarea}
-\end{frame}
-
-% technique de versioning : couplages sans cycles alternants
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=idea1]
-  \frametitle{Idée générale : \textbf{analyser la fréquence des conflits}}
-
-  \begin{columns}[c]
-    \begin{column}{.1\textwidth}
-      \vspace{1mm}
-      \includegraphics[width=\textwidth]{triste.png}
-    \end{column}
-    
-    \begin{column}{.9\textwidth}
-      \begin{itemize}
-      \item Prendre le risque de gâcher un peu de calcul...
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-  \vspace{1cm}
-  
-  \begin{columns}[c]
-    \begin{column}{.1\textwidth}
-      \vspace{3mm}
-      \includegraphics[width=\textwidth]{Content.png}
-    \end{column}
-    
-    \begin{column}{.9\textwidth}
-      \begin{itemize}
-      \item ... Pour réduire le coût de la gestion des conflits
-      \end{itemize}
-    \end{column}
-  \end{columns}  
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=versioning]
-  \frametitle{Technique générale : le \emph{versioning}}
-
-  \begin{itemize}
-  \item Structure de donnée partagée, avec un \alert{numéro de version}
-  \item $v = 0$ au début (\alert{impair} pendant les écritures).
-  \end{itemize}
-
-  \begin{alertblock}{Écrivain}
-    \begin{enumerate}
-    \item Entrer section critique ; incrémenter $v$
-    \item Effectuer les écritures
-    \item incrémenter $v$ ; sortir section critique.
-    \end{enumerate}
-  \end{alertblock}
-
-  \begin{exampleblock}{Lecteur}
-    \begin{enumerate}
-    \item $v_{before} \gets v$
-    \item Effectuer lectures
-    \item $v_{after} \gets v$
-    \item Si $v_{before}$ impair ou $v_{before} \neq v_{after}$, recommencer.
-    \end{enumerate}
-  \end{exampleblock}  
-\end{frame}
-
-%%%%%%%%%%%%%%%%%% 
-
-\begin{frame}
-    \frametitle{Technique générale : le \emph{versioning}}
-
-    \begin{center}
-      \begin{tikzpicture}[scale=0.9, every node/.style={font=\small}]
-        \foreach \i in {0, 1, 2, 3} {
-          \node at (-0.5, 0.5 + \i)  {$T_\i$};
-        }
-        \node at (-0.5, -0.5)  {$T_w$};
-        \draw[dashed] (3, -1.5) -- +(0, 5.75);
-        \draw[dashed] (8, -1.5) -- +(0, 5.75);
-        
-  % lectures avant
-  \draw[fill=white] (0.5, 1) rectangle node {reads} +(1, 0.75);
-  \draw[fill=white] (0.75, 3) rectangle node {reads} +(1, 0.75);  
-  
-  % lecture échouent 
-  \draw[fill=gray] (2, 0) rectangle node {reads} +(4, 0.75);
-  \draw[fill=gray] (2.5, 1) rectangle node {reads} +(5, 0.75);
-  \draw[fill=gray] (1, 2) rectangle node {reads} +(3, 0.75);
-  \draw[fill=gray] (2.5, 3) rectangle node {reads} +(2, 0.75);
-  \draw[fill=gray] (7, 0) rectangle node {reads} +(2, 0.75);
-  \draw[fill=gray] (5, 2) rectangle node {reads} +(1, 0.75);
-  \draw[fill=gray] (7, 2) rectangle node {reads} +(3, 0.75);
-  \draw[fill=gray] (5, 3) rectangle node {reads} +(4, 0.75);
-
-  % lectures après
-  \draw[fill=white] (9.5, 0) rectangle node {reads} +(1, 0.75);  
-  \draw[fill=white] (8.5, 1) rectangle node {reads} +(1, 0.75);
-  \draw[fill=white] (10.5, 2) rectangle node {reads} +(1, 0.75);  
-  \draw[fill=white] (10, 3) rectangle node {reads} +(1, 0.75);
-
-  % thread écrivain
-  \draw[fill=yellow] (3.25, -1) rectangle node[] {write} +(4.5, 0.75);
-\end{tikzpicture}
-\end{center}
-
-\begin{itemize}
-\item Écrivains prioritaires sur les lecteurs
-\end{itemize}
-
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=urmatching]
-  \frametitle{Exemple : plus grand couplage sans cycle alternant}
-
-  \begin{center}
-  \begin{tikzpicture}[xscale=1.41,>=stealth,yscale=1.2]
-
-\node at (0, 2) (R1) {A};
-\node at (0, 1) (R2) {B};
-\node at (0, 0) (R3) {C};
-\node at (1,2) (C1) {1};
-\node at (1,1) (C2) {2};
-\node at (1,0) (C3) {3};
-\draw[blue] (C1) edge (R2);
-\draw[blue] (C2) edge (R1);
-\draw(R2)--(C3);
-\draw[red,very thick] (R1) edge (C1);
-\draw[red,very thick] (R2) edge (C2);
-\draw[very thick](R3)--(C3);
-\draw (C3) +(-0.5, -0.2) node[align=center,below,font=\footnotesize]{Couplage avec \red{\textbf{c}}\blue{y}\red{\textbf{c}}\blue{l}\red{\textbf{e}} \blue{a}\red{\textbf{l}}\blue{t}\red{\textbf{e}}\blue{r}\red{\textbf{n}}\blue{a}\red{\textbf{n}}\blue{t} \\ (polynomial)};
-
-
-\begin{scope}[xshift=4cm]
-  \node at (0, 2) (RR1) {A};
-\node at (0, 1) (RR2) {B};
-\node at (0, 0) (RR3) {C};
-\node at (1,2) (CC1) {1};
-\node at (1,1) (CC2) {2};
-\node at (1,0) (CC3) {3};
-\draw (CC1) edge (RR2);
-\draw (RR1) edge (CC2);
-\draw[very thick] (CC1) edge (RR1);
-\draw[very thick] (RR2) edge (CC3);
-\draw (RR1) edge (CC1);
-\draw (RR2) edge (CC2);
-\draw (RR3) edge (CC3);
-\draw (CC3) +(-0.5, -0.2) node[below,font=\footnotesize,align=center]{Couplage sans cycle alternant \\ (NP-dur)};
-\end{scope}
-\end{tikzpicture}
-\end{center}
-
-\begin{block}{Algorithme glouton \uncover<2>{parallèle avec \textbf{\bfseries Versioning}}}
-  Pour tout sommet $u$ (en parallèle) et toute arête $(u \leftrightarrow v)$  :
-  \begin{itemize}
-  \item<2-> $t \gets |\mathcal{C}|$ 
-  \item Parcours en largeur \blue{a}\red{\textbf{l}}\blue{t}\red{\textbf{e}}\blue{r}\red{\textbf{n}}\blue{a}\red{\textbf{n}}\blue{t} depuis $u$ ; atteint $v$ ? $\Rightarrow$ \texttt{abort}.
-  \item<only@1> Ajoute $(u \leftrightarrow v)$ à $\mathcal{C}$. \hfill \textit{[OK, pas de cycle]} 
-  \item<only@2> \textbf{section critique} : si $t = |\mathcal{C}|$, ajoute $(u \leftrightarrow v)$ à $\mathcal{C}$ ; ok $\gets 1$.
-  \item<2> Si $ok = 0$, recommencer.\hfill\textit{[KO, couplage modifié]} 
-  \end{itemize}
-\end{block}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Support Hardware pour la concurrence}
-
-\begin{frame}[fragile, label=rtm]
-  \frametitle{Concept de \og transaction \fg{}}
-
-  \begin{itemize}
-  \item Problèmes similaires dans les serveurs de bases de données
-  \item Nombreuses techniques de gestion des transactions
-  \end{itemize}
-
-  \begin{columns}
-    \begin{column}{0.47\textwidth}
-  \begin{alertblock}{CPU (très) modernes :\\ \textbf{transactional memory}}
-\begin{minted}{C}
-#include <immintrin.h>
-unsigned int status = _xbegin();
-if (status == _XBEGIN_STARTED) {
-    // Access shared data ...
-    if (problem)    // give up ?
-        _xabort(0); 
-    // Access more shared data ...
-    _xend();
-    /* <-------- Success !!! */
-} else { /* <--- Failure */
-    if (status & _XABORT_EXPLICIT)
-        ...
-    if (status & _XABORT_CONFLICT)
-        ...    
-    if (status & _XABORT_CAPACITY)
-        ...
-}
-\end{minted}
-  \end{alertblock}
-\end{column}
-\begin{column}{0.63\textwidth}
-  \begin{itemize}
-  \item \verb|_xbegin()| démarre une transaction
-    \begin{itemize}
-    \item Renvoie \verb|_XBEGIN_STARTED|
-    \item Purge le cache...
-    \end{itemize}
-  \item \verb|_xend()| tente le \og commit\fg{}.
-    \begin{itemize}
-    \item OK $\rightarrow$ l'exécution continue.
-    \end{itemize}
-  \item \verb|_xabort(cst)| force l'échec
-
-    \medskip
-
-  \item \alert{En cas d'échec} :
-    \begin{itemize}
-    \item Retourne après \verb|_xbegin()|
-    \item Code erreur (conflit, resources, ...)
-    \end{itemize}
-
-    \medskip
-
-  \item Toujours pas la panacée
-    \begin{itemize}
-    \item Coût non-négligeable
-    \item Faux-positifs, ...
-    \end{itemize}
-
-    \medskip
-
-  \item Cf. aussi bibliothèque \texttt{TinySTM}
-  \end{itemize}
-\end{column}
-\end{columns}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[fragile, label=CAS]
-  \frametitle{L'opération \emph{Compare-And-Swap}}
-
-  \small
-  \begin{itemize}
-  \item OpenMP spécifie un \emph{modèle mémoire} et des \emph{opérations
-      atomiques} séquentiellement consistantes.
-  \item \textbf{C11} (ISO/IEC 9899:2011) donne des équivalents.
-  \item Avec un (gros) bonus : \textbf{\emph{compare-and-swap} \alert{atomique}}.
-  \end{itemize}
-
-\medskip
-  
-\begin{minted}{C}
-#include <stdatomic.h>
-bool atomic_compare_exchange_strong(volatile A* obj, C* expected, C desired);
-bool atomic_compare_exchange_weak(volatile A *obj, C* expected, C desired);
-\end{minted}
-
-\medskip
-
-\begin{block}{Spécification --- version \emph{strong}}
-  \mintinline{C}{ok = (obj == expected); if (ok) obj = desired; return ok}% \hfill\alert{(atomique !)}
-\end{block}
-
-\medskip
-
-\begin{enumerate}
-\item Instruction du CPU (ou versions équivalents LL/SC)
-\item La version \emph{weak} peut avoir des faux négatifs
-\end{enumerate}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[fragile]
-  \frametitle{Et dans OpenMP ?}
-
-  \begin{columns}[b]
-    \begin{column}{.1\textwidth}
-      \includegraphics[width=\textwidth]{Content.png}
-    \end{column}
-    \begin{column}{.9\textwidth}
-      \begin{itemize}
-      \item Compare-and-swap est dans OpenMP 5.1
-      \item Paru en novembre 2020
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-\bigskip
-  
-\begin{minted}[fontsize=\normalsize]{C}
-#pragma omp atomic compare
-if (obj == expected)
-        obj = desired;
-
-#pragma omp atomic compare capture
-if (obj == expected)
-        obj = desired;
-else
-        v = obj;
-\end{minted} 
-
-\bigskip
-
-\begin{columns}[b]
-    \begin{column}{.1\textwidth}
-      \includegraphics[width=\textwidth]{Triste.png}
-    \end{column}
-    \begin{column}{.9\textwidth}
-      \begin{itemize}
-      \item \texttt{gcc} 10.2 ne l'implante pas encore...
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[fragile, label=CAS]
-  \frametitle{Transactions avec \emph{Compare-And-Swap}}
-
-  On peut faire (presque) n'importe quoi avec \emph{Compare-And-Swap} !
-
-  \bigskip
-  
-  \begin{block}{Idée générale : \emph{Compare-And-Swap Loop}}
-    \begin{enumerate}
-    \item~[Begin.] $x_{old} \gets x$ 
-    \item~[Work.] Calculer une mise à jour $x_{new}$
-    \item~[Commit.] \mintinline{C}{ok = atomic_compare_exchange_strong(x, x_old, x_new)}
-    \item~[Repeat.] Si pas \texttt{ok}, retourner en 1.
-      \end{enumerate}
-    \end{block}
-  \end{frame}
-  
-\begin{frame}[fragile, label=CAS_list]
-  \frametitle{Exemples avec \emph{Compare-And-Swap}}
-
-  \begin{exampleblock}{Exemple : liste chainée}
-\begin{minted}{C}
-struct item_t {
-    ...
-    struct item_t *next;
-}
-
-void atomic_append(struct item_t *list, ...)
-{
-    struct item_t *new =  malloc(sizeof(*new));
-    ...
-    bool ok = false;
-    while (!ok) {
-        new->next = list;
-        ok =  atomic_compare_exchange_strong(list, new->next, new);
-    }
-}
-\end{minted}
-    \end{exampleblock}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[fragile, label=CAS_hash]
-  \frametitle{Exemples avec \emph{Compare-And-Swap}}
-
-  \begin{exampleblock}{Exemple : table de hachage avec sondage linéaire}
-\begin{minted}{C}
-void insert(void *H, void *item)
-{
-    int i = hash_function(item);        // hash
-    while (H[i] != EMPTY)               // trouve une case vide
-        i = (i + 1) % HASHTABLE_SIZE;        
-    H[i] = item;                        // insert
-}
-\end{minted}
-  \end{exampleblock}
-
-\medskip
-  
-  \begin{alertblock}{Version thread-safe}
-\begin{minted}{C}
-void ATOMIC_insert(void *H, void *item)
-{
-    int i = hash_function(item);
-    book ok = false
-    while (!ok) {
-        ok = atomic_compare_exchange_strong(H[i], EMPTY, item);
-        i = (i + 1) % HASHTABLE_SIZE;        
-    }
-}
-\end{minted}
-  \end{alertblock}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=lock-free-defs]
-  \frametitle{Idée générale : algorithmes \emph{lock-free}}
-
-  \begin{block}{Définition}
-    Une fonction est \textbf{lock-free} si, lorsqu'elle est appelée par plusieurs
-    threads à la fois, au moins l'une des invocations termine en un nombre fini
-    d'étapes de calcul (quoi que fassent les autres, même s'ils bloquent).
-  \end{block}
-
-  \bigskip
-  
-  Remarque : si une fonction acquiert un verrou / section critique, elle ne peut
-  pas être \emph{lock-free}.
-
-  \pause\bigskip
-  
-  \begin{tikzpicture}
-    \node (switch) {\includegraphics[width=2cm]{switch.jpg}};
-    \node[above right=-10mm and 0mm of switch, font={\Large\bfseries}] {Safety};
-    \node[below right=-10mm and 0mm of switch, text=red, font={\Large\bfseries}] {World of PAIN};
-    \node[left=of switch, font={\large}] (label) {Guru switch};
-    \draw (label) edge[->] (switch);
-  \end{tikzpicture}
-
-\end{frame}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile,label=seq_intset]
@@ -2771,12 +2594,64 @@ int extract_min()
   Exercice : faites la preuve.
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=urmatching]
+  \frametitle{Exemple : plus grand couplage sans cycle alternant}
+
+  \begin{center}
+  \begin{tikzpicture}[xscale=1.41,>=stealth,yscale=1.2]
+
+\node at (0, 2) (R1) {A};
+\node at (0, 1) (R2) {B};
+\node at (0, 0) (R3) {C};
+\node at (1,2) (C1) {1};
+\node at (1,1) (C2) {2};
+\node at (1,0) (C3) {3};
+\draw[blue] (C1) edge (R2);
+\draw[blue] (C2) edge (R1);
+\draw(R2)--(C3);
+\draw[red,very thick] (R1) edge (C1);
+\draw[red,very thick] (R2) edge (C2);
+\draw[very thick](R3)--(C3);
+\draw (C3) +(-0.5, -0.2) node[align=center,below,font=\footnotesize]{Couplage avec \red{\textbf{c}}\blue{y}\red{\textbf{c}}\blue{l}\red{\textbf{e}} \blue{a}\red{\textbf{l}}\blue{t}\red{\textbf{e}}\blue{r}\red{\textbf{n}}\blue{a}\red{\textbf{n}}\blue{t} \\ (polynomial)};
+
+
+\begin{scope}[xshift=4cm]
+  \node at (0, 2) (RR1) {A};
+\node at (0, 1) (RR2) {B};
+\node at (0, 0) (RR3) {C};
+\node at (1,2) (CC1) {1};
+\node at (1,1) (CC2) {2};
+\node at (1,0) (CC3) {3};
+\draw (CC1) edge (RR2);
+\draw (RR1) edge (CC2);
+\draw[very thick] (CC1) edge (RR1);
+\draw[very thick] (RR2) edge (CC3);
+\draw (RR1) edge (CC1);
+\draw (RR2) edge (CC2);
+\draw (RR3) edge (CC3);
+\draw (CC3) +(-0.5, -0.2) node[below,font=\footnotesize,align=center]{Couplage sans cycle alternant \\ (NP-dur)};
+\end{scope}
+\end{tikzpicture}
+\end{center}
+
+\begin{block}{Algorithme glouton \uncover<2>{parallèle avec \textbf{\bfseries Versioning}}}
+  Pour tout sommet $u$ (en parallèle) et toute arête $(u \leftrightarrow v)$  :
+  \begin{itemize}
+  \item<2-> $t \gets |\mathcal{C}|$ 
+  \item Parcours en largeur \blue{a}\red{\textbf{l}}\blue{t}\red{\textbf{e}}\blue{r}\red{\textbf{n}}\blue{a}\red{\textbf{n}}\blue{t} depuis $u$ ; atteint $v$ ? $\Rightarrow$ \texttt{abort}.
+  \item<only@1> Ajoute $(u \leftrightarrow v)$ à $\mathcal{C}$. \hfill \textit{[OK, pas de cycle]} 
+  \item<only@2> \textbf{section critique} : si $t = |\mathcal{C}|$, ajoute $(u \leftrightarrow v)$ à $\mathcal{C}$ ; ok $\gets 1$.
+  \item<2> Si $ok = 0$, recommencer.\hfill\textit{[KO, couplage modifié]} 
+  \end{itemize}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-\end{document}
 
 %%% Local Variables:
 %%% TeX-command-extra-options: "-shell-escape"

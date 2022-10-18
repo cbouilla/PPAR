@@ -26,6 +26,8 @@
 \definecolor{codebg}{rgb}{0.95,0.95,0.95}
 \setminted{bgcolor=codebg}
 \usepackage{changepage}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
 
 \newenvironment{wider}{%
 \begin{adjustwidth}{-0.6cm}{}%
@@ -332,7 +334,7 @@ for (int i = 0 ; i < n ; i++) {
 \begin{columns}[t]
   \column{6cm}
   
-\begin{block}{Programme}
+\begin{block}{Program}
 \begin{minted}{C}
 #ifdef _OPENMP
 #include <omp.h>
@@ -356,7 +358,7 @@ int main()
 
 \column{4cm}
 
-\begin{block}{Exécution}
+\begin{block}{Execution}
 \scriptsize
 \begin{verbatim} 
 $ gcc hello.c -o hello
@@ -874,11 +876,11 @@ int main()
   
 Associated clauses~:
   \begin{itemize}
-  \item  {\tt private} ({\it variable\_list}), {\tt firstprivate} ({\it variable\_list}), {\tt lastprivate} ({\it variable\_list})
+  \item {\tt private} ({\it variable\_list}), {\tt firstprivate} ({\it variable\_list}), {\tt lastprivate} ({\it variable\_list})
   \item {\tt reduction}({\it operator: variable\_list})
   \item {\tt ordered}
   \item {\tt collapse}({\it n})
-  \item {\tt  schedule}({\it type}, {\it taille})
+  \item {\tt  schedule}({\it type}, {\it size})
   \item {\tt nowait}
   \end{itemize}
   
@@ -897,7 +899,8 @@ Associated clauses~:
 \item Integer iteration variable
 
 \item Loop counter updated with \texttt{++, --, +=, -=, var=var+inc,
-    var=inc+var, var=var-inc}, integer increment
+    var=inc+var, var=var-inc}
+\item integer increment
 
 \item Condition: \texttt{<, >, <=, >=}. Bound is a fixed expression
 
@@ -987,7 +990,7 @@ int main()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile=singleslide]
-  \frametitle{Short Form for the \texttt{for} directive}
+  \frametitle{Short Form of the \texttt{for} directive}
   
 \begin{framed}
   {\tt \#pragma omp parallel for } {\it  [clause[[, ]clause]...]}  \\
@@ -1342,7 +1345,7 @@ T0 imin=0 imax=1
   
 \item Implicit barrier at the end of \texttt{single}
 
-\item {\tt nowait} et {\tt copyprivate} are incompatible clauses
+\item {\tt nowait} and {\tt copyprivate} are incompatible clauses
 
 \mynote{{\bf copyprivate(a) : ``envoie'' à la fin la valeur de 'a' aux autres
   threads} (cf. slide $+2$) (clause disponible uniquement pour {\tt single})}
@@ -1362,64 +1365,74 @@ Possible clauses:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile=singleslide]
-  \frametitle{\texttt{single} Directive}
+  \frametitle{\texttt{single} Example: Prefix-Sum}
+%  \framesubtitle{Prefix-Sum}
 
+  \vspace*{-4ex}
 \begin{columns}[t]
-  \column{6cm}
-  \begin{block}{Program}
+  \column{4.5cm}
 \begin{minted}{C}
-int main()
-{
-  int a = 10; 
-  #pragma omp parallel firstprivate(a) 
-  {
-    #pragma omp single
-    a = 20;
-   
-    printf("thread %d a=%d\n",
-        omp_get_thread_num(), a);
-  }
+int s = 0;
+for (int i = 0; i < n; i++) {
+    int tmp = A[i];
+    A[i] = s;
+    s += tmp;
 }
 \end{minted}
-\end{block}
   
-  \column{4.5cm}
+  \column{6cm}
   
-  \begin{block}{Execution}
-\footnotesize
-\begin{verbatim}
-$ export OMP_NUM_THREADS=4
-$ ./a.out 
-thread 0 a=20
-thread 1 a=10
-thread 3 a=10
-thread 2 a=10
-\end{verbatim} 
-  \end{block}  
+\begin{minted}{C}
+#pragma omp parallel
+{
+    int t = omp_get_thread_num();
+    S[t] = 0;
+    #pragma omp for schedule(static)
+    for (int i = 0; i < n; i++)
+        S[t] += A[i];
+    #pragma omp single
+    {
+        int p = omp_get_num_threads();
+        int s = 0;
+        for (int i = 0; i < p; i++) {
+            int tmp = S[i];
+            S[i] = s;
+            s += tmp;
+        }
+    }
+    int s = S[t];
+    #pragma omp for schedule(static)
+    for (int i = 0; i < n; i++) {
+        int tmp = A[i];
+        A[i] = s;
+        s += tmp;
+    }
+}
+\end{minted}
 \end{columns}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-    \frametitle{{\tt master} Directive}
+% \begin{frame}
+%     \frametitle{{\tt master} Directive}
 
-\begin{framed}
-  {\tt \#pragma omp master }  \\
-  {\it structured block} 
-\end{framed}
+% \begin{framed}
+%   {\tt \#pragma omp master }  \\
+%   {\it structured block} 
+% \end{framed}
 
-\bigskip
+% \bigskip
 
-\begin{itemize}
-\item No clause
+% \begin{itemize}
+% \item No clause
 
-\item \alert{\textbf{No implicit barrier at the end}}
+% \item \alert{\textbf{No implicit barrier at the end}}
 
-\item Only thread \#0 (master) runs the \textit{structured block}
-\end{itemize}
+% \item Only thread \#0 (master) runs the \textit{structured block}
+% \end{itemize}
   
-\end{frame}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1434,9 +1447,7 @@ Several options:
     {\tt omp\_init\_lock()}\\
     {\tt omp\_\{set,test\}\_lock()}\\
     {\tt omp\_unset\_lock()}\\
-    {\tt omp\_destroy\_lock()}\\
-\mynote{Je privilégie {\tt atomic} et {\tt critical} par rapport aux
-  verrous car je privilégie les pragmas OpenMP aux fonctions OpenMP.}
+    {\tt omp\_destroy\_lock()}
   \end{itemize}
 \end{frame}
 
@@ -1474,9 +1485,56 @@ if (n != 0) {
 
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \frametitle{\texttt{critical} Directive} 
 
+\begin{framed}
+  {\tt \#pragma omp critical } {\it [name]}  \\
+  {\it structured block} 
+\end{framed}
+
+\bigskip
+
+\begin{itemize}
+\item Only a single thread may enter the \textit{structured block} simultaneously
+
+\item ``\textbf{critical section}''
+    
+\item An incoming thread has to wait while another thread executes the \textit{structured block}
+  
+\item The \textit{name} allows to distinguish distinct critical sections.
+\end{itemize}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{\texttt{critical} Example}
+  \framesubtitle{Adding an Item to a Linked List}
+
+\begin{minted}{C}
+struct item_t {
+  void *data;
+  struct item_t *next;
+};
+struct item_t *list;                   /* global variable */
+
+void append(void *payload)
+{
+   struct item_t *new_item = malloc(sizeof(*new_item));
+   new_item->data = payload;
+   #pragma omp critical 
+   {
+      new_item->next = list;
+      list = new_item;
+   }
+}
+\end{minted}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}[fragile=singleslide]
   \frametitle{\texttt{atomic} Directive} 
   
@@ -1553,11 +1611,9 @@ c=400000 thread 1
 \end{frame}
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile=singleslide]
-  \frametitle{Advanced \texttt{atomic} Directive}
+  \frametitle{\texttt{atomic capture}}
   \framesubtitle{Since OpenMP 3.0 (2008)} 
   
   {\scriptsize 
@@ -1590,14 +1646,37 @@ c=400000 thread 1
       \mintinline{C}{{x++; v = x;}}\\
   \end{columns}
 \end{center}
-
 \end{itemize}    
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{\texttt{atomic capture} Example}
+  \framesubtitle{Appending an Item to a Preallocated Array}
+
+\begin{minted}{C}
+void *A[];
+int n = 0;              /* #items in the array */
+
+void atomic_append(void *payload)
+{ 
+   int i;
+   #pragma omp atomic capture 
+   {
+      i = n;         /* equivalent to: i = n++ */
+      n += 1;
+   }
+   A[i] = payload;
+}
+\end{minted}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Ultra-Advanced \texttt{atomic} Directive}
+  \frametitle{\texttt{atomic compare}}
+  \framesubtitle{Since OpenMP 5.1 (needs \texttt{gcc} 12.2, August 2022!)} 
 
   \begin{exampleblock}{``Compare-and-Swap''}
 \vspace*{-2ex}
@@ -1625,66 +1704,102 @@ if (x == old) x = new;
 
   \begin{itemize}
   \item All CPUs have \emph{hardware} support for this operation
-  \item Requires \texttt{gcc 12.2} (August 2022)
+%  \item Requires \texttt{gcc 12.2} (August 2022)
   \end{itemize}
-  
 \end{frame}
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \frametitle{\texttt{critical} Directive} 
-
-\begin{framed}
-  {\tt \#pragma omp critical } {\it [name]}  \\
-  {\it structured block} 
-\end{framed}
-
-\bigskip
-
-\begin{itemize}
-\item Only a single thread may enter the \textit{structured block} simultaneously
-
-\item ``\textbf{critical section}''
-    
-\item An incoming thread has to wait while another thread executes the \textit{structured block}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
-\item The \textit{name} allows to distinguish distinct critical sections.
-\end{itemize}
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile=singleslide]
-  \frametitle{Example of \texttt{critical} Directive }
+\begin{frame}[fragile, label=CAS_list]
+  \frametitle{\texttt{atomic compare} Example}
   \framesubtitle{Adding an Item to a Linked List}
 
 \begin{minted}{C}
 struct item_t {
-  int val;
-  struct item_t *next;
-};
-...
-struct item_t *list = (struct item_t *) malloc(sizeof(*list)); 
-...
-#pragma omp parallel 
-{ 
-   ...
-   (struct item_t *) new =  malloc(sizeof(*nouv));
-   new->val = ...
-   #pragma omp critical 
-   {
-      new->next = list;
-      list = new;
-   }
-   ...
+    void *data;
+    struct item_t *next;
+}
+struct item_t *list;                  /* global variable */
+
+void atomic_append(void *payload)
+{
+    struct item_t *new_item =  malloc(sizeof(*new_item));
+    new_item->data = payload;
+    bool ok = 0;
+    while (!ok) {
+        new_item->next = list;
+        #pragma omp atomic compare capture
+        {
+            ok = list == new_item->next;
+            if (ok)
+                list = new_item;
+    }
 }
 \end{minted}
+\end{frame}
 
-Exercise: do it with \texttt{atomic compare}
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide, label=CAS]
+  \frametitle{``Transactions'' Using \emph{Compare-And-Swap}}
+
+  It is possible to do almost \alert{anything} using \emph{Compare-And-Swap}!
+
+  \bigskip
   
+  \begin{block}{Idiom: \emph{Compare-And-Swap Loop}}
+    \begin{enumerate}
+    \item~[Begin.] $x_{old} \gets x$ 
+    \item~[Work.] Compute an updated $x_{new}$
+      \begin{itemize}
+      \item This may read $x$...
+      \item ... and $x$ may be modified by another thread
+      \end{itemize}
+    \item~[Commit.] \mintinline{C}{ok = (x == x_old); if (ok) x = x_new;}
+    \item~[Repeat.] If not OK, go back to 1.
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile, label=CAS_hash]
+  \frametitle{\texttt{atomic compare} Example}
+  \framesubtitle{Insertion Into a Hash Table With Linear Probing}
+
+  
+  \begin{exampleblock}{Hash Table With Linear Probing}
+\vspace*{-2ex}
+\begin{minted}{C}
+void insert(void *H, void *item)
+{
+    int i = hash_function(item);        // hash
+    while (H[i] != EMPTY)               // locate empty slot
+        i = (i + 1) % HASHTABLE_SIZE;        
+    H[i] = item;                        // insert
+}
+\end{minted}
+\vspace*{-4ex}
+  \end{exampleblock}
+
+\smallskip
+  
+  \begin{alertblock}{Thread-safe version}
+\vspace*{-2ex}
+\begin{minted}{C}
+void atomic_insert(void *H, void *item)
+{
+    int i = hash_function(item);
+    book ok = 0;
+    while (!ok) {
+        #pragma omp atomic compare capture
+        { ok = H[i] == EMPTY; if (ok) H[i] = item; }
+        i = (i + 1) % HASHTABLE_SIZE;        
+    }
+}
+\end{minted}
+\vspace*{-4ex}
+  \end{alertblock}
 \end{frame}
 
 
@@ -1718,11 +1833,70 @@ Exercise: do it with \texttt{atomic compare}
 \end{description}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{\texttt{atomic} VS \texttt{critical}: Tricky Example}
+  \framesubtitle{Appending an Item to a Dynamic Array \alert{with resizing}}
+
+\begin{minted}{C}
+void *A[];
+int n = 0;                           /* #items inserted in A[] */
+size = 0;                            /* allocated size of A */
+
+void append(void *payload)
+{
+   #pragma omp critical
+   {
+      if (n >= size) {             /* array too small? Enlarge it */
+          size = 2 * size + 1;
+          A = realloc(A, size);    /* change A */
+      }
+      A[n] = payload;              /* finally, insert */
+      n += 1;
+   }
+}
+\end{minted}
+
+\begin{alertblock}{Without locks / \texttt{critical}?}
+  \begin{itemize}
+  \item Possible, but quite difficult
+  \item Nice challenge! Try it at home!
+  \end{itemize}
+\end{alertblock}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=lock-free-defs,fragile=singleslide]
+  \frametitle{\emph{Lock-Free} Algorithms}
+
+  \begin{block}{Definition}
+    A function is \textbf{lock-free} if, when it is called by several threads at
+    the same time, at least one of the invocations finishes in a finite number
+    of steps (whatever the others do, even if they block).
+  \end{block}
+  
+  \bigskip
+  
+  $\Rightarrow$ if a function acquires a lock or enters a critical section, it
+  cannot be \emph{lock-free}.
+
+  \bigskip
+
+  \begin{alertblock}{Challenge}
+    Design a \emph{lock-free} data structure to hold a set of $N$ integers. API:
+\begin{minted}{C}
+void setup(int N);     /* initialise S = {0, 1, ..., N-1} */
+bool remove(int i);    /* Remove i from S. Return 1 if i was in S */
+int extract_min();     /* let k = min(S) in remove(k) */
+\end{minted}
+  \end{alertblock}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=golden_rule]
-%  \frametitle{}
-
   \begin{center}
     \Huge \bf \alert{Golden rule of \\ multi-thread programming }
   \end{center}
@@ -1738,414 +1912,189 @@ Exercise: do it with \texttt{atomic compare}
   $*$ at least one of them is a write
 \end{frame}
 
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-% \begin{frame}
-%     \frametitle{Directive {\tt threadprivate}}
-
-%     Permet de définir le statut des variables globales ou statiques
-%     dans les threads (usage pas très fréquent).  
-
-%   \bigskip
-
-%     Une variable {\tt threadprivate} ne doit pas apparaître dans une autre
-%     clause sauf pour {\tt copyin, copyprivate, schedule, num\_thread, if}.
-
-%     \bigskip
-    
-%     Une variable  {\tt threadprivate} ne doit pas être une référence (C++).
-
-% \end{frame}
-
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]
-%   \frametitle{Directive {\tt threadprivate}}
-
-% \small
-% \begin{columns}[t]
-%   \column{6.5cm}
-%   \begin{block}{Programme}
-% \begin{minted}{C}
-% int a = 10;  // variable globale
-% #pragma omp threadprivate(a)
-
-% int main()
-% {
-%     #pragma omp parallel
-%     {
-%         int rang = omp_get_thread_num();
-%         a += rang;
-%         printf("thd=%d a=%d\n", rang, a);
-%     }
-%     printf("SEQ a=%d\n",a);
-% }
-% \end{minted}
-% \end{block}
-  
-%   \column{4cm}
-  
-%   \begin{block}{Exécution}
-% \begin{verbatim}
-% $ export OMP_NUM_THREADS=4
-% $ ./a.out 
-% thd=0 a=10
-% thd=3 a=13
-% thd=1 a=11
-% thd=2 a=12
-% SEQ a=10
-% \end{verbatim} 
-%   \end{block}  
-% \end{columns}
-% \normalsize
-  
-% \mynote{{\tt copyin(a)} : la valeur de la variable 'a' de la région
-%   séquentielle est transmise à tous les threads de la région parallèle.}
-
-% \end{frame}
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Note sur flush :
-
-% Uniquement besoin de flush pour rendre certaines variables ``visibles'' 
-% entre les threads hors des points de synchronisation (points de
-% synchronisation implicites (flush implicites) automatiquement placés 
-% par OpenMP à l'entrée/sortie de certaines directives) 
-
-% -> flush deconseillé par ``Using OpenMP'' (sauf pour les experts) : je
-% préfère donc me limiter ici aux directives atomic/critical (voire aux
-% locks) et ne pas les embrouiller/noyer avec les problemes de cohérence
-% mémoire sur machine multi-processeurs (je garde ca pour CINAP) 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \frametitle{Nested Parallelism}
-
-
-  \begin{itemize}
-\item A \texttt{parallel} directive inside a \texttt{parallel} directive
-
-\medskip
-  
-\item In most cases, this is a no-op.
-  \begin{itemize}
-  \item No more ``available'' threads to work on the nested parallel region:
-    they are all in the parent parallel region.
-  \end{itemize}
-
-  \medskip
-
-\item It is possible to force the creation of a new thread teams (cf. spec)
-  
-\end{itemize}
-
-\begin{alertblock}{My opinion}
-  \begin{itemize}
-  \item \textbf{STRICTLY USELESS} to do it voluntarily
-  \item Could happen if a parallel program invoked a parallel library inside a parallel region
-  \end{itemize}
-\end{alertblock}
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{frame}[fragile]
-%   \frametitle{Parallélisme imbriqué}
-
-% \small
-% \begin{columns}[t]
-%   \column{6cm}
-%   \begin{block}{Programme}
-% \begin{minted}{C}
-% #define MAX 4
-
-% #pragma omp parallel for  
-% for (int i = 0; i < MAX; i++) {
-%     #pragma omp parallel for  
-%     for (int j = 0; j < MAX; j++) {
-%       printf("%3d:(%2d,%2d) \n",
-%          omp_get_thread_num(), i, j);
-%     }
-% }
-% \end{minted}
-% \end{block}
-  
-%   \column{4cm}
-  
-%   \begin{block}{Exécution}
-% {\scriptsize
-% \begin{verbatim}
-% $ export OMP_NUM_THREADS=4
-% $ export OMP_NESTED=TRUE 
-%   0:( 2, 0) 
-%   2:( 2, 2) 
-%   0:( 0, 0) 
-%   3:( 2, 3) 
-%   3:( 0, 3) 
-%   3:( 1, 3) 
-%   2:( 1, 2) 
-%   0:( 1, 0) 
-%   1:( 1, 1) 
-%   1:( 2, 1) 
-%   1:( 0, 1) 
-%   2:( 0, 2) 
-%   3:( 3, 3) 
-%   0:( 3, 0) 
-%   1:( 3, 1) 
-%   2:( 3, 2) 
-% \end{verbatim} 
-% }
-%   \end{block}  
-% \end{columns}
-% \normalsize
-
-
-% \end{frame}
-
-
-% \note{
-% \begin{itemize}
-% \item Combien de threads créés en tout avec nested ? 4 ? 16 ?
-% Avec {\tt gcc -fopenmp} sur commodore : 6 threads supp créés donc 7 threads 
-% en tout !!
-% Pas clair, et comme l'exécution parallèle se déroule comme s'il y a
-% avait 16 threads, leur dire pour l'instant que ``l'execution des 2
-% régions est faite en parallele comme si 16 threads étaient utilisés''... 
-
-% Remarque : possible de limiter le nombre de threads créés par OpenMP
-% avec la variable d'environnement \texttt{OMP\_THREAD\_LIMIT} (la limite
-% incluant le thread master et tous les threads supplémentaires créés
-% par OpenMP ({\it helper threads})). 
-
-% \item  Schéma : 
-
-%   \includegraphics[scale=0.3]{nested} 
-
-% \end{itemize}
-% }
-
-
-% \note{
-%   Spec3.0 : ``If nested parallelism is disabled, or is not supported
-%   by the OpenMP implementation, then the new team that is 
-% created by a thread encountering a parallel construct inside a
-% parallel region will consist only of the encountering thread.''
-
-% Du coup, si OMP\_NESTED=FALSE, alors on a en sortie : 
-% \begin{alltt}
-% \$ export OMP\_NUM\_THREADS=4
-% \$ export OMP\_NESTED=FALSE
-%   0:( 0, 0) 
-%   0:( 0, 1) 
-%   0:( 0, 2) 
-%   0:( 0, 3) 
-%   0:( 3, 0) 
-%   0:( 3, 1) 
-%   0:( 3, 2) 
-%   0:( 3, 3) 
-%   0:( 1, 0) 
-%   0:( 1, 1) 
-%   0:( 1, 2) 
-%   0:( 1, 3) 
-%   0:( 2, 0) 
-%   0:( 2, 1) 
-%   0:( 2, 2) 
-%   0:( 2, 3) 
-% \end{alltt} 
-% mais 3 threads supplémentaires sont bien créés dans la 1ere région
-% parallèle : la deuxième région parallèle est elle exécutée en 
-% séquentiel et chacun des 4 threads de la 1ere région y appara\^it
-% comme le thread ``master'' donc avec le numéro 0.  
-% }
-
-% \note{D'apres tutorial IWOMP: danger de nested est juste de pas
-%   controler le nombre de threads (et de surcharger les coeurs CPU),
-%   surtout si on fait bcp de récursion avec.}
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}[fragile=singleslide]
-  \frametitle{OpenMP Runtime Library}
-
-Some common functions (with \mintinline{C}{#include <omp.h>}):
-\begin{itemize}
-  \item \mintinline{C}{void omp_set_num_threads(int num\thread)}: sets the number
-    of threads to use in subsequent parallel regions
-    
-  \item mintinline{C}{\tt int omp\_get\_num\_threads(void)}: return the number of threads in the current team
-  \item \mintinline{C}{int omp_get_max_threads(void)}: upper bound on \#threads in new teams
-  \item \mintinline{C}{int omp_get_thread_num(void)}
-  \item \mintinline{C}{int omp_get_num_procs(void)}
-  \item \mintinline{C}{int omp_in_parallel(void)}: return true if we are inside a parallel region
-  \item \mintinline{C}{double omp_get_wtime(void)}
-\end{itemize}
-
-  
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \frametitle{Environment Variables}
-  \begin{itemize}
-  \item {\tt OMP\_NUM\_THREADS}
-  \item {\tt OMP\_SCHEDULE} :
-
-{\tt export OMP\_SCHEDULE="static,4"}
-
-{\tt export OMP\_SCHEDULE="dynamic"}
-
-%   \item {\tt OMP\_DYNAMIC} :
-    
-%     \begin{itemize}
-%     \item affectée avec {\tt TRUE} le nombre de threads peut-être ajusté par
-%       l'environnement d'exécution pour améliorer l'utilisation du système.
-      
-%     \item affectée avec {\tt FALSE} l'ajustement est désactivé.
-      
-%     \item la valeur par défaut est système-dépendant.
-%     \end{itemize}
-
-  \item ...
-    
-  \end{itemize}
-
-  
-\end{frame}
-
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Cheat Sheet}
+  \frametitle{The Same Example Again}
 
-  \begin{exampleblock}{Most common}
+%  \small
+  \begin{columns}[t]
+  \column{5.5cm}
+\begin{block}{Program}
+\begin{minted}{C}
+#include <stdio.h>
+  
+int main()
+{
+  int c = 0;
+  #pragma omp parallel for
+  for (int i = 0; i < 100000; i++) { 
+       c++; 
+  }
+  printf("c=%d\n", c);
+}
+\end{minted}
+\end{block}
+    
+    
+    \column{4.5cm}
+\begin{block}{Execution}
+\footnotesize
+\begin{verbatim}
+$ ./a.out
+c=15074
+\end{verbatim}
+\end{block}    
+  \end{columns}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+  \frametitle{Interleaved Increments}
+  \framesubtitle{\emph{Load-Store} Hardware Architectures}
+
+  \bigskip
+  
+  \begin{center}
+    \begin{tikzpicture}
+      \path[red,dotted,use as bounding box] (-2,-1.5) rectangle (8,3);
+
+      % "RAM"
+      \begin{scope}[yshift=1.75cm, every node/.style={anchor=base}]
+        \path (1, 0.4) -- node[above=2mm] {RAM} (5, 0.4);
+        \draw[thick] (1, -0.2) rectangle (5, 0.4);
+        \node<1-10> at (3, 0) {$c = 42$};
+        \node<11-12> at (3, 0) {$c = 43$};
+        \node<13>[text=red] at (3, 0) {$c = 43$};
+      \end{scope}
+
+      \node (CPU1) at (0, 0) {\includegraphics[width=2cm]{cpu_clipart.png}};
+      \node<3-6>[draw,anchor=east,font=\scriptsize] at (-1.5, 0) {\texttt{\%rax = 42}};
+      \node<7->[draw,anchor=east,font=\scriptsize] at (-1.5, 0) {\texttt{\%rax = 43}};
+      
+      \node (CPU2) at (6, 0) {\includegraphics[width=2cm]{cpu_clipart.png}};
+      \node<5-8>[draw,anchor=west,font=\scriptsize] at (7.5, 0) {\texttt{\%rax = 42}};
+      \node<9->[draw,anchor=west,font=\scriptsize] at (7.5, 0) {\texttt{\%rax = 43}};
+
+
+      % flèches RAM <--> CPU
+      \draw<2>[thick,<-] (CPU1) |- (0.9, 1.85);
+      \draw<10>[thick,->] (CPU1) |- (0.9, 1.85);
+
+      \draw<4>[thick,<-] (CPU2) |- (5.1, 1.85);
+      \draw<12>[thick,->] (CPU2) |- (5.1, 1.85);
+
+
+      \node<6> at (0, -1.3) {\texttt{add \%rax, 1}};
+      \node<8> at (6, -1.3) {\texttt{add \%rax, 1}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile]
+
+  \begin{columns}[t]
+  \column{5.5cm}
+  \centering\includegraphics[width=1cm]{triste.png}
+
+  \begin{block}{Bad}
+\begin{minted}{C}
+#include <stdio.h>
+  
+int main()
+{
+  int c = 0;
+  #pragma omp parallel for
+  for (int i = 0; i < 100000; i++) { 
+
+    c++; 
+  }
+  printf("c=%d\n", c);
+}
+\end{minted}
+\end{block}
+    
+    
+    \column{5.5cm}
+    \centering\includegraphics[width=1cm]{content.png}
+
+  \begin{block}{Good}
+\begin{minted}{C}
+#include <stdio.h>
+  
+int main()
+{
+  int c = 0;
+  #pragma omp parallel for
+  for (int i = 0; i < 100000; i++) { 
+    #pragma omp atomic update
+    c++; 
+  }
+  printf("c=%d\n", c);
+}
+\end{minted}
+\end{block}
+  \end{columns}
+
+  \begin{alertblock}{\emph{Load-store} architectures:}
     \begin{itemize}
-    \item The \textit{must} : \verb|#pragma omp parallel for|
-    \item \verb|atomic|  \verb|critical| directives
-    \item \verb|schedule| and \verb|reduction| clauses
+    \item \texttt{x++}, \texttt{x += 10}, etc. are \textbf{not atomic}
+    \item Not even when performed by a \alert{single CPU instruction}
     \end{itemize}
-  \end{exampleblock}
-
-  \begin{block}{Less common : SPMD mode}
-    \begin{itemize}
-    \item Parallel region with explicit \verb|#pragma omp for| inside
-    \item \verb|omp_get_thread_num()| and \verb|omp_get_num_threads()|
-    \item \verb|barrier| or \verb|single| directives
-    \end{itemize}
-  \end{block}
-
-  \begin{alertblock}{Rare (reserved for the most delicate cases...)}
-    Everything else!
   \end{alertblock}
 \end{frame}
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% \begin{frame}
-%   \frametitle{Threads POSIX}
-
-%   \begin{block}{Bibliothèque \texttt{pthread}}
-%     \begin{itemize}
-%     \item POSIX = Portable Operating System Interface for uniX
-%     \item Threads POSIX = interface portable pour
-%       \begin{itemize}
-%       \item Créer des threads
-%       \item Synchroniser des threads entre eux
-%       \end{itemize}
-%     \end{itemize}
-%   \end{block}
-
-%   \begin{alertblock}{Programmation \og bas-niveau\fg{}}
-%     \begin{itemize}
-%     \item Parallélisme explicite (et gestion \og manuelle\fg{})
-%     \item Débugage potentiellement ardu
-%     \end{itemize}
-%   \end{alertblock}
-% \end{frame}
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% \begin{frame}[fragile]
-%   \frametitle{Threads POSIX (suite)}
-
-%   \begin{exampleblock}{Modèle \og \textit{fork/join}}
-% \begin{minted}{C}
-% #include <pthread.h>
-% int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
-%                             void *(*start_routine) (void *), void *arg);
-% int pthread_join(pthread_t thread, void **retval);
-% \end{minted}
-%   \end{exampleblock}
-
-%   \begin{block}{Gestion de la mémoire}
-%     \begin{itemize}
-%     \item Tout l'espace du processus accessible à tous les threads
-%     \item Variables \og privées\fg{} (sur la pile de chaque thread)
-%     \item Variables globales $\rightarrow$ partagées
-%     \item Variables sur le tas $\rightarrow$ partagées (si adresse connue)
-%     \end{itemize}
-%   \end{block}
-  
-% \end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Tasks}
 
 \begin{frame}
-  \frametitle{Tâches OpenMP (depuis v3.0, 2008)}
+  \frametitle{Tasks}
+  \framesubtitle{Since OpenMP 3.0 (2008)}
 
-  \begin{alertblock}{Point d'orthographe}
+  \begin{alertblock}{French speakers: point d'orthographe}
   \begin{description}
-    \item[Tache] marque, salissure, souillure. \textit{Une tache d'encre}
-    \item[Tâche] travail à exécuter. \textit{Une tâche ardue}
+    \item[Tache] marque, salissure, souillure (\emph{stain}). \textit{Une tache d'encre}
+    \item[Tâche] travail à exécuter (\emph{task}). \textit{Une tâche ardue}
     \end{description}
   \end{alertblock}
 
   \pause
   
-  \begin{block}{``Rappel'' : \bf \texttt{\#pragma omp parallel}}
+  \begin{block}{Reminder: \texttt{\#pragma omp parallel}}
     \begin{itemize}
-    \item Une \alert{\textbf{équipe de threads}} est crée
+    \item A \alert{\textbf{thread team}} is assembled
     \item ...
-    \item Une \alert{\textbf{tâche implicite}} est créée pour chaque thread
-    \item Elle lui est \textbf{liée} (peut pas migrer sur un autre thread)
+    \item An \alert{\textbf{implicit task}} is scheduled on each thread
+    \item It is \alert{\textbf{tied}} (cannot migrate to another thread)
     \end{itemize}
   \end{block}
   
   \medskip
   
-  \textbf{tâche} = code + données associées, le tout exécuté par un thread
+  \textbf{task} = code + associated data (``closure''), executed by a thread
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Directive \texttt{omp task}}
+  \frametitle{\texttt{omp task} Directive}
 
   \begin{framed}
   {\tt \#pragma omp task } {\it [clause], [clause], ...}  \\
-  {\it bloc structuré} 
+  {\it structured block} 
 \end{framed}
 
 \begin{itemize}
-\item Le thread qui rencontre ceci crée une \textbf{tâche explicite}
-\item Exécution \alert{immédiate} ou \alert{différée}
-\item Exécution par un des threads de l'équipe... si disponible
+\item The encoutering thread creates an \textbf{explicit task}
+\item Execution can be \alert{immediate} or \alert{deferred}
+\item Execution by one of the threads of the team... if available
 \pause
-\item Un thread peut suspendre l'exécution d'une tâche et en démarrer/reprendre
-  une autre...
-  \item ... Mais seulement lors d'un \emph{task scheduling points}
+\item A thread may suspend a task and start/resume another one...
+  \item ... but only at a \emph{task scheduling point}
 \end{itemize}
 \end{frame}
 
@@ -2161,50 +2110,50 @@ Some common functions (with \mintinline{C}{#include <omp.h>}):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}
-  \frametitle{Synchronisation des tâches}
-  \framesubtitle{Modèle \emph{Fork/Join}}
+  \frametitle{Synchronizing Tasks}
+  \framesubtitle{\emph{Fork/Join} Model}
   
 
-  \begin{block}{Barrières ``normales''}
+  \begin{block}{``Normal'' barrier}
     \begin{itemize}
-    \item Implicites : à la fin d'une région parallèle, de \texttt{omp for}, ...
-    \item Explicites : \texttt{\bf \#pragma omp barrier}
+    \item Implicit: at the end of a parallel region, of \texttt{omp for}, ...
+    \item Explicit: \texttt{\bf \#pragma omp barrier}
     \end{itemize}
 
     \medskip
     
-    \textbf{Garantie} : Toutes les tâches crées par un thread de l'équipe courante sont
-    terminées à la sortie de la barrière
+    \textbf{Guarantee}: All tasks created by threads in the team are completed
+    after the barrier
   \end{block}
   
   \bigskip
   
-  \begin{exampleblock}{Barrière de tâches : \texttt{\bf \#pragma omp taskwait}}
+  \begin{exampleblock}{Task barrier: \texttt{\bf \#pragma omp taskwait}}
     \begin{itemize}
-    \item La tâche courante attend la terminaison de ses tâches \alert{filles}
-    \item Seulement filles directes, pas descendantes
+    \item The current task waits for completion of its \alert{child} tasks
+    \item Only direct children, not descendant
     \end{itemize}
   \end{exampleblock}  
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[fragile]
-  \frametitle{Exemple : parcours d'une liste chainée}
+\begin{frame}[fragile=singleslide]
+  \frametitle{Example: Iterating Over a Linked List}
 
 \begin{minted}[fontsize=\small]{C}
 struct item_t {
-  void * data;
-  struct item_t * next;
+  void *data;
+  struct item_t *next;
 };
-struct item_t * head;
+struct item_t *list;
 \end{minted}
 
 \begin{columns}[T]
   \begin{column}{0.49\textwidth}
-    \begin{block}{Séquentiel}
+    \begin{block}{Sequential}
 \begin{minted}[fontsize=\small,stripnl=false]{C}
-struct item_t * e = head;
+struct item_t *e = list;
 
 
 while (e != NULL) {
@@ -2217,9 +2166,9 @@ while (e != NULL) {
   \end{column}
 
   \begin{column}{0.49\textwidth}
-    \begin{block}{Avec tâches\phantom{Sq}}
+    \begin{block}{With tasks\phantom{Sq}}
 \begin{minted}[fontsize=\small]{C}
-struct item_t * e = head;
+struct item_t *e = list;
 #pragma omp parallel
 #pragma omp single
 while (e != NULL) {
@@ -2233,8 +2182,10 @@ while (e != NULL) {
 \end{columns}
 \end{frame}
 
-\begin{frame}[fragile]
-  \frametitle{Exemple : descente dans un arbre binaire}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{Example: Visiting the Nodes of a Binary Tree}
 
 \begin{minted}{C}
 struct tree_t {
@@ -2246,41 +2197,41 @@ struct tree_t *root;
 
 \begin{columns}[T]
   \begin{column}{0.49\textwidth}
-    \begin{block}{Séquentiel}
+    \begin{block}{Sequential}
 \begin{minted}[stripnl=false]{C}
-void parcours(struct tree_t *t)
+void walk(struct tree_t *t)
 {
   ...
   if (t->left) 
 
-      parcours(t->left);
+      walk(t->left);
   if (t->right) 
 
-      parcours(t->right);
+      walk(t->right);
 }
 
 
-parcours(root);
+walk(root);
 \end{minted}
     \end{block}
   \end{column}
 
   \begin{column}{0.49\textwidth}
-    \begin{block}{Avec tâches\phantom{Sq}}
+    \begin{block}{With tasks\phantom{Sq}}
 \begin{minted}{C}
-void parcours(struct tree_t *t)
+void walk(struct tree_t *t)
 {
   ...
   if (t->left) 
       #pragma omp task
-      parcours(t->left);
+      walk(t->left);
   if (t->right) 
       #pragma omp task
-      parcours(t->right);
+      walk(t->right);
 }
 #pragma omp parallel
 #pragma omp single
-parcours(root);
+walk(root);
 \end{minted}
     \end{block}
   \end{column}
@@ -2290,16 +2241,16 @@ parcours(root);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Directive \texttt{omp task}}
+  \frametitle{\texttt{omp task} Directive (continued)}
 
   \begin{framed}
   {\tt \#pragma omp task } {\it [clause], [clause], ...}  \\
-  {\it bloc structuré} 
+  {\it structured block} 
 \end{framed}
 
 \medskip
 
-Clauses associées :
+Associated clauses:
   \begin{itemize}
   \item  {\tt private} ({\it variable\_list}), {\tt firstprivate} ({\it
       variable\_list}), {\tt shared} ({\it variable\_list})
@@ -2307,26 +2258,27 @@ Clauses associées :
   \item {\tt untied}
   \item {\tt depend}({\it dependance-type}: {\it list})
   \item {\tt if({\it expression})}
+  \item ...
   \end{itemize}  
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[fragile]
-  \frametitle{Tâches : portée des variables}
+\begin{frame}[fragile=singleslide]
+  \frametitle{Tasks: Variable Scoping}
 
   \begin{itemize}
-  \item Le plus utile avec les tâches : \textbf{firstprivate}
-  \item Attribut \textbf{firstprivate} par défaut sur toutes les variables...
-  \item  \alert{\bf sauf} si elles sont déjà considérées comme \textbf{shared}
+  \item Most useful data attribute with tasks: \textbf{firstprivate}
+  \item[$\leadsto$] By default on all variables...
+  \item ...\alert{\textbf{except}} if they are already \textbf{shared}
     \begin{itemize}
-    \item Variable globale
-    \item Variable déclarée avant la région parallèle
-    \item Variable explicitement marquée comme \texttt{shared}
+    \item Global cariables 
+    \item Declared before the parallel section
+    \item Explicitly tagged as\texttt{shared}
     \end{itemize}
   \end{itemize}
 
-  \begin{alertblock}{\bf Attention aux variables partagées sur la pile}
+  \begin{alertblock}{\textbf{Be careful with shared variables on the stack}}
 \begin{minted}{C}
 void f()
 {
@@ -2344,8 +2296,8 @@ f();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[fragile]
-  \frametitle{Tâches : cas où \texttt{shared} est a priori nécessaire}
+\begin{frame}[fragile=singleslide]
+  \frametitle{Tasks: When is \texttt{shared} Necessary?}
 
 \begin{minted}{C}
 struct tree_t {
@@ -2354,7 +2306,7 @@ struct tree_t {
 };
 struct tree_t *root;
 
-/* Renvoie le nombre de noeuds de l'arbre. */
+/* Return \# nodes in the tree. */
 int size(struct tree_t *t)
 {
   int s_left = 0, s_right = 0;
@@ -2401,25 +2353,25 @@ printf("%d\n", size(root));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[fragile]
-  \frametitle{Tâches : granularité}
+\begin{frame}[fragile=singleslide]
+  \frametitle{Tasks: granularity}
 
-  \textbf{Créer une tâche a un coût non-trivial}
+  \textbf{Creating a task has a non-trivial cost}
 
   \bigskip
 
-  \begin{exampleblock}{Ne pas créer des tâches minuscules}
+  \begin{exampleblock}{Don't create microscopic tasks}
     \begin{itemize}
-    \item \emph{Clause} \textbf{if} de la directive \texttt{omp task}
+    \item \textbf{if} \emph{Clause} from the \texttt{omp task} directive
       \begin{itemize}
-      \item \texttt{\#pragma omp task if(prof < PROF\_MAX)}
-      \item La tâche est \alert{quand même créée}...
-      \item ...mais exécutée tout de suite par le thread courant
+      \item E.g. \texttt{\#pragma omp task if(prof < PROF\_MAX)}
+      \item The task is \alert{created anyway}...
+      \item ...but executed immediately by the encountering thread
       \end{itemize}
 
       \medskip
 
-    \item \emph{Instruction} \texttt{if}:
+    \item \texttt{if} \emph{instruction}:
 \begin{minted}{C}
 if (prof < PROF_MAX) {
   #pragma omp task
@@ -2428,7 +2380,7 @@ if (prof < PROF_MAX) {
   stuff(...);
 }
 \end{minted}
-      \item[$\rightarrow$] à privilégier a priori
+      \item[$\rightarrow$] to be preferred
     \end{itemize}
   \end{exampleblock}
   
@@ -2437,21 +2389,121 @@ if (prof < PROF_MAX) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Tâches : dépendances}
-
-  TODO...
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{Tâches : dépendances}
-  \framesubtitle{Exemple de la mort (Christian Terboven)}
+  \frametitle{Tasks: dependances}
+  \framesubtitle{Example (Christian Terboven)}
   
   \includegraphics[width=\textwidth]{block_cholesky_tasking}
   
 \end{frame}
 
+
+\section{Misc}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Nested Parallelism}
+
+
+  \begin{itemize}
+\item A \texttt{parallel} directive inside a \texttt{parallel} directive
+
+\medskip
+  
+\item In most cases, this is a no-op.
+  \begin{itemize}
+  \item No more ``available'' threads to work on the nested parallel region:
+    they are all in the parent parallel region.
+  \end{itemize}
+
+  \medskip
+
+\item It is possible to force the creation of a new thread teams (cf. spec)
+  
+\end{itemize}
+
+\begin{alertblock}{My opinion}
+  \begin{itemize}
+  \item \textbf{STRICTLY USELESS} to do it voluntarily
+  \item Could happen if a parallel program invoked a parallel library inside a parallel region
+  \end{itemize}
+\end{alertblock}
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile=singleslide]
+  \frametitle{OpenMP Runtime Library}
+
+Some common functions (with \mintinline{C}{#include <omp.h>}):
+\begin{itemize}
+  \item \mintinline{C}{void omp_set_num_threads(int num_thread)}: sets the number
+    of threads to use in subsequent parallel regions
+    
+  \item \mintinline{C}{int omp_get_num_threads(void)}: return the number of threads in the current team
+  \item \mintinline{C}{int omp_get_max_threads(void)}: upper bound on \#threads in new teams
+  \item \mintinline{C}{int omp_get_thread_num(void)}
+  \item \mintinline{C}{int omp_get_num_procs(void)}
+  \item \mintinline{C}{int omp_in_parallel(void)}: return true if we are inside a parallel region
+  \item \mintinline{C}{double omp_get_wtime(void)}
+\end{itemize}
+
+  
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \frametitle{Environment Variables}
+  \begin{itemize}
+  \item {\tt OMP\_NUM\_THREADS}
+  \item {\tt OMP\_SCHEDULE} :
+
+{\tt export OMP\_SCHEDULE="static,4"}
+
+{\tt export OMP\_SCHEDULE="dynamic"}
+
+%   \item {\tt OMP\_DYNAMIC} :
+    
+%     \begin{itemize}
+%     \item affectée avec {\tt TRUE} le nombre de threads peut-être ajusté par
+%       l'environnement d'exécution pour améliorer l'utilisation du système.
+      
+%     \item affectée avec {\tt FALSE} l'ajustement est désactivé.
+      
+%     \item la valeur par défaut est système-dépendant.
+%     \end{itemize}
+
+  \item ...    
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{Cheat Sheet}
+
+  \begin{exampleblock}{Most common}
+    \begin{itemize}
+    \item The \textit{must}: \verb|#pragma omp parallel for|
+    \item \verb|atomic| and \verb|critical| directives
+    \item \verb|schedule| and \verb|reduction| clauses
+    \end{itemize}
+  \end{exampleblock}
+
+  \begin{block}{Less common: SPMD mode}
+    \begin{itemize}
+    \item Parallel region with explicit \verb|#pragma omp for| inside
+    \item \verb|omp_get_thread_num()| and \verb|omp_get_num_threads()|
+    \item \verb|barrier| or \verb|single| directives
+    \end{itemize}
+  \end{block}
+
+  \begin{alertblock}{Rare (reserved for the most delicate cases...)}
+    Everything else!
+  \end{alertblock}
+\end{frame}
 
 \end{document}
 
