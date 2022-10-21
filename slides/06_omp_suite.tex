@@ -1,7 +1,7 @@
 \documentclass[xcolor={x11names,svgnames},x11names,svgnames]{beamer}
 \setbeamerfont{note page}{size=\tiny} % default = small 
 
-%\includeonlyframes{rcu}
+%\includeonlyframes{atomic}
 
 \newcommand{\heading}{\frametitle}
 
@@ -1078,6 +1078,70 @@ void * receive()
   \item Yes, it is sequentially consistent
   \end{enumerate}
 \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=atomic]
+  \frametitle{What About \texttt{atomic} Operations?}
+
+  \begin{itemize}
+  \item ``\emph{Read-Modify-Write}'' (atomically) 
+  \item Special order relation $\rmw$ connects the read to the write
+  \item Atomicity $\Longleftrightarrow \rmw \cap (\rb ; \mo) = \emptyset$
+  \end{itemize}
+
+  \begin{center}\small
+\begin{tabular}{|c|p{2.5cm}||p{2.5cm}|}
+  \hline
+  Initially & \multicolumn{2}{c|}{x = 1} \\
+  \hline
+  RMW            & \tt a = x;     & \tt b = x; \\
+                 & \tt x = a + 1; & \tt x = b * 10; \\
+  \hline
+  Expected  & \multicolumn{2}{c|}{$x = 11$ or $x = 20$} \\
+  \hline
+\end{tabular}
+\end{center}
+
+Is it possible to get $x = 2$?
+
+\pause
+
+\begin{center}
+\begin{tikzpicture}[>=latex,every node/.style={font=\small}]
+  \useasboundingbox (-6.5, -0.75) rectangle (3, 1.75);
+  \node at (0, 2) (init) {$W_0(x)1$};
+  
+  \node at (-2,0)  (R0) {$R_0(x)1$};
+  \node at (-2,-1) (W0) {$W_0(x)2$};
+
+  \node at (2,0)  (R1) {$R_1(x)1$};
+  \node at (2,-1) (W1) {$W_1(x)10$};
+
+\draw[Green,->] (init) edge[bend right]  node[left] {\tt rf} (R0);
+\draw[Green,->] (init) edge[bend left]  node[right] {\tt rf} (R1);
+
+%\draw[orange,->] (init) edge[bend left]  node[left] {\tt mo} (W0);
+\draw[orange,->] (init) edge[bend right]  node[right] {\tt mo} (W1);
+\draw[orange,->] (W1) edge[]  node[above] {\tt mo} (W0);
+
+ \draw[Purple,->] (R0) edge  node[above] {\tt rb} (W1);
+ \draw[Purple,->] (R1) edge  node[right] {\tt rb} (W1);
+
+ \draw[gray,->] (R0) edge[out=180, in=180]  node[left] {\tt rmw} (W0.west);
+ \draw[gray,->] (R1) edge[out=0, in=0]  node[right] {\tt rmw} (W1.east);
+\end{tikzpicture}
+\end{center}
+
+\pause
+
+But then we have:
+\[
+  R_0(x)1 \rmw W_0(x)2 \qquad\text{and}\qquad R_0(x)1 \rb W_1(x)10 \mo W_0(x)2.
+\]
+
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
