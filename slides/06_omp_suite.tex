@@ -1785,10 +1785,386 @@ for (int i = 0; i < M; i++) {
 \end{exampleblock}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Procéder par phases}
+\subsection{Sparse LU}
+
+\begin{frame}[label=sparse_lu_intro]
+  \frametitle{Example: Sparse LU Factorization}
+
+  \begin{center}
+    \begin{tikzpicture}
+      \path[red, dashed, use as bounding box] (0.25, -0.2) rectangle +(11, 3.6);
+
+    % L en haut
+    \begin{scope}  
+      \node[anchor=south west, inner sep=0] at (0, 0)
+      {\includegraphics[width=2.8cm, height=3.25cm]{L}};
+      \tikzmat{0,0}{2.8cm, 3.25cm}
+    \end{scope}
+
+    % U en haut
+    \begin{scope}[xshift=3.1cm, yshift=0.45cm]
+       \node[anchor=south west, inner sep=0] at (0, 0) {\includegraphics[width=2.8cm]{U}};
+       \tikzmat{0,0}{2.8cm, 2.8cm}
+     \end{scope}
+    
+    \node[anchor=west, font=\large] at (6, 1.6) {$= P \times$};
+
+     \begin{scope}[xshift=7.4cm]
+       \node[anchor=south west, inner sep=0] at (0, 0) {\includegraphics[width=2.8cm, height=3.2cm]{tf13}};
+       \tikzmat{0,0}{2.8, 3.2}
+     \end{scope}
+
+    \node[anchor=west, font=\large] at (10.25, 1.6) {$\times Q^{-1}$};
+  \end{tikzpicture}
+\end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=sparse_lu_example]
+  \frametitle{Example: Sparse LU Factorization}
+
+
+  \begin{columns}
+    \begin{column}{3.4cm}
+      \begin{tikzpicture}[every node/.style={font=\tiny},scale=0.4]
+    % état initial aléatoire
+    \pgfmathdeclarerandomlist{MyRandomColors}{{white}{white}{white}{white}{white}{white}{lightgray}}
+    \foreach \i in {0, 1, ..., 49} {
+      \pgfmathsetseed{55+\i}
+      \foreach \j in {0, 1, ..., 49} {
+          \pgfmathrandomitem{\RandomColor}{MyRandomColors} 
+          \fill[fill=\RandomColor] (0.2*\j, 0.2*\i) rectangle +(0.2, 0.2);
+        }
+      }
+      % cheat because I made a mistake
+      \fill[fill=lightgray] (0, 0.2*48) rectangle +(0.2, 0.2);
+      
+      % pivot et ligne pivotale
+      \foreach \j in {4, 5, 10, 26, 36, 39, 46} {
+        \fill<2->[fill=blue] (0.2*\j, 0.2*48) rectangle +(0.2, 0.2);
+      }
+      \fill<2->[fill=red] (0, 0.2*48) rectangle +(0.2, 0.2);
+
+      % colonne pivotale
+      \foreach \i in {44, 37, 30, 23, 16, 9, 2} {
+        \fill<2->[fill=blue] (0, 0.2*\i) rectangle +(0.2, 0.2);
+      }
+
+      \foreach \step / \i in {3/44, 4/37, 5/30, 6/23, 7/16, 8/9, 9/2} {
+        %  étape d'élimination
+        \fill<\step->[fill=white] (0, 0.2*\i) rectangle +(0.2, 0.2);
+        \fill<\step->[fill=blue] foreach \j in {4, 5, 10, 26, 36, 39, 46} {(0.2*\j, 0.2*\i) rectangle +(0.2, 0.2)};
+      }
+      \path[use as bounding box] (5mm, 0) rectangle +(10, 10);
+      \draw[use as bounding box] (0, 0) rectangle +(10, 10);
+    \end{tikzpicture}
+  \end{column}
+  \begin{column}{6.5cm}
+    \begin{alertblock}<10->{Several columns in parallel?}
+      \begin{itemize}
+      \item Conflicting accesses to the rows!
+      \end{itemize}
+    \end{alertblock}
+
+    \medskip
+    
+    \begin{exampleblock}<11->{Solution}
+      Identify \emph{independent} column\textbf{S}
+    \end{exampleblock}
+  \end{column}
+\end{columns}
+
+\begin{block}{Algorithm}
+  \setlength{\leftmargini}{5mm}
+  \begin{enumerate}
+  \item~[Start.] $j \gets 1$
+  \item~[Search.] Find $i$ such that $M_{ij} \neq 0$
+  \item~[Eliminate.] For $M_{i'j} \neq 0$ and $i' \neq i$, do: $M_{i'} \gets (...) \times M_i$
+  \item~[Loop.] Increment $j$. If $j=n$, STOP. Otherwise go to step 2
+  \end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{General Idea \#2: Work in ``Phases''}
+
+  \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \vspace{1mm}
+      \includegraphics[width=\textwidth]{triste.png}
+    \end{column}
+    
+    \begin{column}{.9\textwidth}
+      \begin{itemize}
+      \item Give up a small amount of parallelism...
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  \vspace{1cm}
+  
+  \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \vspace{3mm}
+      \includegraphics[width=\textwidth]{Content.png}
+    \end{column}
+    
+    \begin{column}{.9\textwidth}
+      \begin{itemize}
+      \item ... To eliminate conflits altogether
+      \end{itemize}
+    \end{column}
+  \end{columns}  
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\begin{frame}[label=sparse_lu_MIS]
+  \frametitle{Example: Sparse LU Factorization}
+
+  \begin{columns}
+    \begin{column}{0.4\textwidth}
+  \begin{tikzpicture}[scale=0.8]
+    \draw[red,thick,dashed] (0.5, -1) -- (0.5, 6) node[above] {$j$};
+    \draw[red,thick,dashed] (2.5, -1) -- (2.5, 6) node[above] {$j'$};
+
+    \draw[red,thick,dashed] (-1, 0.5) -- (4, 0.5) node[right] {$i$};
+    
+    \draw[fill=lightgray] (0, 0) rectangle +(1, 1);
+    \draw[fill=lightgray] (2, 0) rectangle +(1, 1);
+    \draw[fill=lightgray] (0, 2) rectangle +(1, 1);
+    \draw[fill=lightgray] (2, 4) rectangle +(1, 1);
+  \end{tikzpicture}
+  
+\end{column}
+\begin{column}{0.6\textwidth}
+  \begin{alertblock}{Dependency}
+    \begin{itemize}
+    \item Columns $j$ and $j'$ connected by row $i$
+    \end{itemize}
+  \end{alertblock}
+
+  \medskip
+
+  \begin{block}{Dependency graph $G_{dep}$}
+    \begin{itemize}
+    \item Vertices $V = $ all columns
+    \item Edges:
+      \[
+        E = \{ j \leftrightarrow j'~:~ \exists i. M_{ij} \neq 0 \wedge M_{ij'} \neq 0 \}
+      \]
+    \end{itemize}
+  \end{block}
+
+  \begin{exampleblock}{Independent columns}
+    $\rightarrow$ Independent Set in $G_{dep}$
+  \end{exampleblock}
+\end{column}
+\end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\begin{frame}[label=sparse_lu_MIS]
+  \frametitle{Example: Sparse LU Factorization}
+
+  \begin{block}{Modified algorithm:}
+    \begin{itemize}
+    \item While not all columns have been eliminated:
+      \begin{itemize}
+      \item Find an independent set $\mathcal{I}$ in $G_{dep}$.
+        \begin{itemize}
+        \item (optimal = NP-hard! Here: sequential greedy algorithm)
+        \end{itemize}
+      \item Eliminate all columns in $\mathcal{I}$ \alert{in parallel}
+      \item ``Forget'' eliminated columns
+      \end{itemize}
+    \end{itemize}
+  \end{block}
+  
+  \bigskip
+
+    \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \includegraphics[width=\textwidth]{Content.png}
+    \end{column}
+    \begin{column}[c]{.9\textwidth}
+
+      No conflict!
+      
+    \end{column}
+  \end{columns}
+
+  \bigskip
+  
+  \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \includegraphics[width=\textwidth]{triste.png}
+    \end{column}
+    \begin{column}[c]{.9\textwidth}
+
+      Sequential portion...
+      
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\begin{frame}[label=sparse_lu_MIS_3]
+  \frametitle{Example: Sparse LU Factorization}
+  \framesubtitle{Sub-Example: Greedy Algorithm for Maxim\alert{al} Independent Set}
+  
+  \begin{block}{Algorithm (can be implemented in linear time)}
+    \begin{itemize}
+    \item $\mathcal{I} \gets \emptyset$
+    \item While $G$ is not empty:
+      \begin{itemize}
+      \item Choose a vertex $x$ (arbitrarily)
+      \item Add $x$ to $\mathcal{I}$
+      \item Remove $x$ and all its neighbors from $G$
+      \end{itemize}
+    \item Return $\mathcal{I}$
+    \end{itemize}
+\end{block}
+
+\bigskip
+
+\begin{tikzpicture}[every node/.style={draw,shape=circle}]
+  \node[] (a) at (0,0)  {A};
+  \node[thick,text=red,right=of a] (b) {B};
+  \node[thick,text=red,right=of b] (c) {C};
+
+  \node[thick,text=green] at (5,0) (e) {A};
+  \node[right=of e] (f) {B};
+  \node[right=of f] (g) {C};
+  \node[thick,text=green,right=of g] (h) {D};
+
+  \draw (a) edge (b);
+  \draw (b) edge[ultra thick] (c);
+
+  \draw (e) edge (f);
+  \draw (f) edge (g);
+  \draw (g) edge (h);
+\end{tikzpicture}
+
+  \bigskip
+  
+  \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \includegraphics[width=\textwidth]{triste.png}
+    \end{column}
+    \begin{column}[c]{.9\textwidth}
+
+      In parallel: neighborhood conflict...
+      
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%%%%%%%%%
+
+\begin{frame}[label=parallel_MIS]
+  \frametitle{Example: Sparse LU Factorization}
+  \framesubtitle{Sub-Example: Greedy Algorithm for Maxim\alert{al} Independent Set}
+
+  \begin{exampleblock}{Modified Algorithm}
+    \begin{itemize}
+    \item $\mathcal{I} \gets \emptyset$
+    \item Choose a random permutation $\pi$ of $\{1, \dots, n\}$  (``\emph{score}'')
+    \item While $G$ is not empty: \uncover<2>{\hfill(\alert{\emph{$\approx \log^2 n$ iterations}})}
+      \begin{itemize}
+      \item $X = \{ u \in V~|~\text{$\pi[u] > \pi[v]$ for all $u \leftrightarrow v$} \}$ %$
+      \item Add $X$ to $\mathcal{I}$.
+      \item Remove $X$ and all neighbors of verticies in $X$ from $G$
+      \end{itemize}
+    \item Return $\mathcal{I}$
+    \end{itemize}
+  \end{exampleblock}
+  
+\bigskip
+
+\begin{tikzpicture}[every node/.style={draw,circle solidus,font=\scriptsize,inner sep=0pt}]
+  \node[thick,text=red] (a) at (0,0)  {A \nodepart{lower} 50};
+  \node[right=of a] (b) {B \nodepart{lower} 30};
+  \node[thick,text=red,right=of b] (c) {C \nodepart{lower} \alert{64}};
+
+  \node[] at (5,0) (e) {A \nodepart{lower} 10};
+  \node[right=of e] (f) {B \nodepart{lower} 20};
+  \node[right=of f] (g) {C \nodepart{lower} 30};
+  \node[thick,text=red,right=of g] (h) {D \nodepart{lower} 40};
+
+  \draw (a) edge[] (b);
+  \draw (b) edge[] (c);
+
+  \draw (e) edge[] (f);
+  \draw (f) edge (g);
+  \draw (g) edge[] (h);
+\end{tikzpicture}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Tricks transactionnels}
+
+\begin{frame}[label=sparse_lu_MIS]
+  \frametitle{Example: Sparse LU Factorization}
+
+  \begin{block}{Alternative algorithm (other point of view):}
+  \begin{itemize}
+  \item While not all columns have been eliminated:
+    \begin{itemize}
+    \item Set $\mathcal{I} \gets \empty$, then for each remaining column (in parallel):
+      \begin{itemize}
+      \item Row indices in the column: $[i_1, \dots, i_k]$
+      \item~\emph{(Optional)} If $\texttt{Mark}[i_\ell] = 1$ for any $\ell$, abort
+      \item For all $\ell$, do:\\
+        $\quad$ $old \gets \texttt{Mark}[i_\ell]$ and $\texttt{Mark}[i_\ell] \gets 1$ (atomic capture).\\
+        $\quad$ If $old = 1$, abort.
+      \end{itemize}
+    \item Eliminate all colonnes in $\mathcal{I}$ \alert{in parallel}
+    \item ``Forget'' eliminated columns and reset \texttt{Mark} to zero
+    \end{itemize}
+  \end{itemize}
+\end{block}
+
+\bigskip
+
+    \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \includegraphics[width=\textwidth]{Content.png}
+    \end{column}
+    \begin{column}[c]{.9\textwidth}
+
+      No conflict!
+      
+    \end{column}
+  \end{columns}
+
+  \bigskip
+  
+  \begin{columns}[c]
+    \begin{column}{.1\textwidth}
+      \includegraphics[width=\textwidth]{triste.png}
+    \end{column}
+    \begin{column}[c]{.9\textwidth}
+
+      Some rows spuriously ``locked'' until the next phase 
+      
+    \end{column}
+  \end{columns}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Tricks transactionnels}
+
 
 \begin{frame}[label=transactions]
   \frametitle{Parallel Transactions}
@@ -1835,7 +2211,7 @@ for (int i = 0; i < M; i++) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=idea1]
-  \frametitle{General Principle: \textbf{Analyze Conflict Frequency}}
+  \frametitle{General Idea \#3: \textbf{Analyze Conflict Frequency}}
 
   \begin{columns}[c]
     \begin{column}{.1\textwidth}
@@ -2148,334 +2524,6 @@ if (status == _XBEGIN_STARTED) {
 
 
 
-\subsection{Sparse LU}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{Idée générale n\textdegree 2 : procéder par \og phases\fg{}}
-
-  \begin{columns}[c]
-    \begin{column}{.1\textwidth}
-      \vspace{1mm}
-      \includegraphics[width=\textwidth]{triste.png}
-    \end{column}
-    
-    \begin{column}{.9\textwidth}
-      \begin{itemize}
-      \item Accepter une réduction du degré de parallélisme...
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-  \vspace{1cm}
-  
-  \begin{columns}[c]
-    \begin{column}{.1\textwidth}
-      \vspace{3mm}
-      \includegraphics[width=\textwidth]{Content.png}
-    \end{column}
-    
-    \begin{column}{.9\textwidth}
-      \begin{itemize}
-      \item ... Pour éliminer complètement les conflits
-      \end{itemize}
-    \end{column}
-  \end{columns}  
-\end{frame}
-
-%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=sparse_lu_intro]
-  \frametitle{Exemple : factorisation LU creuse}
-
-  \begin{center}
-    \begin{tikzpicture}
-      \path[red, dashed, use as bounding box] (0.25, -0.2) rectangle +(11, 3.6);
-
-    % L en haut
-    \begin{scope}  
-      \node[anchor=south west, inner sep=0] at (0, 0)
-      {\includegraphics[width=2.8cm, height=3.25cm]{L}};
-      \tikzmat{0,0}{2.8cm, 3.25cm}
-    \end{scope}
-
-    % U en haut
-    \begin{scope}[xshift=3.1cm, yshift=0.45cm]
-       \node[anchor=south west, inner sep=0] at (0, 0) {\includegraphics[width=2.8cm]{U}};
-       \tikzmat{0,0}{2.8cm, 2.8cm}
-     \end{scope}
-    
-    \node[anchor=west, font=\large] at (6, 1.6) {$= P \times$};
-
-     \begin{scope}[xshift=7.4cm]
-       \node[anchor=south west, inner sep=0] at (0, 0) {\includegraphics[width=2.8cm, height=3.2cm]{tf13}};
-       \tikzmat{0,0}{2.8, 3.2}
-     \end{scope}
-
-    \node[anchor=west, font=\large] at (10.25, 1.6) {$\times Q^{-1}$};
-  \end{tikzpicture}
-\end{center}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-\begin{frame}[label=sparse_lu_example]
-  \frametitle{Exemple : factorisation LU creuse}
-
-  \begin{columns}
-    \begin{column}{3.4cm}
-      \begin{tikzpicture}[every node/.style={font=\tiny},scale=0.4]
-    % état initial aléatoire
-    \pgfmathdeclarerandomlist{MyRandomColors}{{white}{white}{white}{white}{white}{white}{lightgray}}
-    \foreach \i in {0, 1, ..., 49} {
-      \pgfmathsetseed{55+\i}
-      \foreach \j in {0, 1, ..., 49} {
-          \pgfmathrandomitem{\RandomColor}{MyRandomColors} 
-          \fill[fill=\RandomColor] (0.2*\j, 0.2*\i) rectangle +(0.2, 0.2);
-        }
-      }
-      % cheat because I made a mistake
-      \fill[fill=lightgray] (0, 0.2*48) rectangle +(0.2, 0.2);
-      
-      % pivot et ligne pivotale
-      \foreach \j in {4, 5, 10, 26, 36, 39, 46} {
-        \fill<2->[fill=blue] (0.2*\j, 0.2*48) rectangle +(0.2, 0.2);
-      }
-      \fill<2->[fill=red] (0, 0.2*48) rectangle +(0.2, 0.2);
-
-      % colonne pivotale
-      \foreach \i in {44, 37, 30, 23, 16, 9, 2} {
-        \fill<2->[fill=blue] (0, 0.2*\i) rectangle +(0.2, 0.2);
-      }
-
-      \foreach \step / \i in {3/44, 4/37, 5/30, 6/23, 7/16, 8/9, 9/2} {
-        %  étape d'élimination
-        \fill<\step->[fill=white] (0, 0.2*\i) rectangle +(0.2, 0.2);
-        \fill<\step->[fill=blue] foreach \j in {4, 5, 10, 26, 36, 39, 46} {(0.2*\j, 0.2*\i) rectangle +(0.2, 0.2)};
-      }
-      \path[use as bounding box] (5mm, 0) rectangle +(10, 10);
-      \draw[use as bounding box] (0, 0) rectangle +(10, 10);
-    \end{tikzpicture}
-  \end{column}
-  \begin{column}{6.5cm}
-    \begin{alertblock}<10->{Plusieurs colonnes en parallèle ?}
-      \begin{itemize}
-      \item Conflit d'accès aux lignes !
-      \end{itemize}
-    \end{alertblock}
-
-    \medskip
-    
-    \begin{exampleblock}<11->{Solution}
-      Identifier DES colonnes \emph{indépendantes}.
-    \end{exampleblock}
-  \end{column}
-\end{columns}
-
-\begin{block}{Algorithme}
-  \setlength{\leftmargini}{5mm}
-  \begin{enumerate}
-  \item~[Début.] $j \gets 1$
-  \item~[Pivot.] Trouver $i$ avec $M_{ij} \neq 0$
-  \item~[Élimination.] Pour $M_{i'j} \neq 0$ avec $i' \neq i$, faire $M_{i'} \gets (...) \times M_i$.
-  \item~[Boucle.] Incrémenter $j$. Si $j=n$, STOP. Sinon retourner en 2.
-  \end{enumerate}
-\end{block}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=sparse_lu_MIS]
-  \frametitle{Exemple : factorisation LU creuse}
-
-  \begin{columns}
-    \begin{column}{0.4\textwidth}
-  \begin{tikzpicture}[scale=0.8]
-    \draw[red,thick,dashed] (0.5, -1) -- (0.5, 6) node[above] {$j$};
-    \draw[red,thick,dashed] (2.5, -1) -- (2.5, 6) node[above] {$j'$};
-
-    \draw[red,thick,dashed] (-1, 0.5) -- (4, 0.5) node[right] {$i$};
-    
-    \draw[fill=lightgray] (0, 0) rectangle +(1, 1);
-    \draw[fill=lightgray] (2, 0) rectangle +(1, 1);
-    \draw[fill=lightgray] (0, 2) rectangle +(1, 1);
-    \draw[fill=lightgray] (2, 4) rectangle +(1, 1);
-  \end{tikzpicture}
-  
-\end{column}
-\begin{column}{0.6\textwidth}
-  \begin{alertblock}{Dépendences}
-    \begin{itemize}
-    \item Colonnes $j$ et $j'$ liées par ligne $i$.
-    \end{itemize}
-  \end{alertblock}
-
-  \medskip
-
-  \begin{block}{Graphe de dépendence $G_{dep}$}
-    \begin{itemize}
-    \item Sommets $V = $ ens. des colonnes.
-    \item Arêtes :
-      \[
-        E = \{ j \leftrightarrow j'~:~ \exists i. M_{ij} \neq 0 \wedge M_{ij'} \neq 0 \}.
-      \]
-    \end{itemize}
-  \end{block}
-
-  \begin{exampleblock}{Colonnes indépendantes}
-    $\rightarrow$ Ensemble indépendant dans $G_{dep}$.
-  \end{exampleblock}
-\end{column}
-\end{columns}
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}[label=sparse_lu_MIS]
-  \frametitle{Exemple : factorisation LU creuse}
-
-  \begin{block}{Nouvel algorithme :}
-  \begin{itemize}
-  \item Tant que ce n'est pas fini :
-    \begin{itemize}
-    \item Trouver un ensemble indépendant $\mathcal{I}$ dans $G_{dep}$.
-      \begin{itemize}
-      \item (optimal = NP-dur. Ici : algorithme glouton séquentiel)
-      \end{itemize}
-    \item Éliminer toutes les colonnes de $\mathcal{I}$ \alert{en parallèle}.
-    \item \og Oublier\fg{} les colonnes éliminées
-    \end{itemize}
-  \end{itemize}
-\end{block}
-
-\bigskip
-
-    \begin{columns}[c]
-    \begin{column}{.1\textwidth}
-      \includegraphics[width=\textwidth]{Content.png}
-    \end{column}
-    \begin{column}[c]{.9\textwidth}
-
-      Pas de conflit !
-      
-    \end{column}
-  \end{columns}
-
-  \bigskip
-  
-  \begin{columns}[c]
-    \begin{column}{.1\textwidth}
-      \includegraphics[width=\textwidth]{triste.png}
-    \end{column}
-    \begin{column}[c]{.9\textwidth}
-
-      Portion séquentielle...
-      
-    \end{column}
-  \end{columns}
-\end{frame}
-
-
-%%%%%%%%%%%%%%
-
-
-\begin{frame}[label=sparse_lu_MIS_3]
-  \frametitle{Exemple : factorisation LU creuse}
-  \framesubtitle{Sous-exemple : algorithme glouton pour trouver un ensemble indépendant maxim\alert{al}}
-  
-  \begin{block}{Algorithme (implantable en temps linéaire)}
-    \begin{itemize}
-    \item $\mathcal{I} \gets \emptyset$
-    \item Tant que $G$ n'est pas vide :
-      \begin{itemize}
-      \item Choisir un sommet $x$ quelconque.
-      \item Ajouter $x$ à $\mathcal{I}$.
-      \item Retirer $x$ et tous ses voisins de $G$.
-      \end{itemize}
-    \item Renvoyer $\mathcal{I}$.
-    \end{itemize}
-\end{block}
-
-\bigskip
-
-\begin{tikzpicture}[every node/.style={draw,shape=circle}]
-  \node[] (a) at (0,0)  {A};
-  \node[thick,text=red,right=of a] (b) {B};
-  \node[thick,text=red,right=of b] (c) {C};
-
-  \node[thick,text=green] at (5,0) (e) {A};
-  \node[right=of e] (f) {B};
-  \node[right=of f] (g) {C};
-  \node[thick,text=green,right=of g] (h) {D};
-
-  \draw (a) edge (b);
-  \draw (b) edge[ultra thick] (c);
-
-  \draw (e) edge (f);
-  \draw (f) edge (g);
-  \draw (g) edge (h);
-\end{tikzpicture}
-
-  \bigskip
-  
-  \begin{columns}[c]
-    \begin{column}{.1\textwidth}
-      \includegraphics[width=\textwidth]{triste.png}
-    \end{column}
-    \begin{column}[c]{.9\textwidth}
-
-      En parallèle : conflit avec ses voisins...
-      
-    \end{column}
-  \end{columns}
-\end{frame}
-
-%%%%%%%%%
-
-
-\begin{frame}[label=parallel_MIS]
-  \frametitle{Exemple : factorisation LU creuse}
-  \framesubtitle{Sous-exemple : algorithme glouton pour trouver un ensemble indépendant maxim\alert{al}}
-
-  \begin{exampleblock}{Algorithme modifié}
-    \begin{itemize}
-    \item $\mathcal{I} \gets \emptyset$
-    \item Choisir une permutation aléatoire $\pi$ (\og \emph{score}\fg{}) de $\{1, \dots, n\}$.
-    \item Tant que $G$ n'est pas vide : \uncover<2>{\hfill(\alert{\emph{$\approx \log^2 n$ iterations}})}
-      \begin{itemize}
-      \item $X = \{ u \in V~|~\text{$\pi[u] > \pi[v]$ pour tout $u \leftrightarrow v$} \}$ %$
-      \item Ajouter $X$ à $\mathcal{I}$.
-      \item Retirer $X$ et tous les voisins des sommets de $X$ de $G$.
-      \end{itemize}
-    \item Renvoyer $\mathcal{I}$.
-    \end{itemize}
-  \end{exampleblock}
-  
-\bigskip
-
-\begin{tikzpicture}[every node/.style={draw,circle solidus,font=\scriptsize,inner sep=0pt}]
-  \node[thick,text=red] (a) at (0,0)  {A \nodepart{lower} 50};
-  \node[right=of a] (b) {B \nodepart{lower} 30};
-  \node[thick,text=red,right=of b] (c) {C \nodepart{lower} \alert{64}};
-
-  \node[] at (5,0) (e) {A \nodepart{lower} 10};
-  \node[right=of e] (f) {B \nodepart{lower} 20};
-  \node[right=of f] (g) {C \nodepart{lower} 30};
-  \node[thick,text=red,right=of g] (h) {D \nodepart{lower} 40};
-
-  \draw (a) edge[] (b);
-  \draw (b) edge[very thick] (c);
-
-  \draw (e) edge[very thick] (f);
-  \draw (f) edge (g);
-  \draw (g) edge[very thick] (h);
-\end{tikzpicture}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
