@@ -9,7 +9,7 @@
 \usepackage{anyfontsize}
 
 \usepackage[utf8]{inputenc}
-\usepackage[francais]{babel}
+\usepackage[english]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[normalem]{ulem}   
 \usepackage{multirow}
@@ -34,23 +34,9 @@
    BoldItalicFont = *-BoldIta
 ]
 
-% \newcommand{\blue}[1]{{\color{Blue}#1}}
-% \newcommand{\green}[1]{{\color{LimeGreen}#1}}
 \newcommand{\red}[1]{{\color{red}#1}}
-% \newcommand{\tikzmat}[2] {
-% \draw[thick] let \p1 = (#1 |- #2),
-%                  \p2 = (#2 |- #1) in
-%    ($ (#1) + (0.05,-0.1) $) -- ++(-0.15, 0)  -- ($ (\p1) + (-0.1,0.1) $) -- ++(0.15,0)
-%    ($ (\p2) + (-0.05,-0.1) $) -- ++(0.15, 0) -- ($ (#2) + (0.1,0.1) $) -- ++(-0.15,0);
-% }
 
-
-\author[C.~Bouillaguet]{Charles Bouillaguet \newline
-  {\small \texttt{charles.bouillaguet@lip6.fr}}}
-
-\title{Cours 7 : la \og vectorisation\fg}
-%\date{2020-04-16}
-
+\title{Vectorization}
 
 \begin{document}
 
@@ -61,12 +47,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Principe}
+  \frametitle{Principle}
 
-  \begin{block}{La vectorisation, c'est...}
+  \begin{block}{Vectorization consists in}
     \begin{itemize}
-    \item Reformuler les algorithmes
-    \item pour qu'ils fassent des opérations sur des \textbf{vecteurs}
+    \item Reformulate algorithms
+    \item So that they operate on \textbf{vectors}
+      \begin{itemize}
+      \item Use only level-1 BLAS...
+      \end{itemize}
     \end{itemize}
      
   \end{block}
@@ -86,19 +75,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Pourquoi ?}
+  \frametitle{Why?}
 
-  \begin{block}{Les ops. sur les vecteurs sont \alert{intrinsèquement parallèles}}
+  \begin{block}{Operations on vectors are \alert{intrinsically parallel}}
     \begin{itemize}
-    \item Permet d'exprimer du parallélisme
+    \item Easy way to express parallelism
       \begin{itemize}
-      \item Fortran ($\geq 90$), \texttt{numpy} gèrent des vecteurs nativement
-      \item Mais pas le C...
+      \item Fortran ($\geq 90$), \texttt{numpy} natively handle vectors
+      \item But not C...
       \end{itemize}
 
       \medskip
       
-    \item Il a existé des \alert{processeurs vectoriels}
+    \item \alert{Vector processors} used to rule the HPC world
       \begin{itemize}
       \item Cray 1 (1975)
       \item Cray X-MP (1982)
@@ -112,7 +101,26 @@
   \end{block}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Vector Processors --- Before}
+  \centering
+  \includegraphics[width=\textwidth]{Cray_1.jpg}
+
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Vector Processors --- Now}
+  \centering
+  \includegraphics[width=\textwidth]{dino.jpg}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \begin{frame}
   \frametitle{IBM 3090 CPU}
@@ -124,36 +132,36 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Intérêt des \red{instructions vectorielles}}
+  \frametitle{Interest of \red{Vector Instructions}}
   
   \begin{itemize}
-  \item Possibilité de traitement parallèle
+  \item Possibility of parallel processing
     \begin{itemize}
-    \item bas-de-gamme = un peu
-    \item haut-de-gamme = beaucoup
+    \item Low end = a little
+    \item High-end = a lot
     \end{itemize}
 
     \medskip
     
-  \item Une seule instruction donne beaucoup de travail
+  \item A single instruction gives a lot of work
     \begin{itemize}
-    \item Économies sur le décodage des instructions
+    \item Save on instruction decoding
     \end{itemize}
 
     \medskip
 
-  \item Opérations enchainées $\leadsto$ pipelining
+  \item Chained operations $\leadsto$ pipelining
     \begin{itemize}
-    \item Efficacité énergétique
+    \item Power efficiency
     \end{itemize}
   \end{itemize}
 
-  \begin{alertblock}{Mais pourquoi ça a disparu ?}
+  \begin{alertblock}{Why did it disappear?}
     \begin{itemize}
-    \item Nécessite \textbf{mémoire rapide} pour transférer les vecteurs
-    \item Scatter/gather sont particulièrement horribles
-    \item[$\Rightarrow$] processeurs/machines \emph{dédiés} au HPC
-    \item Mais tendance \og \textit{commodity components}\fg{} (ASCI red)
+    \item Needs \textbf{fast memory} to transfer the vectors
+    \item Scatter/gather very hard on memory subsystem
+    \item[$\Rightarrow$] (expensive) processors/machines \emph{dedicated} to HPC
+    \item But trend towards \textit{commodity components} (ASCI red)
     \end{itemize}
   \end{alertblock}  
 \end{frame}
@@ -162,15 +170,14 @@
 
 \section{Description du hardware}
 
-
 \begin{frame}
-  \frametitle{Le présent : instructions SIMD}
+  \frametitle{Present Day: SIMD Instructions}
 
   \begin{enumerate}
-  \item[1985] IBM 3090, registres vectoriels de $32 Z$ bits
+  \item[1985] IBM 3090, vector registers of $32 Z$ bits
     \begin{itemize}
-    \item $Z$ \alert{pas spécifié}, \textit{implementation-dependent}
-    \item Dans les faits, $Z=128$, donc vecteurs de 4096 bits
+    \item $Z$ \alert{unspecified}, \textit{implementation-dependent}
+    \item Concretely, $Z=128$ $\leadsto$ 4096-bit vectors
     \end{itemize}
   \end{enumerate}
 
@@ -182,15 +189,15 @@
     \pause
 
     \begin{enumerate}  
-    \item[1996] Intel Pentium MMX : vecteurs de 64 bits (\texttt{8*int8/4*int16})
+    \item[1996] Intel Pentium MMX: 64 bit-vectors (\texttt{8*int8/4*int16})
       \pause
-    \item[1999] Intel SSE : vecteurs de 128 bits, \texttt{4*float}
-    \item[2001] Intel SSE2 : vecteurs de 128 bits, \texttt{int} et \texttt{double}
-    \item[2004] Intel SSE3 : plus d'opérations
-    \item[2007] Intel SSE4 : plus d'opérations
-    \item[2010] Intel AVX : vecteurs de 256 bits, \texttt{8*float}
-    \item[2010] Intel AVX2 : vecteurs de 256 bits, \texttt{int} et \texttt{double} + \texttt{gather}
-    \item[2017] Intel AVX512 : 512 bits, tous types + \texttt{scatter/gather/mask}
+    \item[1999] Intel SSE: 128-bit vectors, \texttt{4*float} only
+    \item[2001] Intel SSE2: more types, \texttt{int} and \texttt{double}
+    \item[2004] Intel SSE3: more operations
+    \item[2007] Intel SSE4: more operations
+    \item[2010] Intel AVX: 256-bit vectors, \texttt{8*float} only
+    \item[2010] Intel AVX2: more types, \texttt{int} and \texttt{double} + \texttt{gather}
+    \item[2017] Intel AVX512: 512-bit, all types + \texttt{scatter/gather/mask}
   \end{enumerate}
 \end{overlayarea}
 
@@ -202,7 +209,7 @@
   \scriptsize
   \begin{tabular}{|c||c|c|c|c|c|}
   \hline
-  ISA & Accronyme & Nom & année & \# regs & |regs| \\
+  ISA & Accronym & Name & Year & \# regs & |regs| \\
   \hline  \hline
     IBM 3090 & & Vector Facility & 1985 & 16 & variable \\ 
     \hline  \hline
@@ -236,63 +243,83 @@
   \hline
 \end{tabular}  
 
-\bigskip
+  \bigskip
 
-\normalsize
-\begin{itemize}
-\item ARMv8 SVE : registres de 128--2048 bits
-\item \texttt{fugaku} implante SVE avec des registres des 512 bits
-\item \texttt{RISC-V} a une extension vectorielle inspirée d'IBM 3090
-\end{itemize}
+  \normalsize
+  \begin{itemize}
+  \item ARMv8 SVE : registers of (128$Z$)-bit (\red{$1 \leq Z \leq 16$})
+    \begin{itemize}
+    \item \texttt{fugaku} has SVE with 512-bit registers
+    \item \texttt{AWS graviton} has SVE with 256-bit registers
+    \end{itemize}
+  \item \texttt{RISC-V} has an "old school" vector extension (IBM 3090-like)
+  \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Deux styles}
+  \frametitle{Two Styles}
 
-\begin{exampleblock}{\og Vraies\fg{} architectures vectorielles à l'ancienne}
+\begin{exampleblock}{"Real" (old-school) vector architectures}
   \begin{itemize}
-  \item Taille des registres inconnue, voire pas de registres du tout
-  \item Fonctionnalités : Scatter + Gather + masques
+  \item Unknown register size, or no registers at all
+  \item Functionality: Scatter + Gather + masks
   \item \textbf{\alert{Revival}}: ARMv8 SVE, RISC-V, AVX-512, ...
   \end{itemize}
 \end{exampleblock}
 
-\begin{alertblock}{Instructions SIMD disponibles dans les CPU grand public}
+\begin{alertblock}{SIMD Instructions available in consumer CPUs}
   \begin{itemize}
-  \item Taille des registres fixée
-  \item Empilement de générations successives
-  \item Accès à la mémoire contraint
+  \item Fixed register size
+  \item Stacking of successive generations
+  \item Constrained memory access
   \end{itemize}
 \end{alertblock}
 
-Entre les deux/à côté : les GPUs
+In between / besides: GPUs
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Vector Processors --- Revival?}
+  \centering
+  \includegraphics[height=9cm]{robodino.jpg}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
   \begin{itemize}
-  \item ARM Neon est dans tous les smartphones
-
+  \item ARM Neon is there in all smartphones 
+    \begin{itemize}
+    \item And recent Apple macbooks
+    \end{itemize}
     \medskip
     
-    \item Presque tous les CPUs x86 ont AVX2 aujourd'hui
+    \item Nearly all x86 CPUs presently have AVX2 
 
       \medskip
 
-    \item AVX512 : pas pour tout le monde
+    \item AVX512 is not for everybody
       \begin{itemize}
-      \item Xeon bronze/silver/gold depuis 2017
-      \item Certains core i3/i5/i7 très récents (mais pas tous...) 
+      \item Intel Xeon bronze/silver/gold (since 2017)
+      \item Intel Some core i7/i9 ("X" or "extreme") 
+      \item AMD EPYC "Zen 4"
       \end{itemize}
     
 
     \medskip
 
-  \item Ici : \texttt{ppti-gpu-[1,2,4]} ont l'AVX512
-  \item Grid'5000 : certains clusters l'ont
+  \item AVX512 @ g5k:
+    \begin{itemize}
+    \item dahu (Grenoble)
+      \item gros (Nancy) 
+    \end{itemize}
+    
   \end{itemize}
 \end{frame}
 
@@ -300,12 +327,13 @@ Entre les deux/à côté : les GPUs
 
 \begin{frame}[fragile]
 
-\verb|bouillaguet@ppti-gpu-1:~$ cat /proc/cpuinfo|
+\verb|chbouillaguet@gros-70:~$ cat /proc/cpuinfo|
 
 \ttfamily\scriptsize
 ...
 
-\verb|model name        : Intel(R) Xeon(R) Gold 6152 CPU @ 2.10GHz|
+\verb|model name        : Intel(R) Xeon(R) Gold 5220 CPU @ 2.20GHz|
+
 
 ...
 
@@ -315,35 +343,31 @@ Entre les deux/à côté : les GPUs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Problèmes avec les jeux d'instructions SIMD}
+  \frametitle{Problems with SIMD Instruction Sets}
 
-  Leur multiplicité les rend difficiles à utiliser
+  Their multiplicity makes them hard to use
 
   \bigskip
   
   \begin{itemize}
-  \item Nécessite recompilation à chaque nouvelle version
+  \item Needs recompilation at each new iteration
     \begin{itemize}
-    \item Voire réécriture du code / changement des algos... 
+    \item Even rewrite code / change algorithms... 
     \end{itemize}
 
     \medskip
     
-  \item Rend le code non-portable
+  \item Makes code non-portable
     \begin{itemize}
-    \item Le CPU qui va exécuter le programme a-t-il AVX-xxx ? 
-    \item Déterminer \alert{à l'exécution} le CPU...
-    \item ... Et utiliser la fonction appropriée (soupir)
+    \item Does the CPU that will run it have AVX-xxx?
+    \item Query the CPU \alert{at runtime}...
+    \item ... and choose appropriate function (sigh)
     \end{itemize}
     
   \end{itemize}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-
 
 \begin{frame}
   \frametitle{SSEx + AVX + AVX2}
@@ -397,14 +421,14 @@ Entre les deux/à côté : les GPUs
   
 \begin{tabular}{|c|c|c|}
   \hline
-  Instructions & registres & taille \\
+  Instructions & registers & size \\
   \hline\hline
-  SSE$x$              & \texttt{\%xmm0}, \dots, \texttt{\%xmm15} & 128 bits \\
+  SSE$x$              & \texttt{\%xmm0}, \dots, \texttt{\%xmm15} & 128-bit \\
   \hline
-  AVX + AVX2          & \texttt{\%ymm0}, \dots, \texttt{\%ymm15} & 256 bits \\
+  AVX + AVX2          & \texttt{\%ymm0}, \dots, \texttt{\%ymm15} & 256-bit \\
   \hline
-  \multirow{2}{*}{AVX512} & \texttt{\%zmm0}, \dots, \texttt{\%zmm31} & 512 bits \\
-               & \texttt{\%k0}, \dots, \texttt{\%k7}      & 64 bits \\
+  \multirow{2}{*}{AVX512} & \texttt{\%zmm0}, \dots, \texttt{\%zmm31} & 512-bit \\
+               & \texttt{\%k0}, \dots, \texttt{\%k7}      & 64-bit \\
   \hline
   \end{tabular}
 \end{center}
@@ -413,18 +437,17 @@ Entre les deux/à côté : les GPUs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Nomenclature des instructions}
+  \frametitle{SIMD Instructions Nomenclature}
   
-Les instructions SIMD flottantes ont des noms
-composés :
+\red{Floating-point} SIMD instructions have compound names:
 \begin{center}
   \verb|<prefix><op><simd or not><type>|
 \end{center}
-où :
+where
 \begin{description}
-\item[\texttt{<prefix>}:] vide (SSE), \texttt{v} (AVX, AVX2, AVX512)
+\item[\texttt{<prefix>}:] empty (SSE), \texttt{v} (AVX, AVX2, AVX512)
 \item[\texttt{<op>}] \texttt{add}, \texttt{sub}, \texttt{mul}, \texttt{div}, \texttt{fmadd}, \texttt{min}, \texttt{max}, \texttt{abs}, \texttt{floor}, \texttt{ceil}, \texttt{round}, \dots
-\item[\texttt{<simd or not>}] \texttt{s} (\textit{scalar}), \texttt{p} (\textit{packed} --- c.a.d. vecteur).
+\item[\texttt{<simd or not>}] \texttt{s} (\textit{scalar}), \texttt{p} (\textit{packed} --- i.e. vector).
 \item[\texttt{<type>}] \texttt{s} (\textit{single}, \texttt{float}), \texttt{d} (\texttt{double})
 \end{description}
 
@@ -436,34 +459,33 @@ E.g. \texttt{vmaxpd}, \texttt{vmulss}, etc.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Principes généraux}
+\section{General Principles}
 
 \begin{frame}
-  \frametitle{La vectorisation en pratique}
+  \frametitle{Practical Vectorization}
 
-  \begin{block}{Principe général}
+  \begin{block}{General Principle}
     \begin{enumerate}
-    \item Charger les données dans registres SIMD
-    \item Calculer avec les instructions SIMD
-    \item Écrire le résultat en mémoire
+    \item Load data into vector registers
+    \item Use vector instructions
+    \item Write result back to memory
     \end{enumerate}
   \end{block}
 
-  (minimiser le nombre de ces transferts est un objectif important)
+  (minimise these transfers is an important goal)
   
-  \begin{alertblock}{Conditions d'utilisation}
+  \begin{alertblock}{Use cases}
     \begin{itemize}
-    \item Se déroule à \textbf{l'intérieur d'un thread}
+    \item Happens \textbf{inside a \alert{single} thread}
       \begin{itemize}
-      \item Parallélisation = répartir sur plusieurs coeurs
-      \item Vectorisation = utiliser instructions SIMD dans UN coeur
+      \item Parallelization = distribute over several cores
+      \item Vectorization = use SIMD instructions inside \textbf{\red{ONE}} core
       \end{itemize}
-    \item La vectorisation concerne des \textbf{portions de code réduites}
+    \item Only \textbf{small code chunks} can (usually) be vectorized
       \begin{itemize}
-      \item \textbf{Boucles} simples (limites du jeu d'instruction) 
-      \item [$\Rightarrow$] cible généralement les boucles les \textbf{plus internes}
+      \item Tight \textbf{loops} (limits of the instruction set) 
+      \item [$\Rightarrow$] Target the \textbf{innermost} loops
       \end{itemize}
-
     \end{itemize}
   \end{alertblock}
 \end{frame}  
@@ -471,51 +493,51 @@ E.g. \texttt{vmaxpd}, \texttt{vmulss}, etc.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Obstacles à la vectorisation}
+  \frametitle{Obstacles}
 
   \begin{itemize}
-  \item Dépendance de donnée (itérations pas indépendantes)
+  \item Data dependencies (dependent iterations)
      \begin{minted}{C}
      for (int i = 1; i < n; i++)
          a[i] += a[i-1];
 \end{minted}
     \begin{itemize}
-    \item Pas de traitement en parallèle possible
-      \item[$\hookrightarrow$] Nécessité de changer l'algorithme
+    \item No possible parallel processing 
+      \item[$\hookrightarrow$] Must change the algorithm
     \end{itemize}
 
 \medskip
 
-\item Instructions conditionnelles \texttt{if}
+\item Conditional instructions (\texttt{if})
      \begin{minted}{C}
      for (int i = 1; i < n; i++)
          if (a[i] != 0)
              a[i] = 1 / a[i];
 \end{minted}
   \begin{itemize}
-  \item Éventuellement gérable (avec surcoût --- à éviter si possible)
+  \item Potentially manageable (overhead --- to avoid if possible)
   \end{itemize}
 
   \medskip
 
-\item Accès à la mémoire compliqués et/ou pb. d'alignement
+\item Complex memory access pattern and/or alignment problems 
   \begin{itemize}
-  \item Chargement de portions de tableaux \textbf{contiguës} uniquement 
+  \item Loading \textbf{contiguous} array slices \red{only}
   \end{itemize}
   
   \medskip
 
-\item Calculs trop compliqués (sin, cos, log, exp, my\_function, ...)
+\item Complex operations (sin, cos, log, exp, my\_function, ...)
 \end{itemize}
 \end{frame}  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Problèmes d'alignement}
+  \frametitle{Data Alignment}
 
-  \begin{alertblock}{Règle générale}
-    Vecteur de $xxx$ octets doit être à une adresse multiple de $xxx$
+  \begin{alertblock}{Rule of thumb}
+    $xxx$-bytes vector must be located at an address multiple of $xxx$  
   \end{alertblock}
 
   \bigskip
@@ -524,12 +546,12 @@ E.g. \texttt{vmaxpd}, \texttt{vmulss}, etc.
     \begin{itemize}
     \item \mintinline{C}{double A[n] __attribute__ ((aligned(32)));}
       \begin{itemize}
-      \item Ceci est du code C correct !
+      \item This is valid C code
       \end{itemize}
   \item \mintinline{C}{int posix_memalign(void **ptr, size_t align, size_t size);}
   \item \mintinline{C}{void *aligned_alloc(size_t alignment, size_t size);}
       \begin{itemize}
-      \item Inclus dans le langage C11
+      \item Included in C11
       \end{itemize}
   \end{itemize}
 \end{exampleblock}
@@ -538,7 +560,7 @@ E.g. \texttt{vmaxpd}, \texttt{vmulss}, etc.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Problèmes d'accès compliqués à la mémoire}
+  \frametitle{Complex memory access pattern}
 
 \begin{alertblock}{Array of struct}
   \begin{minted}{C}
@@ -557,8 +579,8 @@ struct point *A;
 struct points {
       double *x, *y, *z;
 };
-struct points A;          // traitement par lot facilité
-                          // tableaux d'éléments uniformes
+struct points A;          // facilitated batch processing
+                          // arrays of uniform elements
   \end{minted}
 
   \texttt{xxxxxxxxxxxxxx....}\\
@@ -571,71 +593,76 @@ struct points A;          // traitement par lot facilité
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Vectorisation de boucles simples: \textit{strip-mining}}
+  \frametitle{Vectorizing Simple Loops: \textit{strip-mining}}
 
-  \begin{block}{Code original}
+  \begin{block}{Original code}
   \begin{minted}{C}
 for (int i = 0; i < n; i++)
     u[i] = u[i] + alpha * v[i];
 \end{minted}
 \end{block}
 
-\begin{exampleblock}{Code transformé}
+\begin{exampleblock}{Transformed code}
 \begin{minted}{C}
 int m = n - (n % 4);
-/* traitement par lots de 4 avec instructions SIMD */
+/* Processing in batches of 4 with SIMD instructions */
 for (i = 0; i != m; i += 4) {
     u[i + 0] = u[i + 0] + alpha * v[i + 0];
     u[i + 1] = u[i + 1] + alpha * v[i + 1];
     u[i + 2] = u[i + 2] + alpha * v[i + 2];
     u[i + 3] = u[i + 3] + alpha * v[i + 3];
 }
-/* épilogue au cas où n ne soit pas un multiple de 4 */
+/* epilogue when n is not a multiple of 4 */
 for (int i = m; i < n; i ++)
     u[i] = u[i] + alpha * v[i];
   \end{minted}
 \end{exampleblock}
 \begin{itemize}
-\item Éventuellement : prologue pour l'alignement
-\item On peut éviter l'épilogue avec un \textbf{bourrage}
+\item Potentially: prologue to ensure alignment
+\item The epilogue can be avoided with \textbf{padding}
 \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{\textit{strip-mining}?}
+
+  \centering
+  \includegraphics[width=10cm]{strip_mining.jpg}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Modifications algorithmiques}
+  \frametitle{Algorithmic Modifications }
 
-  \begin{block}{Point de départ}
+  \begin{block}{Starting Point}
 
 \begin{minted}{C}
 double sum = 0;
 for (int i = 0; i < n; i++)
-    sum += a[i];
+    sum += a[i];               // data dependency (sum)
 \end{minted}
-
-    \begin{itemize}
-    \item Dépendance de données sur \texttt{sum}
-    \end{itemize}
   \end{block}
 
-  \begin{exampleblock}{Code transformé}
+  \begin{exampleblock}{Transformed code}
 
 \begin{minted}{C}
 double __sum[4] = {0, 0, 0, 0};
-for (int i = 0; i < n; i += 4) {      // suppose que n est multiple de 4
+for (int i = 0; i < n; i += 4) {      // assume that n is multiple of 4
     __sum[0] += a[i + 0];
     __sum[1] += a[i + 1];
     __sum[2] += a[i + 2];
     __sum[3] += a[i + 3];
 }
-// épilogue : réduction finale (non-vectorisée)
+// final reduction (non-vectorized)
 double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
 \end{minted}
 
     \begin{itemize}
-    \item Boucle maintenant vectorisable
-    \item Léger surcoût dans l'épilogue
+    \item Loop is now vectorizable
+    \item Small overhead in epilogue
     \end{itemize}
   \end{exampleblock}
 \end{frame}
@@ -643,24 +670,24 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile]
-  \frametitle{Appliquer un algorithme séquentiel sur des vecteurs}
+  \frametitle{Apply a Full Sequential Algorithm on Vectors}
 
   \begin{columns}[T]
     \begin{column}{7cm}
   
-      \begin{block}{Un algorithme séquentiel $\mathcal{A}$}
+      \begin{block}{Sequential Algorithm $\mathcal{A}$}
         \begin{itemize}
-        \item S'applique sur un tableau $X$ 
-        \item \og \textit{data-oblivious}\fg{} : séquence des instructions dépend pas des valeurs
+        \item Applies to an array $X$ 
+        \item "\textit{data-oblivious}": sequence id instructions independent of the values
         \end{itemize}
       \end{block}
 
       \medskip
 
-      \begin{exampleblock}<3->{Appliquer $k$ fois l'algo en parallèle}
+      \begin{exampleblock}<3->{Apply $k$ times the algorithm in parallel}
         \begin{itemize}
-        \item scalaires $\rightarrow$ vecteurs de taille $k$
-        \item opérations scalaires $\rightarrow$ SIMD
+        \item scalars $\rightarrow$ vectors of size $k$
+        \item scalar operations  $\rightarrow$ SIMD
         \end{itemize}
       \end{exampleblock}
     \end{column}
@@ -715,48 +742,45 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
 \section{Comment s'en servir ?}
 
 \begin{frame}
-  \frametitle{Comment utiliser les instructions SIMD/vectorielles ?}
+  \frametitle{How to Use SIMD / Vector Instructions?}
 
   \begin{enumerate}
-  \item \sout{Écrire de l'assembleur}
+  \item \sout{Write assembler code directly}
 
     \medskip
     
-  \item Utiliser les \og \textit{instrinsics}\fg{} des compilateurs
+  \item Use "\textit{instrinsics}" offered by compilers
 
 \medskip
     
-  \item Laisser faire le compilateur (vectorisation automatique)
+  \item Let the compiler do it (automatic vectorization)
 
 \medskip
     
-  \item Donner des directives de vectorisation (OpenMP $\geq$ v4.0)
+  \item Provide vectorization directives (OpenMP $\geq$ v4.0)
 
     \medskip
     
-  \item Utiliser les extensions (non-standard) de \texttt{gcc}
+  \item Use \texttt{gcc}-specific vector extensions
 
   \end{enumerate}
-  
 \end{frame}
-
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 \subsection{intrinsics}
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Utilisations des \emph{intrinsics}}
+  \frametitle{Using the \emph{Intrinsics}}
 
   \begin{itemize}
-  \item Introduit par Intel, diffusé aux autres compilateurs ensuite
-  \item Pseudo-fonctions qui émettent \textbf{une} instruction SIMD
-  \item Nécessité de connaître le(s) jeu(x) d'instructions
+  \item Introduced by Intel, later adopted by other compilers
+  \item Pseudo-functions that emit \textbf{one} SIMD instructions
+  \item Need to know the instruction set(s)
   \end{itemize}
   
   
-\begin{block}{Déclarations}
+\begin{block}{Headers}
   \begin{minted}{C}
 #include <xmmintrin.h>         // SSE
 #include <emmintrin.h>         // SSE2
@@ -773,30 +797,31 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Types de données pour les \emph{intrinsics}}
+  \frametitle{Data Types for the \emph{Intrinsics}}
 
-\begin{block}{Correspondent aux \og vecteurs\fg{} matériels}
+\begin{block}{Match the hardware "vectors"}
   
   \begin{description}
-\item[\texttt{\_\_m512}] 512 bits (16 \texttt{float})
-\item[\texttt{\_\_m512d}] 512 bits (8 \texttt{double})
-\item[\texttt{\_\_m512i}] 512 bits (entiers)
-
+  \item[\texttt{\_\_m512}] 512 bits (16 \texttt{float})
+  \item[\texttt{\_\_m512d}] 512 bits (8 \texttt{double})
+  \item[\texttt{\_\_m512i}] 512 bits (ints)
+  \item + \texttt{\_\_mmask8}, \texttt{\_\_mmask16}, \texttt{\_\_mmask32}, \texttt{\_\_mmask64}
+    
   \item[\texttt{\_\_m256}] 256 bits (8 \texttt{float})
-\item[\texttt{\_\_m256d}] 256 bits (4 \texttt{double})
-\item[\texttt{\_\_m256i}] 256 bits (entiers)
-
-\item[\texttt{\_\_m128}] 128 bits (4 \texttt{float})
-\item[\texttt{\_\_m128d}] 128 bits (2 \texttt{double})
-\item[\texttt{\_\_m128i}] 128 bits (entiers)
-\end{description}
+  \item[\texttt{\_\_m256d}] 256 bits (4 \texttt{double})
+  \item[\texttt{\_\_m256i}] 256 bits (ints)
+    
+  \item[\texttt{\_\_m128}] 128 bits (4 \texttt{float})
+  \item[\texttt{\_\_m128d}] 128 bits (2 \texttt{double})
+  \item[\texttt{\_\_m128i}] 128 bits (ints)
+  \end{description}
 \end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Exemples}
+  \frametitle{Examples (AVX2)}
 
   \begin{itemize}
   \item \mintinline{C}{_mm256_set1_ps}
@@ -813,7 +838,7 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Nomenclature générale}
+  \frametitle{General Nomenclature}
 
   \begin{center}
     \verb|   _mm_<operation>_<suffix>(param1, param2)        |
@@ -823,19 +848,19 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
     \verb|_mm512_<operation>_<suffix>(param1, param2, param3)|
   \end{center}
 
-  \begin{block}{\texttt{<suffix>} en deux parties}
+  \begin{block}{Two-part \texttt{<suffix>}}
     \begin{itemize}
-    \item 1ère partie :
+    \item 1st part
       \begin{itemize}
-      \item \texttt{p} (packed) et \texttt{ep} (extended packed) : calcul SIMD
-      \item \texttt{s} (scalar) : vecteur vu comme 1 seul élément
+      \item \texttt{p} (packed) and \texttt{ep} (extended packed): SIMD
+      \item \texttt{s} (scalar): only 1st vector element is active 
       \end{itemize}
 
     
-  \item 2ème partie (type)
+  \item 2nd part (type)
     \begin{itemize}
-    \item{}  [\texttt{s}/\texttt{d}] : nombre flottant en simple ou double précision
-    \item{} [\texttt{i}/\texttt{u}]\texttt{nnn} : entier signé ou non-signé (unsigned) de \texttt{nnn} bits (\texttt{nnn} vaut 512, 256, 128, 64, 32, 16, ou 8)
+    \item{}  [\texttt{s}/\texttt{d}]: \textbf{s}ingle- or \textbf{d}ouble-precision float
+    \item{} [\texttt{i}/\texttt{u}]\texttt{nnn}: s\textbf{i}gned or \textbf{u}nsigned \texttt{nnn}-bits integer \\ (\texttt{nnn} is 512, 256, 128, 64, 32, 16, or 8)
     \end{itemize}
   \end{itemize}
 \end{block}
@@ -844,9 +869,9 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Exemple}
+  \frametitle{Example}
 
-  \begin{block}{Code original}
+  \begin{block}{Original Code}
 \begin{minted}{C}
 double alpha;
 double u[], v[];
@@ -856,15 +881,15 @@ for (int i = 0; i < n; i++)
 \end{minted}
 \end{block}
 
-\begin{exampleblock}{Code vectorisé (AVX2)}
+\begin{exampleblock}{Vectorized code (AVX2)}
 \begin{minted}{C}
 __m256d valpha = _mm256_set1_pd(alpha);   // (alpha, alpha, alpha, alpha)
 for (i = 0; i != m; i += 4) {
-    /* traitement par lots de 4 */
-    __m256d vu = _mm256_load_pd(&u[i]);        // alignement nécessaire
-    __m256d vv = _mm256_load_pd(&v[i]);        // alignement nécessaire
+    /* processing by batches of 4 */
+    __m256d vu = _mm256_load_pd(&u[i]);        // alignment required
+    __m256d vv = _mm256_load_pd(&v[i]);        // alignment required
     __m256d vres = _mm256_fmadd_pd(valpha, vv, vu);
-    _mm256_store_pd(&u[i], vres);              // alignement nécessaire
+    _mm256_store_pd(&u[i], vres);              // alignment required
 }
   \end{minted}
 \end{exampleblock}
@@ -873,11 +898,20 @@ for (i = 0; i != m; i += 4) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Exemple : conversions colorimétriques}
+  \frametitle{Non-Trivial Example: Colorimetric Conversions}
 
-  R, G, B, C, M, Y, K = flottant dans $[0; 1]$
+  \centering
+  \includegraphics[width=10cm]{rgb_cmyk.png}
+\end{frame}
 
-  \begin{exampleblock}{Sens facile à vectoriser}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[fragile=singleslide]
+  \frametitle{Non-Trivial Example: Colorimetric Conversions}
+
+  R, G, B, C, M, Y, K = floats in $[0; 1]$
+
+  \begin{exampleblock}{Easy Direction}
   \[
   \left\{
     \begin{array}{rl}
@@ -889,11 +923,11 @@ for (i = 0; i != m; i += 4) {
 \]
 \end{exampleblock}
 
-\begin{alertblock}{Sens problématique}
+\begin{alertblock}{Problematic direction}
   \begin{itemize}
-  \item Si $(R, G, B) = (0, 0, 0)$ alors $(C,M,Y,K) = (0, 0, 0, 1)$
+  \item If $(R, G, B) = (0, 0, 0)$ then $(C,M,Y,K) = (0, 0, 0, 1)$
     
-  \item Sinon
+  \item Otherwise
     \[  \left\{\begin{array}{rl}
       K &= 1 - \max(R, G, B) \\
       C &= 1 - R  / (1 - K) \\
@@ -911,24 +945,24 @@ for (i = 0; i != m; i += 4) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Problèmes d'instructions conditionnelles}
-  \framesubtitle{Exemple : RGB $\rightarrow$ CMYK}
+  \frametitle{Problems with Conditional Instructions}
+  \framesubtitle{Example: RGB $\rightarrow$ CMYK}
 
   \begin{block}{$K = 1 - \max(R, G, B)$}
 \begin{minted}{C}
 __m256 vone = _mm256_set1_ps(1.0);            // (1, 1, 1, 1, 1, 1, 1, 1)
 // ...
-/* traite un chunk de 8 couleurs */
-__m256 vR = _mm256_load_ps(&R[i]);               // alignement nécessaire
-__m256 vG = _mm256_load_ps(&G[i]);               // alignement nécessaire
-__m256 vB = _mm256_load_ps(&B[i]);               // alignement nécessaire
+/* process a chunk of 8 colors */
+__m256 vR = _mm256_load_ps(&R[i]);               // alignment required
+__m256 vG = _mm256_load_ps(&G[i]);               // alignment required
+__m256 vB = _mm256_load_ps(&B[i]);               // alignment required
 __m256 vmax = _mm256_max_ps(_mm256_max_ps(vR, vG), vB);
 __m256 vK = _mm256_sub_ps(vone, vmax);
-_mm256_store_ps(&K[i], vk);                      // alignement nécessaire
+_mm256_store_ps(&K[i], vk);                      // alignment required
 \end{minted}
 \end{block}
 
-  \begin{alertblock}{Si $K < 1$}
+  \begin{alertblock}{If $K < 1$}
 \begin{minted}{C}
 __m256 vC = _mm256_sub_ps(vone, _mm256_div_ps(vR, vmax));
 __m256 vM = _mm256_sub_ps(vone, _mm256_div_ps(vG, vmax));
@@ -940,10 +974,10 @@ __m256 vY = _mm256_sub_ps(vone, _mm256_div_ps(vB, vmax));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Problèmes d'instructions conditionnelles}
-  \framesubtitle{Exemple : RGB $\rightarrow$ CMYK}
+  \frametitle{Problems with Conditional Instructions}
+  \framesubtitle{Example: RGB $\rightarrow$ CMYK}
 
-  \begin{exampleblock}{Si $K = 1$}
+  \begin{exampleblock}{If $K = 1$}
 \begin{minted}{C}
     __m256 vzero = __m256 _mm256_setzero_ps();
     __m256 vmask = _mm256_cmp_ps(vK, vone, _CMP_EQ_OQ);
@@ -951,12 +985,12 @@ __m256 vY = _mm256_sub_ps(vone, _mm256_div_ps(vB, vmax));
     vC = _mm256_blendv_ps(vzero, vC, vmask);
     vM = _mm256_blendv_ps(vzero, vM, vmask);
     vY = _mm256_blendv_ps(vzero, vY, vmask);
-    // blendv : vX[i] = vmask[i]        ? vzero[i] : vX[i]
-    //                  (vK[i] == 1.0)  ? vzero[i] : vX[i]   
+    // blendv : vX[i] =     vmask[i]   ? vzero[i] : vX[i]
+    //                  (vK[i] == 1.0) ? vzero[i] : vX[i]   
 \end{minted}
   \end{exampleblock}
 
-  \begin{block}{Intructions de déplacement au sein des registres}
+  \begin{block}{Intructions for shuffling data inside registers:}
   \begin{itemize}
   \item \texttt{blend}, \texttt{blendv}, \texttt{broadcast}, \texttt{extract}, \texttt{insert}, \texttt{permute},  \texttt{permutevar}, \texttt{shuffle}, \texttt{unpackhi}, \texttt{unpacklo}, ...
   \end{itemize}
@@ -966,17 +1000,18 @@ __m256 vY = _mm256_sub_ps(vone, _mm256_div_ps(vB, vmax));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Problèmes d'instructions conditionnelles}
-  \framesubtitle{Exemple : RGB $\rightarrow$ CMYK}
+  \frametitle{Problems with Conditional Instructions}
+  \framesubtitle{Example: RGB $\rightarrow$ CMYK}
 
 \begin{minted}{C}
+// R, G, B, C, M, Y, K must be aligned
 __m256 vone, vzero, vmask, vR, vG, vB, vC, vM, vY, vK;
 vone = _mm256_set1_ps(1.0);            // (1, 1, 1, 1, 1, 1, 1, 1)
 vzero = _mm256_setzero_ps();           // (0, 0, 0, 0, 0, 0, 0, 0)
 for (int i = 0; i < n; i += 8) {
-    vR = _mm256_load_ps(&R[i]);           // alignement nécessaire 
-    vG = _mm256_load_ps(&G[i]);           // alignement nécessaire
-    vB = _mm256_load_ps(&B[i]);           // alignement nécessaire
+    vR = _mm256_load_ps(&R[i]);
+    vG = _mm256_load_ps(&G[i]);
+    vB = _mm256_load_ps(&B[i]);
     vmax = _mm256_max_ps(_mm256_max_ps(vR, vG), vB);
     vK = _mm256_sub_ps(vone, vmax);
     vC = _mm256_sub_ps(vone, _mm256_div_ps(vR, vmax));
@@ -986,10 +1021,10 @@ for (int i = 0; i < n; i += 8) {
     vC = _mm256_blendv_ps(vzero, vC, vmask);
     vM = _mm256_blendv_ps(vzero, vM, vmask);
     vY = _mm256_blendv_ps(vzero, vY, vmask);
-    _mm256_store_ps(&C[i], vC);                  // alignement nécessaire
-    _mm256_store_ps(&M[i], vM);                  // alignement nécessaire
-    _mm256_store_ps(&Y[i], vY);                  // alignement nécessaire
-    _mm256_store_ps(&K[i], vK);                  // alignement nécessaire
+    _mm256_store_ps(&C[i], vC);
+    _mm256_store_ps(&M[i], vM);
+    _mm256_store_ps(&Y[i], vY);
+    _mm256_store_ps(&K[i], vK);
 }
 \end{minted}
 \end{frame}
@@ -999,10 +1034,15 @@ for (int i = 0; i < n; i += 8) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Directive OpenMP simd}
+  \frametitle{OpenMP \texttt{simd} Directive}
 
-  Rappel: nécessite l'option \texttt{-fopenmp}
-
+  \begin{alertblock}{OpenMP reminder}
+    \begin{itemize}
+    \item requires compiling with \texttt{-fopenmp}
+    \item \texttt{-fopenmp-simd} enables SIMD but not threads
+    \end{itemize}
+  \end{alertblock}
+  
   \bigskip
   
   \begin{minted}{C}
@@ -1012,20 +1052,20 @@ for (int i = 0; i < n; i += 8) {
   \end{minted}
 
   \begin{itemize}
-  \item Regroupe les itérations en \textit{chunks} de taille $N$
+  \item Groupe iterations in \textit{chunks} of size $N$
     \begin{itemize}
-    \item effectue le calcul avec une unité SIMD à $N$ éléments
+    \item Do the computation using $N$-wide SIMD instructions
     \end{itemize}
     
-  \item On \og promet\fg{} au compilateur que la boucle est vectorisable
-  \item Pas de parallélisation multi-thread 
+  \item We ``promise'' the compiler that the loop is vectorizable
+  \item No multi-thread parallelization there
   \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Directive OpenMP simd}
+  \frametitle{OpenMP \texttt{simd} Directive}
   
   \begin{minted}{C}
     #pragma omp simd [clause[[,] clause],...]
@@ -1033,28 +1073,28 @@ for (int i = 0; i < n; i += 8) {
         ...
    \end{minted}
 
-   \begin{block}{Clauses possibles (liste non-exhaustive)}
+   \begin{block}{Possible clauses (non-exhaustive list)}
      \begin{itemize}
-     \item \texttt{reduction(+:v}) : déjà connu
+     \item \texttt{reduction(+:v}): already known 
        \begin{itemize}
-       \item Casse dépendance de données sur la variable qui accumule
+       \item Breaks data dependency on accumulator variable
        \end{itemize}
        \smallskip
        
-     \item \texttt{simdlen(length)}: taille de \textit{chunk} souhaitée
+     \item \texttt{simdlen(length)}: desired \textit{chunk} size
 \smallskip
        
-     \item \texttt{safelen(length)}: taille de \textit{chunk} maximale
+     \item \texttt{safelen(length)}: maximum allowed \textit{chunk} size
        \begin{itemize}
-       \item E.g., au-delà, un problème de dépendance pourrait arriver
+       \item E.g., beyond this a dependency problem could occur
        \end{itemize}
 \smallskip
        
-     \item \texttt{aligned(v[:k])}: promet que $v$ est alignée sur \texttt{k} octets
+     \item \texttt{aligned(v[:k])}: promise that $v$ is aligned on \texttt{k} bytes
 \smallskip
 
 
-     \item \texttt{linear(x[:step])}: $x$ dépend de $i$ (\mintinline{C}{x_i = x_init + i * step;})
+     \item \texttt{linear(x[:step])}: $x$ is an affine function of $i$ (\mintinline{C}{x_i = x_init + i * step;})
      \end{itemize}
    \end{block}
  \end{frame}
@@ -1065,25 +1105,25 @@ for (int i = 0; i < n; i += 8) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Vectorisation automatique}
+  \frametitle{Automatic Vectorization }
 
   \begin{itemize}
-  \item Fortran a des vecteurs explicites
+  \item Fortran a has explicit vectors
     \begin{itemize}
-    \item Facile à vectoriser
+    \item Easy to vectorize
     \end{itemize}
-    \item En C, le compilateur détecte les \textbf{boucles vectorisables}
+    \item In C, compiler detects \textbf{vectorizable loops}
 
   \end{itemize}
 
-\begin{exampleblock}{Code C}
+\begin{exampleblock}{C Code}
 \begin{minted}{C}
 for (int i = 0; i < n; i++)
         C[i] = lambda * A[i] + mu * B[i];
 \end{minted}
 \end{exampleblock}
 
-\begin{alertblock}{Code assembleur produit par gcc}
+\begin{alertblock}{Assembler code produced by \texttt{gcc}}
 
 \begin{minted}{gas}
 .loop:
@@ -1102,22 +1142,22 @@ for (int i = 0; i < n; i++)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{Instructions SIMD dans le compilateur gcc}
+  \frametitle{SIMD Instructions in \texttt{gcc}}
 
     \begin{itemize}
-    \item La \textbf{vectorisation automatique} est désactivée par défaut 
+    \item \textbf{automatic vectorization} is \alert{disabled} by default 
       \begin{itemize}
-      \item Par défaut, GCC compile au niveau d'optimisation zéro
-      \item Vectorisation automatique et via OpenMP sont désactivées
+      \item Without explicit options, ``optimization level'' = 0
+      \item automatic vectorization (and OpenMP) disabled
       \end{itemize}
 
       \medskip
       
-    \item On peut l'activer par l'option \verb|-ftree-vectorize|
+    \item Enable with option \verb|-ftree-vectorize|
       \begin{itemize}
-      \item \verb|-O3| entraine cette option
+      \item \verb|-O3| activates this feature
       \end{itemize}
-    \item On fait du HPC : compiler avec \verb|-O2| ou \verb|-O3| !
+    \item We're doing HPC: always compile with \verb|-O2| or \verb|-O3|
   \begin{minted}{shell}
 ~$ gcc -O1 -ftree-vectorize vectorisation_auto.c
 ~$ gcc -O1 -fopenmp vectorisation_omp.c
@@ -1125,16 +1165,16 @@ for (int i = 0; i < n; i++)
 
 \medskip
   
-  \item gcc n'émet \textbf{pas} les instructions AVX2 (resp. FMA) par défaut
+  \item \texttt{gcc} does \textbf{not} emit AVX2 (resp. FMA) instructions by default
     \begin{itemize}
-    \item Ajouter options \verb|-mavx2| (resp. \verb|-mfma|).
+    \item Add \verb|-mavx2| (resp. \verb|-mfma|) to the command-line
     \end{itemize}
 
 \medskip
 
-\item Verbosité et diagnostic:
+\item Verbosity and diagnostics:
   \begin{itemize}
-  \item \scriptsize \verb|-fopt-info-vec|, \verb|-fopt-info-vec-missed| et \verb|-fopt-info-vec-all|
+  \item \scriptsize \verb|-fopt-info-vec|, \verb|-fopt-info-vec-missed| and \verb|-fopt-info-vec-all|
   \end{itemize}
   \end{itemize}
 
@@ -1149,23 +1189,23 @@ for (int i = 0; i < n; i++)
 \section{FFT}
 
 \begin{frame}
-  \frametitle{Étude de cas}
+  \frametitle{Case Study}
 
-  \begin{block}{\textbf{Transformée de Fourier Discrete} (DFT)}
+  \begin{block}{\textbf{Discrete Fourier Transform} (DFT)}
   \begin{itemize}
-  \item La DFT d'un tableau $X$ de $n$ nombres (complexes) est
+  \item The DFT of an array $X$ of $n$ (complexes) numbers is
 \[
-  Y[k] = \sum_{j=0}^{n-1} X[j] \omega_n^{jk}, \qquad \text{avec} \qquad \omega_n = e^{-\frac{2i\pi}{n}} \qquad (0 \leq k < n)
+  Y[k] = \sum_{j=0}^{n-1} X[j] \omega_n^{jk}, \qquad \text{with} \qquad \omega_n = e^{-\frac{2i\pi}{n}} \qquad (0 \leq k < n)
 \]
-\item Bibliothèques optimisées (e.g. FFTW)
+\item Optimized libraries (e.g. FFTW)
 \end{itemize}
 \end{block}
 
 \medskip
 
-\begin{alertblock}{Ré-écriture de la formule}
-Lorsque $n = n_1 \times n_2$, on pose
-$j = j_1 n_2 + j_2$ et $k = k_1 + k_2 n_1$ 
+\begin{alertblock}{Rewriting the definition}
+When $n = n_1 \times n_2$, we set
+$j = j_1 n_2 + j_2$ and $k = k_1 + k_2 n_1$ 
 \[
 Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 1} X[j_1n_2 + j_2] {\omega_{n_1}}^{j_1 k_1} \right) {\omega_n}^{j_2 k_1} \right] {\omega_{n_2}}^{j_2 k_2}
 \]
@@ -1176,19 +1216,19 @@ Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{FFT : algorithme récursif}
+  \frametitle{FFT: Recursive Algorithm}
 
-$n = n_1 \times n_2$, on pose $j = j_1 n_2 + j_2$ et $k = k_1 + k_2 n_1$ 
+$n = n_1 \times n_2$, we set $j = j_1 n_2 + j_2$ et $k = k_1 + k_2 n_1$ 
 
 \[
 Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 1} X[j_1n_2 + j_2] {\omega_{n_1}}^{j_1 k_1} \right) {\omega_n}^{j_2 k_1} \right] {\omega_{n_2}}^{j_2 k_2}
 \]
   
-\begin{block}{Algorithme pour le calcul de la DFT de taille $n_1 \times n_2$}
+\begin{block}{Algorithm to compute the DFT of size $n_1 \times n_2$}
   \begin{enumerate}
-  \item Calculer $n_2$ DFT de taille $n_1$ (somme interne)
-  \item Multiplier par les \emph{twiddle factors} ${\omega_n}^{j_2 k_1}$
-  \item Effectuer $n_1$ DFT de taille $n_2$ (somme externe)
+  \item Do $n_2$ DFTs of size $n_1$ (internal sum)
+  \item Multiply by the \emph{twiddle factors} ${\omega_n}^{j_2 k_1}$
+  \item Do $n_1$ DFTs of size $n_2$ (external sum)
   \end{enumerate}
 \end{block}
 
@@ -1197,19 +1237,19 @@ Y[k_1 + k_2 n_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile]
-  \frametitle{FFT : algorithme récursif}
-  \framesubtitle{Présentation classique}
+  \frametitle{FFT: Recursive Algorithm}
+  \framesubtitle{Classical Presentation}
 
     \begin{columns}[T]
     \begin{column}{8cm}
 
       \begin{itemize}
-      \item Choix commun : $n_2 = 2$
+      \item Common choice : $n_2 = 2$
         \begin{itemize}
-        \item \og \textit{Radix-2 Decimation in Time}\fg
+        \item ``\textit{Radix-2 Decimation in Time}''
         \end{itemize}
         
-      \item FFT taille 2 : $(x, y) \rightarrow (x + y, x - y)$
+      \item FFT of size 2 : $(x, y) \rightarrow (x + y, x - y)$
       \end{itemize}
       
       
@@ -1306,9 +1346,9 @@ void FFT(const double * X, double *Y, int n, int s)
         \item $0 \leq k_1 < n_1$ 
         \end{itemize}
 
-      \item<7-> Transposer $V$
+      \item<7-> Transpose $V$
         \begin{itemize}
-        \item \red{surcoût} de la vectorisation
+        \item \red{overhead} from vectorization
         \end{itemize}
         
       \item<only@5-6> $Y[k_1, \star] \gets FFT(V[k_1, \star])$
@@ -1321,9 +1361,9 @@ void FFT(const double * X, double *Y, int n, int s)
         \item $0 \leq k_1 < n_1$
         \end{itemize}
 
-      \item<10-> Retransposer $Y$
+      \item<10-> Retranspose $Y$
         \begin{itemize}
-        \item \red{surcoût} de la vectorisation
+        \item \red{overhead} from vectorization
         \end{itemize}
         
       \end{itemize}
@@ -1357,14 +1397,14 @@ void FFT(const double * X, double *Y, int n, int s)
         % transposée
         \draw<7-9>[<->] (21, 0) -- node[right] {$n_2$} +(0, 8);
         \draw<7-9>[<->] (0, 9) -- node[above] {$n_1$} +(20, 0);
-        \fill<7-8>[fill=red]      (0, 0) rectangle +(20, 1);
-        \fill<7-8>[fill=orange]   (0, 1) rectangle +(20, 1);
-        \fill<7-8>[fill=yellow]   (0, 2) rectangle +(20, 1);
-        \fill<7-8>[fill=green]    (0, 3) rectangle +(20, 1);
-        \fill<7-8>[fill=cyan]     (0, 4) rectangle +(20, 1);
-        \fill<7-8>[fill=blue]     (0, 5) rectangle +(20, 1);
-        \fill<7-8>[fill=magenta]  (0, 6) rectangle +(20, 1);
-        \fill<7-8>[fill=violet]   (0, 7) rectangle +(20, 1);
+        \fill<7-8>[fill=red]      (0, 7) rectangle +(20, 1);
+        \fill<7-8>[fill=orange]   (0, 6) rectangle +(20, 1);
+        \fill<7-8>[fill=yellow]   (0, 5) rectangle +(20, 1);
+        \fill<7-8>[fill=green]    (0, 4) rectangle +(20, 1);
+        \fill<7-8>[fill=cyan]     (0, 3) rectangle +(20, 1);
+        \fill<7-8>[fill=blue]     (0, 2) rectangle +(20, 1);
+        \fill<7-8>[fill=magenta]  (0, 1) rectangle +(20, 1);
+        \fill<7-8>[fill=violet]   (0, 0) rectangle +(20, 1);
         \draw<7-9>[thick] (0, 0) rectangle (20, 8);
         \foreach \i in {1, 2, ..., 7}
         {
@@ -1413,7 +1453,7 @@ void FFT(const double * X, double *Y, int n, int s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Addendum : transposition vectorisée}
+  \frametitle{Addendum: Vectorized Transposition}
 
     \begin{tikzpicture}[scale=0.225]
 %        \path[use as bounding box] (0, 0) rectangle (20, 22);
@@ -1464,12 +1504,12 @@ void FFT(const double * X, double *Y, int n, int s)
     \end{tikzpicture}
 
     \begin{textblock}{8}(5.5, 9)
-      \begin{block}{Exercice \og amusant\fg{}}
-        Écrivez du code qui transpose 
+      \begin{block}{``Fun'' exercise}
+        Write code that transpose 
         \begin{itemize}
-        \item Une matrice $4 \times 4$ de \texttt{double}
-        \item Une matrice $8 \times 8$ de \texttt{float}
-        \item Vectorisé avec les \emph{intrinsics}
+        \item A $4 \times 4$ matrix of \texttt{double}
+        \item A $8 \times 8$ matrix of \texttt{float}
+        \item Using \emph{intrinsics}
         \end{itemize}
       \end{block}
     \end{textblock}
@@ -1482,7 +1522,7 @@ void FFT(const double * X, double *Y, int n, int s)
 %%% Local Variables:
 %%% TeX-command-extra-options: "-shell-escape"
 %%% TeX-engine: xetex
-%%% ispell-local-dictionary: "french"
+%%% ispell-local-dictionary: "english"
 %%% eval: (flyspell-mode 1)
 %%% eval: (reftex-mode 1)
 %%% End:
