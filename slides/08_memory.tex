@@ -12,7 +12,7 @@
 \usepackage{amsmath, amssymb, amsthm}
 
 \usepackage[utf8]{inputenc}
-\usepackage[francais]{babel}
+%\usepackage[francais]{babel}
 \usepackage[T1]{fontenc}
 \usepackage[normalem]{ulem}   
 \usepackage{mdframed}
@@ -52,10 +52,10 @@
 }
 
 
-\author[C.~Bouillaguet]{Charles Bouillaguet \newline
-  {\small \texttt{charles.bouillaguet@univ-lille.fr}}}
+% \author[C.~Bouillaguet]{Charles Bouillaguet \newline
+%   {\small \texttt{charles.bouillaguet@univ-lille.fr}}}
 
-\title{Cours 8 : la mémoire}
+\title{Memory}
 %\date{2020-02-28}
 
 
@@ -73,7 +73,7 @@
 
   \centering
   
-    \huge \bf {L'ennemi n\textdegree 1 de la programmation HPC :}
+    \huge \bf {Public enemy \#1 \\ of HPC programming}
 
   \vspace{2cm}\pause
 \begin{center}
@@ -86,7 +86,7 @@ double x = A[i];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%
 \begin{frame}
-  \frametitle{Le \og \emph{Memory Wall}\fg{}}
+  \frametitle{The ``\emph{Memory Wall}''}
 
     \begin{columns}[c]
     \begin{column}{.1\textwidth}
@@ -95,16 +95,16 @@ double x = A[i];
     \begin{column}{.9\textwidth}
       
   \begin{itemize}
-  \item La \textbf{puissance de calcul} augmente
+  \item\textbf{Computing Power} increases
     \begin{itemize}
-    \item Augmentation rapide des FLOP/s
+    \item Quick increase in FLOP/s
     \end{itemize}
 
     \medskip
     
-  \item La vitesse de la mémoire \textbf{ne suit pas}
+  \item Speed of memory \textbf{does not follow} at the same pace
         \begin{itemize}
-    \item Augmentation \emph{moins rapide} des Go/s
+    \item \emph{Less quick} increase in GB/s
     \end{itemize}
   \end{itemize}
 \end{column}
@@ -112,17 +112,17 @@ double x = A[i];
 
 \bigskip
 
-\begin{block}{On distingue...}
+\begin{block}{Can distinguish}
 \begin{itemize}
-\item Algorithmes \alert{compute-bound} {\small (ou CPU-bound)}
+\item \alert{Compute-bound} {\small (or CPU-bound)} algorithms
   \begin{itemize}
-  \item Limités par FLOP/s
+  \item limited by peak FLOP/s
   \end{itemize}
   \medskip
   
-\item Algorithmes \alert{memory-bound}
+\item \alert{Memory-bound} algorithms
   \begin{itemize}
-  \item  limités par Go/s depuis la RAM
+  \item limited by peak RAM bandwidth (GB/s)
   \end{itemize}
 \end{itemize}
 \end{block}
@@ -132,10 +132,10 @@ double x = A[i];
 %%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Le \og \emph{Memory Wall}\fg{}}
+  \frametitle{The ``\emph{Memory Wall}''}
 
   \begin{center}
-    \large FLOPS $\div$ \texttt{[débit de la mémoire]}
+    \large FLOPS $\div$ \texttt{[memory bandwidth]}
   \end{center}
 
   \bigskip
@@ -147,10 +147,10 @@ double x = A[i];
 %%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Le \og \emph{Memory Wall}\fg{}}
+  \frametitle{The ``\emph{Memory Wall}''}
 
   \begin{center}
-    \large FLOPS $\div$ \texttt{[latence de la mémoire]}
+    \large FLOPS $\div$ \texttt{[memory latency]}
   \end{center}
 
   \bigskip
@@ -162,7 +162,7 @@ double x = A[i];
 %%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Multicoeur : c'est l'horreur}
+  \frametitle{Multicore Horror}
   \framesubtitle{STREAM benchmark}
   
   \smallskip
@@ -171,7 +171,7 @@ double x = A[i];
   \centering
 \begin{tabular}{|cc|c|c|}
   \hline
-  Machine         & Threads & Go/s & Speedup \\
+  Machine         & Threads & GB/s & Speedup \\
     \hline  \hline
   \multirow{2}{*}{Laptop}          & 1 & 10.9  & -\\
             & 2 & 10.9  & \alert{1} \\
@@ -198,16 +198,16 @@ double x = A[i];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Déplacer des données est (énergétiquement) couteux}
+  \frametitle{Energy Cost of Data Transfers}
 
   \begin{center}
     \includegraphics[width=\textwidth,clip,trim=0 0 0 3.5cm]{nvidia.pdf}
-    \footnotesize (image : Bill Dally, NVIDIA, \og the path to exascale\fg)
+    \footnotesize (image : Bill Dally, NVIDIA, `` the path to exascale'')
   \end{center}
 
-  \begin{block}{Consommation énergétique sur un CPU normal}
+  \begin{block}{On a usual CPU}
     \begin{itemize}
-    \item Lire la RAM = 10$\times$ multiplication flottante
+    \item Read RAM = 10$\times$ FP64 multiplication
     \end{itemize}
   \end{block}
 \end{frame}
@@ -215,9 +215,9 @@ double x = A[i];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile,label=pointer_jumping]
-  \frametitle{Accès non-contigus}
+  \frametitle{Non-contiguous Accesses}
 
-  $T =$ tableau de $N$ entiers aléatoires dans $[0; N[$.
+  $T =$ array of $N$ random integers in $[0; N)$
 
   \smallskip
   
@@ -227,14 +227,14 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 \begin{overlayarea}{\textwidth}{6.5cm}
   \begin{onlyenv}<1>
     \bigskip
-    \begin{exampleblock}{En théorie}
-      Complexité indépendante de $N$.
+    \begin{exampleblock}{In theory}
+      Complexity independent of $N$
     \end{exampleblock}
 
     \medskip
 
-    \begin{alertblock}{En pratique}
-      On a affaire à la \textbf{latence} de la mémoire
+    \begin{alertblock}{In practice}
+      We are dealing with memory \textbf{latency}
     \end{alertblock}
 
 \end{onlyenv}
@@ -243,10 +243,10 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
       \vspace{-0.33cm}
       \begin{tikzpicture}
         \node[anchor=south west] at (0, 0) {\includegraphics[height=6.5cm]{cache_curve_gr20.pdf}};
-        \draw[Green] (1.2, 6.33) node[right] {Accès contigus: 13Go/s};
-        \draw<3->[thick,red,->] (1.4, 4) node[right] {3Go/s} -- +(0, -3.15);
-        \draw<4->[thick,red,->] (6.32, 1.33) node[left] {48Mo/s} -- +(0, 4.1);
-        \draw<5->[thick,red,->] (9, 1.33) node[left] {27Mo/s} -- +(0, 4.9);
+        \draw[Green] (1.2, 6.33) node[right] {Contiguous access: 13GB/s};
+        \draw<3->[thick,red,->] (1.4, 4) node[right] {3GB/s} -- +(0, -3.15);
+        \draw<4->[thick,red,->] (6.32, 1.33) node[left] {48MB/s} -- +(0, 4.1);
+        \draw<5->[thick,red,->] (9, 1.33) node[left] {27MB/s} -- +(0, 4.9);
       \end{tikzpicture}
     \end{center}
 \end{onlyenv}
@@ -256,22 +256,22 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}<1-2>[label=plan]
-  \frametitle{Plan}
+  \frametitle{Roadmap}
 
   \begin{enumerate}
-  \item<alert@2> Description du hardware
+  \item<alert@2> The hardware
 
     \bigskip
     
-  \item La hiérarchie mémoire (caches)
+  \item Memory hierarchy (caches)
 
     \bigskip
 
-  \item Amélioration de la localité des données
+  \item Improving data locality
 
-        \bigskip
+    \bigskip
 
-  \item (bonus) Problèmes liés à la pagination
+  \item (bonus) Paging-related issues
   \end{enumerate}
   
 \end{frame}
@@ -282,7 +282,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 
 
 \begin{frame}
-  \frametitle{Un \emph{DIMM} (une \og barrette de RAM\fg{})}
+  \frametitle{A \emph{DIMM} (a `` memory stick'')}
 
   \vfill
   \begin{tikzpicture}[every node/.style={font=\small}, invisible/.style={opacity=0}]
@@ -300,10 +300,10 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
     \draw<3,5->[orange, very thick] (1.025 + 0.6, 1.2 -0.33) -- (9.575 + 0.6, 1.2 - 0.33) ;
     \draw<5->[cyan, very thick]     (1.025 + 0.2, 1.2 -0.66) -- (9.575 + 0.2, 1.2 - 0.66) ;
 
-    \node[orange, anchor=north]             at (7.33625, -0.5) (ad) {\only<3,5->{adresse}};
-    \node[cyan, anchor=north, align=center] at (3.875,   -0.5) (do) {\only<5->{données \\ (64 bits/cycle)}};
+    \node[orange, anchor=north]             at (7.33625, -0.5) (ad) {\only<3,5->{address}};
+    \node[cyan, anchor=north, align=center] at (3.875,   -0.5) (do) {\only<5->{data \\ (64 bits/cycle)}};
 
-    \draw (5.605625, -2.5) node (ca) {\only<6->{canal}};
+    \draw (5.605625, -2.5) node (ca) {\only<6->{channel}};
 
     % flèche des barres horizontales vers "données", "adresse"
     \draw<3,5->[orange, very thick] (6.73625+0.6,  1.2 - 0.33) edge (ad);
@@ -312,7 +312,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
     \draw<6->[orange, very thick, <-] (ad) edge (ca);
     \draw<6->[cyan, very thick, <->]  (do) edge (ca);
     
-    \draw (5.6, -4.25) node (ctrl) {\only<7->{contrôleur mémoire}};
+    \draw (5.6, -4.25) node (ctrl) {\only<7->{memory controller}};
     \draw<7->[very thick,->] (ctrl) edge[transform canvas={xshift=-2mm}] (ca);
     \draw<7->[very thick,->] (ca)   edge[transform canvas={xshift=+2mm}] (ctrl);
   \end{tikzpicture}
@@ -322,7 +322,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Un \emph{DIMM} (une \og barrette de RAM\fg{})}
+  \frametitle{A \emph{DIMM} (a `` memory stick'')}
 
   \begin{tikzpicture}[every node/.style={font=\small}, invisible/.style={opacity=0}]
     \path[red,dotted,use as bounding box] (0.2, -0.5) rectangle +(\textwidth, 3);
@@ -334,7 +334,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
   \centering\small
   \begin{tabular}{|c|c|c|c|c|}
   \hline
-  Génération     & Année & Mhz       & Prefetch  & Go/s \\
+  Generation     & Year & Mhz       & Prefetch  & GB/s \\
   \hline\hline                                                    
   DDR\phantom{1} & 2000  & 100--200  & 16        &  1.6--3.2 \\
   \hline                                                          
@@ -351,8 +351,8 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Canaux}
-  \framesubtitle{Plus de parallélisme, plus de débit}
+  \frametitle{Memory Channels}
+  \framesubtitle{More parallelism, more bandwidth}
 
   \tikzset{
     -|/.style={to path={-| (\tikztotarget)}},
@@ -361,10 +361,10 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
   
   \begin{tikzpicture}[every node/.style={font=\small}]
     \node<1>[anchor=west] at (-1.5, 4) {$\leq$ 2000};
-    \node<2>[anchor=west] at (-1.5, 4) {$\geq$ 2000, presque tous les \og grand-public\fg{} (Core i3, i5, ...)};
-    \node<3>[anchor=west] at (-1.5, 4) {2008, Core i7 920 \og Bloomfield\fg{}};
-    \node<4>[anchor=west] at (-1.5, 4) {2010, AMD Opteron 6100, AMD Ryzen, Core i7/i9 \og serie X\fg{}};
-    \node<5>[anchor=west] at (-1.5, 4) {2017, Xeon Scalable (\og Skylake\fg{})};
+    \node<2>[anchor=west] at (-1.5, 4) {$\geq$ 2000, almost all ``consummer'' CPUs (Core i3, i5, ...)};
+    \node<3>[anchor=west] at (-1.5, 4) {2008, Core i7 920 `` Bloomfield''};
+    \node<4>[anchor=west] at (-1.5, 4) {2010, AMD Opteron 6100, AMD Ryzen, Core i7/i9 ``X series''};
+    \node<5>[anchor=west] at (-1.5, 4) {2017, Xeon Scalable (`` Skylake'')};
     \node<6>[anchor=west] at (-1.5, 4) {2019, AMD Epyc, IBM Power9};
     
     \path[red,dotted,use as bounding box] (-1.6, -3) rectangle +(11, 4);
@@ -388,37 +388,37 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
     \node<6> at (8, 0) (DIMMc) {\includegraphics[width=0.25\textwidth]{DIMM.jpg}};
 
     
-    \node[draw,thick] at (4, 0) (cntrl) {Contrôleur mémoire};
+    \node[draw,thick] at (4, 0) (cntrl) {Memory controller};
     
-    \draw<1>[thick] (cntrl) -- node[right] {Canal 0} (DIMM0);
+    \draw<1>[thick] (cntrl) -- node[right] {Channel 0} (DIMM0);
 
-    \draw<2>[thick] (cntrl)  -| node[near end, left] {Canal 0} (DIMM1);
-    \draw<2>[thick] (cntrl)  -| node[near end, right] {Canal 1} (DIMM2);
+    \draw<2>[thick] (cntrl)  -| node[near end, left] {Channel 0} (DIMM1);
+    \draw<2>[thick] (cntrl)  -| node[near end, right] {Channel 1} (DIMM2);
 
-    \draw<3>[thick] (cntrl)  -| node[near end, left] {Canal 0} (DIMM3);
-    \draw<3>[thick] (cntrl)  -- node[right] {Canal 1} (DIMM0);
-    \draw<3>[thick] (cntrl)  -| node[near end, right] {Canal 2} (DIMM5);
+    \draw<3>[thick] (cntrl)  -| node[near end, left] {Channel 0} (DIMM3);
+    \draw<3>[thick] (cntrl)  -- node[right] {Channel 1} (DIMM0);
+    \draw<3>[thick] (cntrl)  -| node[near end, right] {Channel 2} (DIMM5);
 
-    \draw<4>[thick,transform canvas={yshift=+1mm}] (cntrl)  -| node[near end, left] {Canal 0} (DIMM1);
-    \draw<4>[thick,transform canvas={yshift=+1mm}] (cntrl)  -| node[near end, left] {Canal 1} (DIMM2);
-    \draw<4>[thick,transform canvas={yshift=-1mm}] (cntrl)  -| node[near end, left] {Canal 2} (DIMM6);
-    \draw<4>[thick,transform canvas={yshift=-1mm}] (cntrl)  -| node[near end, right] {Canal 3} (DIMM7);
+    \draw<4>[thick,transform canvas={yshift=+1mm}] (cntrl)  -| node[near end, left] {Channel 0} (DIMM1);
+    \draw<4>[thick,transform canvas={yshift=+1mm}] (cntrl)  -| node[near end, left] {Channel 1} (DIMM2);
+    \draw<4>[thick,transform canvas={yshift=-1mm}] (cntrl)  -| node[near end, left] {Channel 2} (DIMM6);
+    \draw<4>[thick,transform canvas={yshift=-1mm}] (cntrl)  -| node[near end, right] {Channel 3} (DIMM7);
 
-    \draw<5>[thick,transform canvas={yshift=+1mm}] (cntrl)  -| node[near end, left] {Canal 0} (DIMM3);
-    \draw<5>[thick] (cntrl)  -- node[right] {Canal 1} (DIMM0);
-    \draw<5>[thick,transform canvas={yshift=+1mm}] (cntrl)  -| node[near end, right] {Canal 2} (DIMM5);
-    \draw<5>[thick,transform canvas={yshift=-1mm}] (cntrl)  -| node[near end, left] {Canal 3} (DIMM8);
-    \draw<5>[thick] (cntrl)  -- node[right] {Canal 4} (DIMM9);
-    \draw<5>[thick,transform canvas={yshift=-1mm}] (cntrl)  -| node[near end, right] {Canal 5} (DIMMa);
+    \draw<5>[thick,transform canvas={yshift=+1mm}] (cntrl)  -| node[near end, left] {Channel 0} (DIMM3);
+    \draw<5>[thick] (cntrl)  -- node[right] {Channel 1} (DIMM0);
+    \draw<5>[thick,transform canvas={yshift=+1mm}] (cntrl)  -| node[near end, right] {Channel 2} (DIMM5);
+    \draw<5>[thick,transform canvas={yshift=-1mm}] (cntrl)  -| node[near end, left] {Channel 3} (DIMM8);
+    \draw<5>[thick] (cntrl)  -- node[right] {Channel 4} (DIMM9);
+    \draw<5>[thick,transform canvas={yshift=-1mm}] (cntrl)  -| node[near end, right] {Channel 5} (DIMMa);
     
-    \draw<6>[thick,transform canvas={yshift=+1mm}] (cntrl)  -- node[near end, left] {Canal 0} (DIMM3);
-    \draw<6>[thick] (cntrl)  -- node[right, near end] {Canal 1} (DIMM0);
+    \draw<6>[thick,transform canvas={yshift=+1mm}] (cntrl)  -- node[near end, left] {Channel 0} (DIMM3);
+    \draw<6>[thick] (cntrl)  -- node[right, near end] {Channel 1} (DIMM0);
     \draw<6>[thick] (cntrl)  --  (DIMMb);
-    \draw<6>[thick,transform canvas={yshift=+1mm}] (cntrl)  -- node[near end, right] {Canal 2} (DIMM5);
-    \draw<6>[thick,transform canvas={yshift=-1mm}] (cntrl)  -- node[near end, left] {Canal 5} (DIMM8);
-    \draw<6>[thick] (cntrl)  -- node[right,near end] {Canal 6} (DIMM9);
+    \draw<6>[thick,transform canvas={yshift=+1mm}] (cntrl)  -- node[near end, right] {Channel 2} (DIMM5);
+    \draw<6>[thick,transform canvas={yshift=-1mm}] (cntrl)  -- node[near end, left] {Channel 5} (DIMM8);
+    \draw<6>[thick] (cntrl)  -- node[right,near end] {Channel 6} (DIMM9);
     \draw<6>[thick] (cntrl)  --  (DIMMc);
-    \draw<6>[thick,transform canvas={yshift=-1mm}] (cntrl)  -- node[near end, right] {Canal 7} (DIMMa);
+    \draw<6>[thick,transform canvas={yshift=-1mm}] (cntrl)  -- node[near end, right] {Channel 7} (DIMMa);
 
  \end{tikzpicture}
 \end{frame}
@@ -427,16 +427,16 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 
 
 \begin{frame}
-  \frametitle{Plus près, plus vite}
+  \frametitle{Closer, Faster}
 
   \begin{tikzpicture}[every node/.style={font=\small}]
-    \node<1> at (4, 4) {$\leq$ 2008 : contrôleur sur la carte mère (\og chipset, north bridge\fg{})};
-   \node<3>[anchor=west] at (-1.5, 4) {$\geq$ 2008, contrôleur(s) dans le cpu};
+    \node<1> at (4, 4) {$\leq$ 2008 : controller on the motherboard (`` chipset, north bridge'')};
+   \node<3>[anchor=west] at (-1.5, 4) {$\geq$ 2008, controller on the CPU};
     
     \path[red,dotted,use as bounding box] (-1.4, -2.5) rectangle +(11.5, 7);
     \node<1> at (8, 0) (DIMM0) {\includegraphics[width=0.25\textwidth]{DIMM.jpg}};
     \node<1> at (-1, 0) (cpu) {\includegraphics[width=2cm]{cpu_clipart.png}};
-    \node<1>[draw,thick] at (3.25, 0) (cntrl) {Contrôleur mémoire};
+    \node<1>[draw,thick] at (3.25, 0) (cntrl) {memory controller};
     \draw<1> (cpu) -- (cntrl);
     \draw<1> (cntrl) -- (DIMM0);
 
@@ -460,7 +460,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Plus dans les détails}
+  \frametitle{In greater detail}
 
   \vfill
     \begin{tikzpicture}
@@ -512,7 +512,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
     \node[anchor=west] at (11, 7.5)   {10 bits $\mapsto$ column};
     \node[anchor=west] at (11, 6) {\phantom{1}x bits $\mapsto$ row};
 
-    \node[anchor=west] at (12, 3.4) {(pour DDR4)};
+    \node[anchor=west] at (12, 3.4) {(DDR4)};
   \end{tikzpicture}
 \end{frame}
 
@@ -566,7 +566,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{En 2020 : la DDR4}
+  \frametitle{In 2020: DDR4}
 
     \begin{tikzpicture}
       \node[anchor=south west] at (0, 0) {\includegraphics[width=\textwidth]{DIMM.jpg}};
@@ -577,7 +577,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
   \small
   \begin{tabular}{|c|c|c|c|c|}
   \hline
-Standard   & Freq. (Mhz) & Go/s  & CL min. & Latence (ns) \\
+Standard   & Freq. (Mhz) & GB/s  & CL min. & Latency (ns) \\
   \hline\hline                                                                    
 DDR4-1600  & 200         & 12.8 & 10      & 12.5   \\
 DDR4-1866  & 233         & 14.9 & 12      & 12.9 \\
@@ -596,16 +596,16 @@ DDR4-3200  & 400         & 25.6 & 20      & 12.5   \\
 \againframe<3>{plan}
 
 \begin{frame}[label=caches]
-  \frametitle{La hiérarchie mémoire (les caches)}
+  \frametitle{Memory Hierarchy}
 
   \begin{tikzpicture}[every node/.style={font=\small}, scale=0.66, node distance=0.5cm]
     \path[use as bounding box] (-8.5, 0) rectangle +(17, 10);
     
     \node at (0, 0) (cpu) {\includegraphics[width=1cm]{cpu_clipart.png}};
-    \node[above=of cpu, shape=rectangle, draw, align=center] (L1) {Cache L1 ($\approx$ 32Ko)};
-    \node[above=of L1, shape=rectangle, draw, align=center] (L2) {Cache L2 (256Ko--1Mo)};
-    \node[above=of L2, shape=rectangle, draw, align=center] (L3) {Cache L3 ($\leq$ 64Mo)};
-    \node[above=of L3, shape=rectangle, draw, align=center] (L4) {Cache L4 (rare, IBM z15: 960Mo)};
+    \node[above=of cpu, shape=rectangle, draw, align=center] (L1) {L1 cache ($\approx$ 32Ko)};
+    \node[above=of L1, shape=rectangle, draw, align=center] (L2) {L2 cache (256Ko--1Mo)};
+    \node[above=of L2, shape=rectangle, draw, align=center] (L3) {L3 cache ($\leq$ 64Mo)};
+    \node[above=of L3, shape=rectangle, draw, align=center] (L4) {L4 cache (rare, IBM z15: 960Mo)};
     \node[above=of L4, shape=rectangle, draw, align=center] (RAM) {RAM};
 
     \draw (cpu) edge[<->] (L1);
@@ -625,9 +625,9 @@ DDR4-3200  & 400         & 25.6 & 20      & 12.5   \\
 %%%%%%%%%%%
 
 \begin{frame}[fragile,label=caches]
-  \frametitle{Effet de la hiérarchie mémoire}
+  \frametitle{Effect of the Memory Hierarchy}
 
-  $T =$ tableau de $N$ entiers aléatoires dans $[0; N[$.
+  $T =$ array of $N$ random integers in $[0; N)$
 
   \smallskip
   
@@ -639,10 +639,10 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
       \vspace{-0.33cm}
       \begin{tikzpicture}
         \node[anchor=south west] at (0, 0) {\includegraphics[height=6.5cm]{cache_curve_gr20.pdf}};
-        \draw[Green] (1.2, 6.33) node[right] {Accès contigus: 13Go/s};
-        \draw<2->[thick,red,->] (1.4, 4) node[right] {3Go/s} -- +(0, -3.15);
-        \draw<3->[thick,red,->] (6.32, 1.33) node[left] {48Mo/s} -- +(0, 4.1);
-        \draw<4->[thick,red,->] (9, 1.33) node[left] {27Mo/s} -- +(0, 4.9);
+        \draw[Green] (1.2, 6.33) node[right] {Contiguous access: 13GB/s};
+        \draw<2->[thick,red,->] (1.4, 4) node[right] {3GB/s} -- +(0, -3.15);
+        \draw<3->[thick,red,->] (6.32, 1.33) node[left] {48MB/s} -- +(0, 4.1);
+        \draw<4->[thick,red,->] (9, 1.33) node[left] {27MB/s} -- +(0, 4.9);
       \end{tikzpicture}
     \end{center}
 \end{frame}
@@ -650,50 +650,49 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 %%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[label=caches]
-\frametitle{Caches : grande variabilité}
-\framesubtitle{Raspberry Pi 3B+ (ARM Cortex A53)}
-
+  \frametitle{Caches: Wide Variety}
+  \framesubtitle{Raspberry Pi 3B+ (ARM Cortex A53)}
   \centering
   \includegraphics[width=\textwidth]{lstopo_rpi3b.pdf}
 \end{frame}
 
 \begin{frame}[label=caches]
-  \frametitle{Caches : grande variabilité}
+  \frametitle{Caches: Wide Variety}
   \framesubtitle{Mon laptop  (Intel Core i7 6600U)}
   \centering
   \includegraphics[height=6cm]{lstopo_laptop.pdf}
 \end{frame}
   
 \begin{frame}[label=caches]
-  \frametitle{Caches : grande variabilité}
+  \frametitle{Caches: Wide Variety}
   \framesubtitle{IBM BlueGene/Q (PowerPC A2)}
   \centering
   \includegraphics[width=\textwidth]{lstopo_bgq.png}
 \end{frame}
 
 \begin{frame}[label=caches]
-  \frametitle{Caches : grande variabilité}
+  \frametitle{Caches: Wide Variety}
   \framesubtitle{Noeud d'un cluster récent (2 $\times$ Intel Xeon Gold 6130)}
   \centering
   \includegraphics[width=\textwidth]{lstopo_gr20.pdf}
 \end{frame}
 
 \begin{frame}[label=caches]
-  \frametitle{Caches : grande variabilité}
+  \frametitle{Caches: Wide Variety}
   \framesubtitle{Noeud d'un autre cluster récent (2 $\times$ AMD EPYC 7301)}
   \centering
   \includegraphics[width=\textwidth]{lstopo_chiclet.pdf}
 \end{frame}
 
 \begin{frame}[label=caches]
-  \frametitle{Caches : grande variabilité}
+  \frametitle{Caches: Wide Variety}
   \framesubtitle{Fat Node (4 $\times$ Intel Xeon E7-4850 v3) + 1.5To de RAM}
   \centering
   \includegraphics[height=7cm]{lstopo_wurst.pdf}
 \end{frame}
 
 \begin{frame}[label=caches]
-  \frametitle{Caches : ça prend de la place !}
+  \frametitle{Caches: it Takes Up a Lot of Space!}
   \framesubtitle{PowerPC A2}
   \centering
   \includegraphics[height=7cm]{die-bgq.png}
@@ -707,8 +706,8 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 % cohérence, false sharing
 
 \begin{frame}[label=cache_organization]
-\frametitle{Organisation d'un cache}
-\framesubtitle{Cache L1 typique}
+\frametitle{Cache Organization}
+\framesubtitle{Typical L1 Cache}
 
 \begin{tikzpicture}[xscale=0.66, yscale=0.33]
   \draw[ultra thick] (0, 0) rectangle +(3.2, 16);
@@ -717,18 +716,18 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
   \draw[very thick,<->] (-1, 0) -- node[left] {512} +(0, 16);
   \draw[very thick,<->] (0, -2) -- node[below] {64} +(3.2, 0);
 
-  \node[anchor=west, red] at (6, 8.5) (tag) {Ligne de cache};
+  \node[anchor=west, red] at (6, 8.5) (tag) {Cache line};
   \draw[->, red,thick] (tag) -- (3.5, 8.5);
 
-  \node[anchor=west,font=\small] at (6, 6.5) {$=$ 64 octets alignés};
-  \node[anchor=west,font=\scriptsize] at (6, 4.5) {(l'adresse du 1er est un multiple de 64)};
+  \node[anchor=west,font=\small] at (6, 6.5) {$=$ 64 aligned bytes};
+  \node[anchor=west,font=\scriptsize] at (6, 4.5) {(address is a multiple of 64)};
 \end{tikzpicture}
 \end{frame}
 
 %%%%%%%%%%%% 
 
 \begin{frame}[label=cache_organization,fragile]
-\frametitle{Fautes de cache}
+\frametitle{Cache Misses}
 
  \begin{tikzpicture}[xscale=0.66,yscale=0.33]
 
@@ -772,7 +771,7 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 %%%%%%%%%
 
 \begin{frame}[label=cache_organization]
-\frametitle{Fautes de cache (suite)}
+\frametitle{Cache Misses (continued)}
 
 \begin{columns}
   \begin{column}{2cm}
@@ -792,20 +791,20 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
     \end{tikzpicture}
   \end{column}
   \begin{column}{9cm}
-    \begin{block}{En cas de faute de cache}
+    \begin{block}{In case of cache miss}
     \begin{itemize}
-    \item Quelle ligne évincer ?
+    \item Evict which cache line? 
       \begin{itemize}
       \item LRU, PLRU
       \end{itemize}
-    \item Et les écritures ?
+    \item What about writes?
       \begin{itemize}
       \item Write-through, write-back
-      \item false-sharing
+      \item False-sharing
       \end{itemize}
-    \item Quels emplacements pour une ligne donnée ?
+    \item What possible locations for a given line
       \begin{itemize}
-      \item Associativité
+      \item Associativity
       \end{itemize}
     \end{itemize}
   \end{block}
@@ -818,11 +817,11 @@ for (int i=0, x=0; i < 1000000000; i++) x = T[x];
 \subsection{Petits exemples}
 
 \begin{frame}[label=applications,fragile=singleslide]
-\frametitle{Petits exemples}
-\framesubtitle{Recopie de tableau 2D}
+\frametitle{Small Examples}
+\framesubtitle{2D array copy}
 
-\begin{minted}{C}
-/* Mauvais */
+\begin{minted}[fontsize=\small]{C}
+/* Bad */
 for (int i = 0; i < N; i++)
     for (int j = 0; j <N; j++)
         dst[j][i] = src[j][i];
@@ -830,8 +829,8 @@ for (int i = 0; i < N; i++)
 
 \bigskip
 
-\begin{minted}{C}
-/* Bon */
+\begin{minted}[fontsize=\small]{C}
+/* Good */
 for (int i = 0; i < N; i++)
     for (int j = 0; j < N; j++)
         dst[i][j] = src[i][j];
@@ -842,8 +841,8 @@ for (int i = 0; i < N; i++)
 
 
 \begin{frame}[label=applications,fragile]
-\frametitle{Petits exemples}
-\framesubtitle{Produit de matrice naïf}
+\frametitle{Small Examples}
+\framesubtitle{Naive GEMM (Matrix-Matrix Product)}
 
 \hrule%
 \begin{overlayarea}{\textwidth}{2.5cm}%
@@ -905,45 +904,45 @@ for (int i = 0; i < N; i++)
 \end{tikzpicture}
 \end{onlyenv}
 
-\begin{block}<only@2>{Astuce \#1}
+\begin{block}<only@2>{Trick \#1}
 \begin{itemize}
-\item Permuter les boucles sur $j$ et $k$.
-\item[$\Rightarrow$] Accès contigüs (localité spatiale)
-\item Bonus : possibilités de vectorisation.
+\item Swap the loops over $j$ abd $k$
+\item[$\Rightarrow$] Contiguous accesses (spatial locality)
+\item Bonus: opens vectorization possibilities
 \end{itemize}
 \end{block}
 
 
-\begin{block}<only@4>{Astuce \#2}
+\begin{block}<only@4>{Trick \#2}
 \begin{itemize}
-\item Pré-transposer $B$.
+\item Pre-transpose $B$.
   
-\item Bonus : possibilités de vectorisation.
+\item Bonus: opens vectorization possibilities
 \end{itemize}
 \end{block}
 
 \begin{exampleblock}<only@5>{Bilan}
   \begin{itemize}    
-  \item Petites matrices : pas rentable
+  \item Small matrices: not profitable
     \begin{itemize}
-    \item surcoût trop élevé.
+    \item Overhead too high
     \end{itemize}
 
-  \item Grandes matrices : gain
+  \item Large matrices: clear gain
     \begin{itemize}
     \item $N=3200 : 177s \leadsto 63s$.
     \end{itemize}
   \end{itemize}
 \end{exampleblock}
 
-\begin{block}<only@6>{Astuce \#2}
+\begin{block}<only@6>{Astuce \#3}
   \begin{itemize}
-  \item Produit par blocs.
+  \item Product by blocks
   
-  \item Défaut : récursif au lieu d'itératif.
+  \item Con: naturally recursive instead of iterative
 
-  \item Avantage : les petits blocs tiennent en cache.
-  \item 3 matrices $32 \times 32$ tiennent 
+  \item Pro: small blocks fit in cache
+  \item (3 matrices $32 \times 32$ fit)
   \end{itemize}
 \end{block}
 \end{overlayarea}
@@ -957,7 +956,7 @@ for (int i = 0; i < N; i++)
 
       
 \begin{frame}[fragile,label=radix]
-  \frametitle{Exemple : Bucket Sort}
+  \frametitle{Example: Bucket Sort}
 
 %int C[256];
 %for (int i = 0; i < 256; i++)
@@ -1111,26 +1110,26 @@ for (int i = 0; i < N; i++) {
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[fragile]
-  \frametitle{Bucket Sort : analyse}
+\begin{frame}[fragile=singleslide]
+  \frametitle{Bucket Sort: Analyse}
 
 
-  \begin{exampleblock}{Phase \og histogramme\fg{}}
+  \begin{exampleblock}{Histogram phase}
     \begin{itemize}
-    \item $C$ tient en cache ? 
-    \item \# buckets $\times$ \mintinline[fontsize=\normalsize]{C}{sizeof(int)} $\leq$ 32Ko ?
+    \item Does $C$ fit in cache? 
+    \item \# buckets $\times$ \mintinline[fontsize=\normalsize]{C}{sizeof(int)} $\leq$ 32KB ?
     \item \# buckets $\leq$ 8192 \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Content.png}}
     \end{itemize}
   \end{exampleblock}
 
   \medskip
 
-  \begin{alertblock}{Phase \og Dispatch\fg{}}
+  \begin{alertblock}{Dispatching Phase}
     \begin{itemize}
-    \item Écrit dans \#buckets adresses \red{éloignées}
-    \item Un bucket $\leftrightarrow$ une ligne de cache
+    \item Write into \#buckets (\alert{far apart}) addresses 
+    \item One bucket $\leftrightarrow$ one cache line
     \item \# buckets $\leq$ 512 \raisebox{-2pt}{\includegraphics[height=\baselineskip]{Content.png}}
-    \item \scriptsize Nécessite $C$ + cible en cache
+    \item \scriptsize Requires $C$ + target in cache
     \end{itemize}
   \end{alertblock}  
 \end{frame}
@@ -1138,21 +1137,21 @@ for (int i = 0; i < N; i++) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{GEMV : produit matrice-vecteur}
+  \frametitle{GEMV (matrix-vector product)}
 
-  \begin{block}{version directe}
+  \begin{block}{Direct version}
 \begin{minted}{C}
 /* y += A*x */
-void gemv(int n, int m, int stride, double * A, double * x, double * y)
+void gemv(int n, int m, double * A, int ldA, double * x, double * y)
 {
     for (int i = 0; i < m; i++)
         for (int j = 0; j < n; j++)
-            y[i] += A[i * stride + j] * x[j];
+            y[i] += A[i * ldA + j] * x[j];
 }
 \end{minted}
     \begin{itemize}
-    \item Lit la matrice $A$ à 7Go/s sur ma machine
-    \item 50\% de la bande passante de la RAM
+    \item Reads $A$ at 7GB/s on my laptop
+    \item 50\% of peak memory bandwidth
     \end{itemize}
   \end{block}
 \end{frame}
@@ -1160,12 +1159,12 @@ void gemv(int n, int m, int stride, double * A, double * x, double * y)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile=singleslide]
-  \frametitle{GEMV : produit matrice-vecteur}
+  \frametitle{GEMV (matrix-vector product)}
 
-\begin{alertblock}{version par blocs}
+\begin{alertblock}{Blocked version}
 \begin{minted}{C}
 static const int nb = 8;
-void gemvb(int n, int m, int stride, double *A, double *x, double * y)
+void gemvb(int n, int m, int double *A, int ldA, double *x, double * y)
 {
     int nhi = (n / nb) * nb;
     int mhi = (m / nb) * nb;
@@ -1173,18 +1172,18 @@ void gemvb(int n, int m, int stride, double *A, double *x, double * y)
     int mextra = m - mhi;
     for (int i = 0; i < mhi; i += nb) {
         for (int j = 0; j < nhi; j += nb)
-            gemv(nb, nb, stride, &A[i*stride + j], &x[j], &y[i]);
-        gemv(nb, nextra, stride, &A[i*stride + nhi], &x[nhi], &y[i]);
+            gemv(nb, nb, stride, &A[i*ldA + j], &x[j], &y[i]);
+        gemv(nb, nextra, stride, &A[i*ldA + nhi], &x[nhi], &y[i]);
     }
     for (int j = 0; j < nhi; j += nb)
-        gemv(nb, mextra, stride, &A[mhi*stride + j], &x[j], &y[mhi]);
-    gemv(mextra, nextra, stride, &A[mhi*stride + nhi], &x[nhi], &y[mhi]);
+        gemv(nb, mextra, stride, &A[mhi*ldA + j], &x[j], &y[mhi]);
+    gemv(mextra, nextra, stride, &A[mhi*ldA + nhi], &x[nhi], &y[mhi]);
 }
 \end{minted}
     \begin{itemize}
-    \item Lit la matrice $A$ à 15Go/s sur ma machine
-    \item 100\% de la bande passante de la RAM
-    \item $2\times$ plus rapide que le naïf
+    \item Reads $A$ at 15GB/s on my laptop
+    \item 100\% of peak memory bandwidth
+    \item $2\times$ faster than naive algorithm
     \end{itemize}
 
 \end{alertblock}
@@ -1193,126 +1192,110 @@ void gemvb(int n, int m, int stride, double *A, double *x, double * y)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[fragile]
-  \frametitle{SpMV : l'opération maudite}
+  \frametitle{SpMV (sparse GEMV): the cursed operation}
 
 \begin{minted}{C}
 for (long k = 0; k < nnz; k++) {
     int i = transpose ? Mj[k] : Mi[k];
     int j = transpose ? Mi[k] : Mj[k];
     double v = Mx[k];
-    double a = y[i];              // risque
-    double b = x[j];              // risque
+    double a = y[i];              // risk
+    double b = x[j];              // risk
     y[i] = a + b * v;
 }
 \end{minted}
 
   \begin{itemize}
-  \item Trier \texttt{Mi} $\leadsto$ fautes sur $x$
-  \item Trier \texttt{Mj} $\leadsto$ fautes sur $y$    
-  \item L'usage de \textbf{blocs} de vecteurs \red{amortit} les fautes de cache
-  \item Idée \og raisonnable\fg{} : blocs de la taille d'une ligne de cache
+  \item Sort \texttt{Mi} $\leadsto$ misses on $x$
+  \item Sort \texttt{Mj} $\leadsto$ misses on $y$    
+  \item Using \textbf{blocks} of vectors \red{amortize} misses
+  \item `` Reasonable'' idea: use blocks of the size of a cache line
   \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Peut-on observer tout ces phénomènes ?}
+  \frametitle{Can We Observe All These Phenomena?}
 
-  \begin{exampleblock}{Oui !}
+  \begin{exampleblock}{Yes!}
     \begin{itemize}
-    \item Exécution : \og évènements\fg{} (faute de cache, etc.)
-    \item Ces évènements ont des \textbf{noms}...
+    \item Execution: `` events'' (cache miss, etc.)
+    \item These events have \textbf{names}...
       \begin{itemize}
-      \item ... qui varient d'un système / mécanisme à l'autre
+      \item ... that vary from one system / mechanism to another
       \end{itemize}
-    \item Compteurs matériels $\leadsto$ mesure
-    \item Pas très facile d'accès et pas vraiment portable (OS / CPU-spécifique)
+    \item Hardware counter $\leadsto$ mesure
+    \item Not very easy to access and not very portable (OS / CPU-specific)
     \end{itemize}
   \end{exampleblock}
   
-  \begin{block}{Sous Linux, avec \texttt{perf}}
+  \begin{block}{Under Linux, with \texttt{perf}}
     \begin{itemize}
-    \item Liste des évènements : \texttt{perf list}
+    \item Available event list: \texttt{perf list}
       \begin{itemize}
       \item \texttt{cpu-cycles}, \texttt{instructions}, \texttt{L1-dcache-load-misses}, ...
       \end{itemize}
     \item \texttt{perf stat -e [list evt] ./prog}
-    \item \texttt{perf record -e [list evt] ./prog} puis \texttt{perf report}
+    \item \texttt{perf record -e [list evt] ./prog} then \texttt{perf report}
     \end{itemize}
   \end{block}
 
-  + profilage avec \texttt{score-p}
+  + profiling with \texttt{score-p}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-  \frametitle{Peut-on observer tout ces phénomènes ?}
+  \frametitle{Can We Observe All These Phenomena?}
 
-  \begin{alertblock}{Instrumentation manuelle avec la bibliothèque \texttt{PAPI}}
+
+  \begin{alertblock}{Manual Instrumentation with the \texttt{PAPI} library}
     \begin{itemize}
-    \item La documentation ÉTAIT peu lisible
-    \item Nouvelle version 6.0
-    \item Nouvelles API
-    \item Utilitaire \texttt{papi\_avail} liste les évènements
+    \item Performance API (Application Programming Interface)
+    \item Documentation USED TO BE unreadable
+    \item New version 7.0
+    \item New high-level API
+    \item Command-line tool \texttt{papi\_avail} list events
       \begin{itemize}
       \item \texttt{PAPI\_L1\_DCM  : Level 1 data cache misses}
       \end{itemize}
-    \item Puis instrumentation du code...
+    \item Then instrument your code...
+    \item \textbf{Do} read ``\textit{Redesigning PAPI’s High-Level API}'', Frank Winkler
     \end{itemize}
   \end{alertblock}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
-\begin{frame}[fragile]
-\frametitle{PAPI : initialisation}
-\begin{minted}{C}
-#include <papi.h>
 
-void error (int rc)
-{
-     printf("PAPI error %d: %s\n", rc, PAPI_strerror(rc));
-     // ...
-}
-// ...
-int rc;
-int EventSet = PAPI_NULL;
-long long values[3];
-
-/* Initialize the PAPI library */
-rc = PAPI_library_init(PAPI_VER_CURRENT);
-if (retval != PAPI_VER_CURRENT) error(rc);
-
-/* Create the Event Set */
-if (rc = PAPI_create_eventset(&EventSet) != PAPI_OK) error(rc);
-
-/* Configure the Event Set */
-if (rc = PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK) error(rc);
-if (rc = PAPI_add_event(EventSet, PAPI_L3_DCM) != PAPI_OK) error(rc);
-if (rc = PAPI_add_event(EventSet, PAPI_MEM_SCY) != PAPI_OK) error(rc);
-\end{minted}
-\end{frame}
-  
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
-\begin{frame}[fragile]
-  \frametitle{PAPI : lecture des compteurs}
+\begin{frame}[fragile=singleslide]
+  \frametitle{PAPI in action}
   
 \begin{minted}{C}
-/* Start counting events in the Event Set */
-if (PAPI_start(rc = EventSet) != PAPI_OK) error(rc);
+#include <err.h>
+#include <papi.h>
+  
+int main()
+{
+  int retval;
+  retval = PAPI_hl_region_begin("computation");
+  if (retval != PAPI_OK)
+       errx(1, "something went wrong");
 
-// HERE : observed code 
+  // HERE: observed code 
 
-/* Read the counting events in the Event Set */
-if (rc = PAPI_read(EventSet, values) != PAPI_OK) error(rc);
-
-printf("Instructions completed: %lld\n", values[0]);
-printf("Level 3 data cache misses: %lld\n", values[1]);
-printf("Cycles Stalled Waiting for memory accesses: %lld\n", values[2]);
+  retval = PAPI_hl_region_end ("computation");
+  if (retval != PAPI_OK)
+      ....
 \end{minted}
+
+\begin{itemize}
+\item Control using environment variables (\texttt{PAPI\_EVENTS})
+\item Write result in a file
+\item Can also use to low-level API to get results inside the code
+\end{itemize}
+
 
 \end{frame}
   
@@ -1322,7 +1305,7 @@ printf("Cycles Stalled Waiting for memory accesses: %lld\n", values[2]);
 %%% Local Variables:
 %%% TeX-command-extra-options: "-shell-escape"
 %%% TeX-engine: xetex
-%%% ispell-local-dictionary: "french"
+%%% ispell-local-dictionary: "english"
 %%% eval: (flyspell-mode 1)
 %%% eval: (reftex-mode 1)
 %%% End:
