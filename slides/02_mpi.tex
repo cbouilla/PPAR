@@ -67,7 +67,7 @@
 ]
 
 
-\title{Lecture \#  : Message Passing Interface}
+\title{Lecture \#2: Message Passing Interface}
 
 \begin{document}
 
@@ -134,11 +134,10 @@
     \begin{itemize}
     \item v1.0 of the \textbf{MPI specification}
     \item Consortium with the usual suspects (Cray, IBM, ...)
-    \item Goals:
+    \item New standard for writing ``Message-passing programs''. Goals:
       \begin{itemize}
-      \item develop a widely used standard for writing message-passing programs.
-      \item establish a practical, portable, efficient, and flexible standard
-        for message-passing.
+      \item \textbf{Widely-used}
+      \item \textbf{Practical}, \textbf{portable}, \textbf{efficient}, and \textbf{flexible}
       \end{itemize}
     \end{itemize}
   \end{exampleblock}
@@ -608,9 +607,10 @@ int MPI_Get_count(MPI_Status *status,
   \item \mintinline{C}{MPI_Finalize()}
   \end{itemize}
 
-  \begin{alertblock}{Major advantage}
+  \begin{alertblock}{Major advantages}
     \begin{itemize}
     \item Works over any kind of weird network
+    \item Don't need to care about network addresses
     \end{itemize}
   \end{alertblock}
 \end{frame}

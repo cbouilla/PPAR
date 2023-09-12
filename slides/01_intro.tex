@@ -150,7 +150,8 @@ Iterate the process until convergence.
   \frametitle{Numerical Simulations}
 
   \begin{exampleblock}{Using computers to simulate and analyze a physical phenomenon}
-  
+
+    
   \begin{columns}[t]
     \column{0.5\textwidth} 
     \begin{itemize}
@@ -167,14 +168,23 @@ Iterate the process until convergence.
     
     \column{0.5\textwidth}
     \begin{center}
-      \begin{figure}[ht]
-        \centering
-        \includegraphics[width=0.9\textwidth]{Science-SimuNum.pdf}
-      \end{figure}
-      {\tiny (after
-        % {\it Parallel Programming in C 
-        % with MPI and OpenMP}, 
-        M.J. Quinn)} 
+      \begin{tikzpicture}[>=stealth,scale=0.5, every node/.style={shape=ellipse, font=\small,inner sep=2pt}]
+        \path[use as bounding box] (-3, 0.5) rectangle (7 , -8);
+        \node (nature) {Nature};
+        \node[below=0.5cm of nature,draw] (obs) {Observations};
+        \node[below=0.5cm of obs, draw] (theory) {Theory};
+        \node[below left=0.5cm of theory, draw, align=center,inner sep=0] (exp) {Physical\\experiments};
+        \node<2>[below right=0.5cm of theory, draw, align=center,red,inner sep=1pt] (sim) {Numerical\\simulation};
+
+        \draw (nature) edge[->] (obs);
+        \draw (obs) edge[->] (theory);
+        \draw (theory) edge[->] (exp);
+        \draw<2> (theory) edge[->] (sim);
+
+        \draw[->] (exp.north)  |- (obs);
+        \draw<2>[red,->] (sim.north)  |- (obs);
+
+      \end{tikzpicture}
     \end{center}
   \end{columns}
 \end{exampleblock}
@@ -348,7 +358,7 @@ Iterate the process until convergence.
 
 \begin{frame}
   \frametitle{Gamer's PC}
-  \framesubtitle{For smart-asses who think IA will replace actual science}
+  \framesubtitle{For smart-asses who think AI will replace actual science}
   
   \centering
   \includegraphics[width=5cm]{gamer}%
@@ -546,7 +556,7 @@ Iterate the process until convergence.
   \frametitle{More Examples (TOP 500)}
 
   \begin{enumerate}
-  \item \#4 = \texttt{Summit} (DoE, USA, 2018--), 200 PFLOPS
+  \item \#5 = \texttt{Summit} (DoE, USA, 2018--), 200 PFLOPS
     \begin{itemize}
     \item IBM  ($\approx$ \$ 500 millions)
     \item 4~608 nodes
@@ -563,7 +573,7 @@ Iterate the process until convergence.
 
     \medskip\pause
 
-  \item \#16 = \texttt{Frontera} (Univ. Texas, 2019--), 38.7 PFLOPS
+  \item \#21 = \texttt{Frontera} (Univ. Texas, 2019--), 38.7 PFLOPS
     \begin{itemize}
     \item Dell ($\approx$ \$60 millions)
     \item 8008 nodes
@@ -583,7 +593,7 @@ Iterate the process until convergence.
   \frametitle{And of Course...}
 
   \begin{itemize}
-  \item \#2 = \texttt{Fugaku} (RIKEN, Japon, 2021--), 550 PetaFLOPS
+  \item \#2 = \texttt{Fugaku} (RIKEN, Japon, 2021--), 550 PFLOPS
     \begin{itemize}
     \item Fujitsu ($\approx$ 900 millions \euro)
     \item $\geq$ 150~000 nodes
@@ -734,7 +744,7 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
     \begin{description}
     \item[machine] all components
 
-    \item[cluster] compute servers connected to a network (\sout{COVID})
+    \item[cluster] compute servers connected to a network
       
     \item[node] an independent ``computer''
 
@@ -742,7 +752,7 @@ CM-5                  &	1993 &   1 024	& 3M	   &    60G  \\
 
     \item[SMP] node with several processors
 
-    \item[processeur] contains at least one core + cache, etc.
+    \item[processor] contains at least one core + cache, etc.
   
     \item[socket] connects a processor to the motherboard
 
@@ -1237,6 +1247,14 @@ Processing units simultaneously execute the same operation on their own data
   \end{exampleblock}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Non-Uniform Memory Access}
+  \begin{tikzpicture}
+    \node {\includegraphics[width=\textwidth]{dell2}};
+    \draw[red,ultra thick,dashed] (-5, 0) -- (5, 0);
+  \end{tikzpicture}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
@@ -1417,7 +1435,7 @@ pthread_exit();
 \end{minted}
   \end{block}
 
-  \begin{block}<only@4>{GB}
+  \begin{block}<only@4>{Go}
 \begin{minted}[fontsize=\small]{go}
 func main() {
     s := []int{7, 2, 8, -9, 4, 0}
@@ -1616,7 +1634,7 @@ C    & Xeon E5-2695 v4 & $2 \times$ & 18        & 45MB\\
   \frametitle{Amdahl's Law}
   \framesubtitle{Sequential Portions Limit Parallel Speedup}
 
-  An Algorithm with a fraction $f$ of operations that must be performed
+  Algorithm with a fraction $f$ of operations that must be performed
   sequentially. Then
 
 \[
