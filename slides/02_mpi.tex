@@ -249,7 +249,7 @@
 \begin{minted}{C}
 #include <mpi.h>
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
 
@@ -431,7 +431,7 @@ int main(int argc, char** argv)
   \frametitle{Point-to-Point Communication (sending)}
 
 \begin{minted}[fontsize=\small]{C}
-int MPI_Send(void* buf, int count, MPI_Datatype datatype,
+int MPI_Send(void *buf, int count, MPI_Datatype datatype,
              int dest, int tag, MPI_Comm comm)
 \end{minted}
 
@@ -444,7 +444,7 @@ int MPI_Send(void* buf, int count, MPI_Datatype datatype,
     \item Send it to process of rank \mintinline{C}{dest} in communicator \mintinline{C}{comm}
     \item Message ``labelled'' with \mintinline{C}{tag}
       \begin{itemize}
-      \item $0 \leq \mintinline{C}{tag} < 2^{15} \leq $
+      \item $0 \leq \mintinline{C}{tag} < 2^{15}$
       \end{itemize}
     \item Function returns when message has been entirely read
       \begin{itemize}
@@ -460,7 +460,7 @@ int MPI_Send(void* buf, int count, MPI_Datatype datatype,
   \frametitle{Point-to-Point Communication (sending)}
 
 \begin{minted}[fontsize=\small]{C}
-int MPI_Send(void* buf, int count, MPI_Datatype datatype,
+int MPI_Send(void *buf, int count, MPI_Datatype datatype,
              int dest, int tag, MPI_Comm comm)
 \end{minted}
 
@@ -487,7 +487,7 @@ int MPI_Send(void* buf, int count, MPI_Datatype datatype,
   \frametitle{Point-to-Point Communication (receiving)}
 
 \begin{minted}[fontsize=\small]{C}
-int MPI_Recv(void* buf, int count, MPI_Datatype datatype,
+int MPI_Recv(void *buf, int count, MPI_Datatype datatype,
              int source, int tag, MPI_Comm comm,
              MPI_Status *status)
 \end{minted}
@@ -498,7 +498,7 @@ int MPI_Recv(void* buf, int count, MPI_Datatype datatype,
       \begin{itemize}
       \item Labelled \mintinline{C}{tag} from process \mintinline{C}{source} in communicator \mintinline{C}{comm}
       \end{itemize}
-    \item Write it in memory in \alert{receive buffer} (at address \mintinline{C}{status})
+    \item Write it in memory in \alert{receive buffer} (at address \mintinline{C}{buf})
     \item Write metadata in \mintinline{C}{status}
     \item Size of the message must be $\leq$ \mintinline{C}{count}
       \begin{itemize}

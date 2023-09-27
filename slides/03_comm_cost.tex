@@ -705,7 +705,7 @@
   
   \begin{alertblock}{\vspace*{-3ex}}
     \begin{enumerate}
-    \item $(p-1) \frac{n}{p}$ elements exit from each node
+    \item $(p-1) \frac{n}{p}$ elements enter into each node
       \begin{itemize}
       \item $T \geq (p-1) \frac{n}{p} \beta$ \hfill (``bandwidth term'')
       \end{itemize}
@@ -806,6 +806,13 @@
   \end{block}
 
   \vfill
+
+  \begin{exampleblock}{Exercise for next week}
+    All-to-all on 2D torus ?
+  \end{exampleblock}
+
+  
+  \vfill
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -854,6 +861,36 @@
 
 \begin{frame}
   \frametitle{Realistic?}
+  \framesubtitle{Requires \textbf{Non-Blocking} Switch (expensive)}
+
+  \centering
+  \includegraphics[width=10cm]{ib_switch.jpg}
+  Infiniband 36-port non-blocking switch, 100Gbit/s per port (17k€)
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{On Grid5000 / ``gros'' cluster @ Nancy}
+  All 124 nodes $\leftrightarrow$ single switch
+
+  \centering
+  MPI All-to-All:
+  \includegraphics[width=\textwidth]{gros_sort.pdf}
+\end{frame}
+
+\begin{frame}
+  \frametitle{On Grid5000 / ``gros'' cluster @ Nancy}
+  All 124 nodes $\leftrightarrow$ single switch
+
+  Ring algorithm:
+  \includegraphics[width=\textwidth]{gros_cyclic.pdf}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \frametitle{Realistic?}
   \framesubtitle{Fat Tree (Infiniband / Omnipath)}
 
   \centering
@@ -861,6 +898,7 @@
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \begin{frame}
   \frametitle{Fat tree (2 levels)}
@@ -913,6 +951,12 @@
 \item $(R^2 / 2)$-port switch using $1.5R$ basic switches
 \item Infiniband : $R = 36 \leadsto $ 648 ports
 \end{itemize}
+
+\begin{exampleblock}{Question for next week}
+  How many 48-port switches to build a fat tree for 64 nodes?
+
+  (this is the case of grvingt @ Nancy)
+\end{exampleblock}
 
 \end{frame}
 
@@ -1089,22 +1133,6 @@
   \includegraphics[height=8cm]{dragonfly.pdf}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \frametitle{On Grid5000 ?}
-  Except in special case, all nodes of a cluster connected to a switch
-
-  MPI All-to-All:
-  \includegraphics[width=\textwidth]{gros_sort.pdf}
-\end{frame}
-
-\begin{frame}
-  \frametitle{On Grid5000 ?}
-
-  Ring algorithm:
-  \includegraphics[width=\textwidth]{gros_cyclic.pdf}
-\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
