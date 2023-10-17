@@ -3,7 +3,8 @@
 % début ---> prefix-sum exclu = 50 min
 % prefix-sum + dense LA = 2h
 
-% \includeonlyframes{lu,sca-lu}
+%\includeonlyframes{fftdef,6steps,cyclic,pack,conversion}
+%\includeonlyframes{cyclic,pack,conversion}
 
 \usepackage[T1]{fontenc}
 \usepackage{cellspace}
@@ -4973,8 +4974,1075 @@ int MPI_Reduce_scatter_block(void* sendbuf, void* recvbuf,
     \item Communication time \textbf{also decreases} when $p$ grows
     \item Speed-up \textbf{no longer bounded} when $p$ grows
     \end{itemize}
-  \end{alertblock}
+  \end{alertblock}  
+\end{frame}
+
+\section{FFT}
+
+\begin{frame}
+  \centering
+  \vfill
+  \Huge Discrete Fourier Transform
+  \vfill
+\end{frame}
+
+
+\subsection{Definition, main formula}
+\begin{frame}[label=fftdef]
+  \frametitle{Case Study}
+
+  \begin{block}{\textbf{Discrete Fourier Transform} (DFT)}
+  \begin{itemize}
+  \item The DFT of an array $X$ of $n$ (complex) numbers is
+\[
+  Y[k] = \sum_{j=0}^{n-1} X[j] \left(\omega_n^{k}\right)^j, \qquad \text{with} \qquad \omega_n = e^{-\frac{2i\pi}{n}} \qquad (0 \leq k < n)
+\]
+%\item Optimized libraries (e.g. FFTW, MKL, ...)
+\end{itemize}
+\end{block}
+
+\medskip
+
+\begin{alertblock}{Rewriting the definition}
+When $n = n_1 \times n_2$, we set
+$j = j_1 n_2 + j_2$ and $k = k_2 n_1 + k_1$ 
+\[
+Y[k_2 n_1 + k_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 1} X[j_1n_2 + j_2] {\omega_{n_1}}^{j_1 k_1} \right) {\omega_n}^{j_2 k_1} \right] {\omega_{n_2}}^{j_2 k_2}
+\]
+\end{alertblock}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=fftdef]
+  \frametitle{DFT: Recursive Algorithm}
+
+$n = n_1 \times n_2$, we set $j = j_1 n_2 + j_2$ and $k = k_2 n_1 + k_1$ 
+
+\[
+Y[k_2 n_1 + k_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 1} X[j_1n_2 + j_2] {\omega_{n_1}}^{j_1 k_1} \right) {\omega_n}^{j_2 k_1} \right] {\omega_{n_2}}^{j_2 k_2}
+\]
   
+\begin{block}{Algorithm to compute the DFT of size $n_1 \times n_2$}
+  \begin{enumerate}
+  \item Do $n_2$ DFTs of size $n_1$ (internal sum)
+  \item Multiply by the \emph{twiddle factors} ${\omega_n}^{j_2 k_1}$
+  \item Do $n_1$ DFTs of size $n_2$ (external sum)
+  \end{enumerate}
+\end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\begin{frame}[label=fftdef, fragile]
+  \frametitle{DFT: Recursive Algorithm (cont'd)}
+
+  \begin{overlayarea}{\textwidth}{2cm}
+      
+  \only<1-2>{
+    \[
+      Y[k_2 n_1 + k_1] = \sum_{j_2 = 0}^{n_2 - 1} \left[ \left( \sum_{j_1 = 0}^{n_1 - 1} X[j_1n_2 + j_2] {\omega_{n_1}}^{j_1 k_1} \right) {\omega_n}^{j_2 k_1} \right] {\omega_{n_2}}^{j_2 k_2}
+    \]
+  }
+  \only<3>{
+    \[
+      Y[k_2 n_1 + k_1] = \sum_{j_2 = 0}^{n_2 - 1} \left( U[k_1 n_2 + j_2] {\omega_n}^{j_2 k_1} \right) {\omega_{n_2}}^{j_2 k_2}
+    \]
+  }
+  \only<4>{
+    \[
+      Y[k_2 n_1 + k_1] = \sum_{j_2 = 0}^{n_2 - 1} V[k_1 n_2 + j_2] {\omega_{n_2}}^{j_2 k_2}
+    \]
+  }
+  
+  \only<5->{
+    \[
+      Y[k_2 n_1 + k_1] = W[k_1 n_2 + k_2]
+    \]
+  }
+\end{overlayarea}
+
+\begin{overlayarea}{\textwidth}{8cm}
+  \begin{columns}[T]
+    \begin{column}{6cm}
+      \small 
+      \begin{itemize}
+      \item<2-> $U[\star, j_2] \gets \textsc{DFT}(X[\star, j_2])$
+        \begin{itemize}
+        \item $0 \leq j_2 < n_2$
+        \end{itemize}
+
+      \item<3-> $V[k_1, j_2] \gets U[k_1, j_2] \cdot {\omega_n}^{j_2 k_1}$
+        \begin{itemize}
+        \item $0 \leq j_2 < n_2$
+        \item $0 \leq k_1 < n_1$ 
+        \end{itemize}
+        
+      \item<4-> $W[k_1, \star] \gets \textsc{DFT}(V[k_1, \star])$
+        \begin{itemize}
+        \item $0 \leq k_1 < n_1$
+        \end{itemize}
+
+      \item<5-> $Y \gets \textsc{Transpose}(W)$
+      \end{itemize}
+    \end{column}
+
+    \begin{column}{5.8cm}
+      \begin{tikzpicture}[scale=0.25,line around/.style={decoration={pre length=#1,post length=#1}}]
+        \path[use as bounding box] (0, 0) rectangle (20, 22);
+
+        \draw<1-4>[<->] (9, 0) -- node[right] {$n_1$} +(0, 20);
+        \draw<1-4>[<->] (0, 21) -- node[above] {$n_2$} +(8, 0);
+        \fill<1,3>[fill=lightgray] (0, 0) rectangle (8, 20);
+
+        % 1ère passe FFT
+        \foreach \i in {0, 1, ..., 7} {
+          \pgfmathsetmacro{\wavelength}{390+\i*(750-390)/7}
+          \definecolor{rainbow}{wave}{\wavelength}
+          \fill<2>[fill=rainbow]      (\i, 0) rectangle +(1, 20);
+          \draw<2>[color=-rainbow, decorate,decoration={snake, amplitude=0.5mm}, line around=1mm, <->, ] (\i + 0.5, 0.1) -- +(0, 19.8);
+        }
+
+        % 2ème passe FFT
+        \foreach \i in {0, 1, ..., 19} {
+          \pgfmathsetmacro{\wavelength}{390+\i*(750-390)/19}
+          \definecolor{rainbow}{wave}{\wavelength}
+          \fill<4>[fill=rainbow]      (0, \i) rectangle +(8, 1);
+          \draw<4>[color=-rainbow, decorate,decoration={snake, amplitude=0.5mm}, line around=1mm,<->] (0.1, \i + 0.5) -- +(7.8, 0);
+        }
+
+        \draw<1-4>[thick] (0, 0) rectangle (8, 20);
+        \foreach \i in {1, 2, ..., 7} {
+          \draw<1-4> (\i, 0) -- +(0, 20);
+        }
+        \foreach \j in {1, 2, ..., 19} {
+          \draw<1-4> (0, \j) -- +(8, 0);
+        }
+                       
+        % twiddle
+        \foreach \i in {0.5, 1.5, ..., 7.5} {
+          \foreach \j in {0.5, 1.5, ..., 19.5} {
+            \draw<3>[black,variable=\t,smooth,domain=0:19.5,samples=20] (\i, \j) plot ({\i + 0.0225 * \t *sin(\t r)}, {\j + 0.0225 * \t * cos(\t r)});
+          }
+        }
+
+        % transposée
+        \draw<5>[<->] (21, 0) -- node[right] {$n_2$} +(0, 8);
+        \draw<5>[<->] (0, 9) -- node[above] {$n_1$} +(20, 0);
+        \fill<5>[fill=lightgray] (0, 0) rectangle (20, 8);
+        \draw<5>[thick] (0, 0) rectangle (20, 8);
+        \foreach \i in {1, 2, ..., 7} {
+          \draw<5> (0, \i) -- +(20, 0);
+        }
+        \foreach \j in {1, 2, ..., 19} {
+          \draw<5> (\j, 0) -- +(0, 8);
+        }
+
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{overlayarea}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=fftdef, fragile]
+  \frametitle{FFT: Classic (Sequential) Recursive Algorithm}
+
+    \begin{columns}[T]
+    \begin{column}{8cm}
+
+      \begin{itemize}
+      \item Common choice : $n_2 = 2$
+        \begin{itemize}
+        \item ``\textit{Radix-2 Decimation in Time}''
+        \end{itemize}
+        
+      \item FFT of size 2 : $(x, y) \rightarrow (x + y, x - y)$
+      \end{itemize}
+      
+      
+\begin{minted}[fontsize=\scriptsize]{C}
+void FFT(const double * X, double *Y, int n, int s)
+{
+    if (n == 1) {
+       Y[0] = X[0];
+       return;
+    }
+    double omega_n = exp(-2*I*pi / n);
+    double omega = 1;   // twiddle factor
+    FFT(X,     Y      , n/2, 2*s);
+    FFT(X + s, Y + n/2, n/2, 2*s);
+    for (int i = 0; i < n/2; i++) {
+        double p = Y[i];
+        double q = Y[i + n/2] * omega;
+        Y[i] = p + q;
+        Y[i + n/2] = p - q;
+        omega *= omega_n;    
+    }
+}     // T(n) == 2 * T(n/2) + O(n) == O(n * log n)
+\end{minted}
+
+    \end{column}
+    \begin{column}{1.6cm}
+    
+\begin{tikzpicture}[scale=0.225,line around/.style={decoration={pre length=#1,post length=#1}}]
+  \path[use as bounding box] (-1, 0) rectangle (2, 32);
+
+  % dessin du tableau
+  \begin{onlyenv}<1-8>
+  \foreach \i in {0, 2, ..., 30} {
+    \fill[fill=cyan] (0, \i) rectangle +(2, 1);
+    \fill[fill=LimeGreen] (0, \i + 1) rectangle +(2, 1);
+  }
+  \end{onlyenv}
+
+  % Et si le tableau est réparti par bloc ?
+  \filldraw<9>[fill=red]       (0, 29) rectangle +(2,3);
+  \filldraw<9>[fill=orange]    (0, 26) rectangle +(2,3);
+  \filldraw<9>[fill=yellow]    (0, 23) rectangle +(2,3);
+  \filldraw<9>[fill=green]     (0, 20) rectangle +(2,3);
+  \filldraw<9>[fill=cyan]      (0, 17) rectangle +(2,3);
+  \filldraw<9>[fill=blue]      (0, 14) rectangle +(2,3);
+  \filldraw<9>[fill=magenta]   (0, 11) rectangle +(2,3);
+  \filldraw<9>[fill=violet]    (0,  8) rectangle +(2,3);
+  \filldraw<9>[fill=lightgray] (0,  5) rectangle +(2,3);
+  \filldraw<9>[fill=darkgray]  (0,  2) rectangle +(2,3);
+  \filldraw<9>[fill=brown]     (0,  0) rectangle +(2,2);
+
+  \node<9>[font=\LARGE, anchor=west]   at  (3,  16) {???}; 
+
+  % \draw[thick] (0, 0) rectangle (10, 1);
+  % \foreach \i in {0.2, 0.4, ..., 9.8}
+  % \draw (\i, 0) -- +(0, 1);
+  \draw[thick] (0, 0) rectangle (2, 32);
+  \foreach \i in {0, 1, ..., 31} {
+    \draw (0, \i) -- +(2, 0);
+  }
+
+  
+  % FFT récursives
+  \foreach \j in {1, 3, ..., 29} {
+    \draw<2> (2, \j + 0.5) .. controls (3, \j + 1) and (3, \j + 2) .. (2, \j + 2.5);
+  }
+  \foreach \j in {0, 2, ..., 28} {
+    \draw<3> (2, \j + 0.5) .. controls (3, \j + 1) and (3, \j + 2) .. (2, \j + 2.5);
+  }
+
+  % papillons de taille 2 ensuite
+  \draw<4> (0, 31.5) -- (-1, 31.5) -- (-1, 15.5) -- (0, 15.5);
+  \draw<5> (0, 30.5) -- (-1, 30.5) -- (-1, 14.5) -- (0, 14.5);
+  \draw<6> (0, 29.5) -- (-1, 29.5) -- (-1, 13.5) -- (0, 13.5);
+  \draw<7> (0, 17.5) -- (-1, 17.5) -- (-1, 1.5) -- (0, 1.5);
+  \draw<8> (0, 16.5) -- (-1, 16.5) -- (-1, 0.5) -- (0, 0.5);
+  
+\end{tikzpicture}
+\end{column}
+\end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\subsection{6-step DFT}
+
+\begin{frame}[label=6steps,fragile]
+  \frametitle{The ``Six-Step'' DFT Algorithm}
+  
+  \begin{itemize}
+  \item $N = p^2 k^2$ data items
+  \item Assumptions: nodes have $\sqrt{N}$ memory, \alert{block distribution}
+  \end{itemize}
+  
+  \begin{block}{Main strategy: use $n_1 = n_2 = \sqrt{N}$}
+    \begin{itemize}
+    \item Recursive DFTs confined \textbf{inside nodes}
+    \item[$\leadsto$] No communication needed in recursive calls
+    \end{itemize}
+  \end{block}
+
+  \begin{overlayarea}{\textwidth}{5cm}
+  \begin{onlyenv}<1-6>
+    \begin{center}
+    \begin{tikzpicture}[scale=0.25,line around/.style={decoration={pre length=#1,post length=#1}}]
+        \path[red, dotted, use as bounding box] (0, 0) rectangle (43, 15);
+
+        \begin{scope}
+        \draw[<->] (13, 0) -- node[right] {$n_1$} +(0, 12);
+        \draw[<->] (0, 13) -- node[above] {$n_2$} +(12, 0);
+
+        % distribution par blocs initiale 
+
+          \fill<1,2,4->[fill=red]    (0, 10) rectangle +(12, 2);
+          \fill<1,2,4->[fill=orange] (0,  8) rectangle +(12, 2);
+          \fill<1,2,4->[fill=yellow] (0,  6) rectangle +(12, 2);
+          \fill<1,2,4->[fill=green]  (0,  4) rectangle +(12, 2);
+          \fill<1,2,4->[fill=cyan]   (0,  2) rectangle +(12, 2);
+          \fill<1,2,4->[fill=blue]   (0,  0) rectangle +(12, 2);
+
+         \draw[thick] (0, 0) rectangle (12, 12);
+         \foreach \i in {1, 2, ..., 11} {
+           \draw<1-2,4-> (\i, 0) -- +(0, 12);
+           \draw<1-2,4-> (0, \i) -- +(12, 0);
+         }
+
+         % 1ère passe FFT (avortée)
+         \foreach \i in {0, 1, 2, ..., 11} {
+           \draw<2>[color=white, semithick, decorate,decoration={snake, amplitude=0.5mm}, line around=1mm, <->, ] (\i + 0.5, 0.1) -- +(0, 11.8);
+         }
+
+        % à transposer
+        \node<3> at (6, 6) {\includegraphics[height=2cm]{Triste.png}};
+      \end{scope}
+
+      \begin{onlyenv}<4->
+
+        \draw[ultra thick, ->] (17, 6) -- node[above] {\textsc{Transpose}} (26, 6);
+        
+        \begin{scope}[xshift=28cm]
+          \draw[<->] (13, 0) -- node[right] {$n_2$} +(0, 12);
+          \draw[<->] (0, 13) -- node[above] {$n_1$} +(12, 0);
+          
+          % distribution par blocs initiale 
+          \fill<4,5>[fill=red]    ( 0,0) rectangle +(2, 12);
+          \fill<4,5>[fill=orange] ( 2,0) rectangle +(2, 12);
+          \fill<4,5>[fill=yellow] ( 4,0) rectangle +(2, 12);
+          \fill<4,5>[fill=green]  ( 6,0) rectangle +(2, 12);
+          \fill<4,5>[fill=cyan]   ( 8,0) rectangle +(2, 12);
+          \fill<4,5>[fill=blue]   (10,0) rectangle +(2, 12);
+          \draw[thick] (0, 0) rectangle (12, 12);
+          \foreach \i in {1, 2, ..., 11} {
+            \draw<4,5> (\i, 0) -- +(0, 12);
+            \draw<4,5> (0, \i) -- +(12, 0);
+          }
+          
+          % 1ère passe FFT (réussie)
+          \foreach \i in {0, 1, ..., 11} {
+            \draw<5>[color=white, semithick, decorate,decoration={snake, amplitude=0.5mm}, line around=1mm, <->, ] (\i + 0.5, 0.1) -- +(0, 11.8);
+          }
+          
+          % à transposer
+          \node<6> at (6, 6) {\includegraphics[width=2cm]{Content.png}};
+        \end{scope}
+      \end{onlyenv}
+    \end{tikzpicture}
+  \end{center}
+\end{onlyenv}
+
+  \begin{exampleblock}<7>{Plan}
+    \begin{enumerate}
+    \item Transpose
+    \item First pass of recursive DFTs (``columns'')  \hfill \alert{[local]}
+    \item Multiplication by twiddle factors  \hfill \alert{[local]}
+    \item Transpose
+    \item Second pass of recursive DFTs (``rows'')     \hfill \alert{[local]}
+    \item Transpose
+    \end{enumerate}
+  \end{exampleblock}
+\end{overlayarea}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Transpose}
+
+\begin{frame}[label=conversion]
+\frametitle{Transposing a Square Block-Distributed Matrix}
+\framesubtitle{Pure Data Movement Problem}
+
+\begin{wider}
+  
+\begin{itemize}
+\item Dimension $pk \times pk$
+\item Block-distributed: $k$ (consecutive) rows / process
+\end{itemize}
+
+\medskip
+
+Initial block distribution:
+
+\begin{center}
+\begin{tikzpicture}[scale=0.7, remember picture]
+  \path[use as bounding box] (0, 0) rectangle (17, 1.1);
+  \foreach \i / \col in {0/red, 1/orange, 2/yellow, 3/green, 4/cyan, 5/blue} {
+    \begin{scope}[xshift=\i*2.8cm]
+      \foreach \j in {0, 0.1, ..., 2.3} {
+        \pgfmathsetmacro{\tintpercent}{100 - \j*40}
+        \fill[thick, fill=\col!\tintpercent]  (\j, 0) rectangle  +(0.1, 1);
+      }
+      \draw[very thick] (0, 0) rectangle +(1.2, 1);
+      \draw[very thick] (1.2, 0) rectangle +(1.2, 1);
+      \foreach \j in {0, 1, ..., 23} {
+        \draw (\j*0.1, 0) -- +(0, 1);
+        \path (\j*0.1, 0) -- node[coordinate,anchor=south] (marker_\i_\j) {} +(0.1, 0);
+      }
+    \end{scope}
+  }
+\end{tikzpicture}
+\end{center}
+
+\smallskip
+
+\begin{block}<4>{First DFT pass (``columns'')}
+  \begin{itemize}
+  \item $j$-th column = $\mintinline{python}{A[j::p*k]}$
+  \item Each column needs $k$ items from each process
+  \item Each process needs $k^2$ items from each other process
+  \end{itemize}
+\end{block}
+
+%\bigskip
+
+Goal:
+\smallskip
+
+\begin{tikzpicture}[scale=0.7,remember picture]
+%  \path[use as bounding box] (0, 0) rectangle (17, 1.1);
+  
+  \foreach \p in {0, ..., 5} {
+    \foreach \i in {0, 1} {
+      \begin{scope}[xshift=\i*1.2cm + \p*2.8cm]
+        \pgfmathsetmacro{\tintA}{100 - (2*\p + \i)*4 }
+        \pgfmathsetmacro{\tintB}{100 - (2*\p + \i + 12)*4 }
+        \filldraw[fill=red!\tintA]       (0,   0) rectangle  +(0.1, 1);
+        \filldraw[fill=red!\tintB]       (0.1, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=orange!\tintA]    (0.2, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=orange!\tintB]    (0.3, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=yellow!\tintA]    (0.4, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=yellow!\tintB]    (0.5, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=green!\tintA]     (0.6, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=green!\tintB]     (0.7, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=cyan!\tintA]      (0.8, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=cyan!\tintB]      (0.9, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=blue!\tintA]      (1.0, 0) rectangle  +(0.1, 1);
+        \filldraw[fill=blue!\tintB]      (1.1, 0) rectangle  +(0.1, 1);
+        \draw[very thick] (0, 0) rectangle (1.2, 1);
+      \end{scope}
+    }
+  }
+  \foreach \i in {0, ..., 5} {
+    \foreach \j in {2, 14} {
+      \draw<2>[overlay] (marker_\i_\j) -- +(0, -0.2) -- (2.833 + 0.2*\i + \j/120, 1.2) -- ++(0, -0.2);    
+    }
+    \foreach \j in {3, 15} {
+      \draw<2>[overlay] (marker_\i_\j) -- +(0, -0.2) -- (4.033 + 0.2*\i + \j/120, 1.2) -- ++(0, -0.2);    
+    }
+    
+    \foreach \j in {8, 20} {
+      \draw<3>[overlay] (marker_\i_\j) -- +(0, -0.2) -- (11.166 + 0.2*\i + \j/120, 1.2) -- ++(0, -0.2);    
+    }
+    \foreach \j in {9, 21} {
+      \draw<3>[overlay] (marker_\i_\j) -- +(0, -0.2) -- (12.366 + 0.2*\i + \j/120, 1.2) -- ++(0, -0.2);    
+    }
+  }  
+\end{tikzpicture}
+\end{wider}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Easier with cyclic}
+
+\begin{frame}[label=conversion]
+\frametitle{How To Do This?}
+  \vfill
+  \begin{alertblock}{\textbf{Not completely trivial problem}}
+    \begin{itemize}
+    \item (solution \textbf{not found} on google / StackOverflow / ...)
+    \end{itemize}
+  \end{alertblock}
+  \vfill
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=cyclic]
+  \frametitle{Somewhat Simpler: \textbf{Scatter} to Cyclic Distribution}
+
+  \begin{itemize}
+  \item Rank 0 has an array of size $n$ (multiple of $p$)
+  \item Goal: process $i$ gets \texttt{A[i::p]}
+    \begin{itemize}
+    \item \textit{i.e.} $B[k] = A[i + kp]$ for $0 \leq k < n/p$
+    \end{itemize}
+  \end{itemize}
+  
+  \medskip
+
+  \begin{block}{Roadmap}
+    \begin{enumerate}
+    \item Create a custom MPI Type ($N/p$ items with stride of $p$)
+      \begin{itemize}
+      \item \mintinline{C}{MPI_Type_vector}
+      \end{itemize}
+      
+    \item ``Cheat'' by changing its \emph{extent} 
+      \begin{itemize}
+      \item \mintinline{C}{MPI_Type_create_resized}
+      \end{itemize}
+      
+    \item Then \mintinline{C}{MPI_Scatter} with the custom type
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=cyclic,fragile]
+\frametitle{Scatter to Cyclic Distribution}
+
+\begin{overlayarea}{12cm}{3.5cm}
+\begin{wider}
+  \begin{onlyenv}<1>
+\begin{minted}[fontsize=\small]{C}
+MPI_Datatype strided;
+
+MPI_Type_vector(n/p, 1, p, MPI_DOUBLE, &strided);
+
+
+
+
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<2>
+\begin{minted}[fontsize=\small]{C}
+MPI_Datatype strided, cyclic;
+MPI_Aint extent, lb;
+MPI_Type_vector(n/p, 1, p, MPI_DOUBLE, &strided);
+MPI_Type_get_extent(MPI_DOUBLE, &lb, &extent);
+MPI_Type_create_resized(strided, 0, extent, &cyclic);
+
+
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<3>
+\begin{minted}[fontsize=\small]{C}
+MPI_Datatype strided, cyclic;
+MPI_Aint extent, lb;
+MPI_Type_vector(n/p, 1, p, MPI_DOUBLE, &strided);
+MPI_Type_get_extent(MPI_DOUBLE, &lb, &extent);
+MPI_Type_create_resized(strided, 0, extent, &cyclic);
+MPI_Type_commit(&cyclic);
+MPI_Scatter(X,1,cyclic, Y,n/p,MPI_DOUBLE, 0, MPI_COMM_WORLD);
+\end{minted}
+\end{onlyenv}
+\end{wider}
+\end{overlayarea}
+
+\begin{itemize}
+\item $n/p$ blocks
+\item Each block = 1 $\times$ \mintinline{C}{double}
+\item $p$ \mintinline{C}{double} between the start of two blocks
+\item<only@1> $(n-p+1) \times$ \mintinline{C}{double} between two \mintinline{C}{strided} types
+\item<only@2-> Only $1 \times$ \mintinline{C}{double} between two \mintinline{C}{cyclic} types
+\end{itemize}
+
+\begin{tikzpicture}[xscale=1.75]
+  \path[use as bounding box] (0, -1.75) rectangle (5, 1);
+
+  \draw[thick] (0, 0) rectangle (6, 1);
+  \foreach \i in {0, 0.1, ..., 6}
+  \draw (\i, 0) -- +(0, 1);
+
+  \foreach \i in {0, ..., 9} {
+    \filldraw[fill=red] (0.6*\i,   0)  rectangle  +(0.1, 1);
+    \filldraw<3>[fill=orange] (0.1 + 0.6*\i,   0)  rectangle  +(0.1, 1);
+    \filldraw<3>[fill=yellow] (0.2 + 0.6*\i,   0)  rectangle  +(0.1, 1);
+    \filldraw<3>[fill=green] (0.3 + 0.6*\i,   0)  rectangle  +(0.1, 1);
+    \filldraw<3>[fill=cyan] (0.4 + 0.6*\i,   0)  rectangle  +(0.1, 1);
+    \filldraw<3>[fill=blue] (0.5 + 0.6*\i,   0)  rectangle  +(0.1, 1);
+  }
+  
+  \draw<1-2>[dashed] (2.4, 0) -- (2.4, -0.5);
+  \draw<1-2>[dashed] (3, 0) -- (3, -0.5);
+  \draw<1-2>[<->] (2.4, -0.5) -- node[below,font=\small] {block} (3, -0.5);
+  
+  \draw[dashed] (0, 0) -- (0, -1.2);
+  \draw<1>[dashed] (5.5, 0) -- (5.5, -1.2);
+  \draw<2->[dashed] (0.1, 0) -- (0.1, -1.2);
+  \draw<1>[<->] (0, -1.25) -- node[below,font=\small] {extent $= n -p+1$} (5.5, -1.25);
+  \draw<2->[<->] (0, -1.25) -- node[below,font=\small] {extent $=1$} (0.1, -1.25);
+\end{tikzpicture}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=pack]
+  \frametitle{Packing and Unpacking}
+  
+  \begin{tikzpicture}
+    \node[inner sep=0] at (0, -0.5)   (Pi)    {\includegraphics[width=3cm]{dell1}};
+    \node[inner sep=0] at (7, -0.5)   (Pj)    {\includegraphics[width=3cm]{dell1}};
+
+    \node at (0, -3) (read) {Read $1 \times$ \mintinline{C}{cyclic}};
+    \node[red] at (0, -5) (pack) {\textsc{Pack}};
+
+    \node at (3.5, -5) (cable) {\includegraphics[width=2cm]{optical_fiber}};
+    \node at (3.5, -6) {$\frac{n}{p} \times$ \mintinline{C}{MPI_DOUBLE}};
+
+    \node[red] at (7, -5) (unpack) {\textsc{Unpack}};
+    \node at (7, -3) (write) {Write $\frac{n}{p} \times$ \mintinline{C}{MPI_DOUBLE}};
+    
+    \draw[->, ultra thick] (Pi) edge (read);
+    \draw[->, ultra thick] (read) edge (pack);
+    \draw[->, ultra thick] (pack) edge (cable);
+    \draw[->, ultra thick] (cable) edge (unpack);
+    \draw[->, ultra thick] (unpack) edge (write);
+    \draw[->, ultra thick] (write) edge (Pj);
+    \end{tikzpicture}  
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=cyclic,fragile]
+\frametitle{Next: Redistribute Block $\longrightarrow$ Cyclic}
+
+\begin{tikzpicture}[scale=0.7, remember picture]
+  \path[use as bounding box] (0.6, 0) rectangle (17, 1.1);
+  \foreach \i / \col in {0/red, 1/orange, 2/yellow, 3/green, 4/cyan, 5/blue} {
+    \begin{scope}[xshift=\i*2.8cm]
+      \foreach \j in {0, 0.1, ..., 2.3} {
+        \pgfmathsetmacro{\tintpercent}{100 - \j*40}
+        \fill[thick, fill=\col!\tintpercent]  (\j, 0) rectangle  +(0.1, 1);
+      }
+      \draw[thick] (0, 0) rectangle +(2.4, 1);
+      \foreach \j in {0, 1, ..., 23} {
+        \draw (\j*0.1, 0) -- +(0, 1);
+        \path (\j*0.1, 0) -- node[coordinate,anchor=south] (marker_\i_\j) {} +(0.1, 0);
+      }
+  \end{scope}
+}
+\end{tikzpicture}
+
+\vspace*{-0.25cm}
+
+\begin{overlayarea}{\textwidth}{6.75cm}
+\begin{block}<only@1>{Communication pattern}
+\begin{itemize}
+\item $n = p^2 \ell$
+\item $i$-th rank gets \mintinline{python}{A[i::p]}
+\item Each process sends $\ell$ items to each other process
+  \begin{itemize}
+  \item[$\Rightarrow$] \mintinline{C}{MPI_Alltoall} 
+  \end{itemize}
+\end{itemize}
+\end{block}
+
+\begin{block}<only@1>{Data location}
+  \begin{itemize}
+  \item $\ell$ \textbf{\alert{non-contiguous}} items in send buffer
+  \item $\ell$ \textbf{contiguous} items in reception buffer
+    \begin{itemize}
+    \item Just like before (scatter to cyclic)
+    \end{itemize}
+  \end{itemize}
+\end{block}
+
+\begin{onlyenv}<3>
+  \begin{wider}
+\begin{minted}[fontsize=\small]{C}
+MPI_Datatype strided, cyclic;
+MPI_Aint extent, lb;
+MPI_Type_vector(l, 1, p, MPI_DOUBLE, &strided);
+MPI_Type_get_extent(MPI_DOUBLE, &lb, &extent);
+MPI_Type_create_resized(strided, 0, extent, &cyclic);
+MPI_Type_commit(&cyclic);
+
+MPI_Alltoall(Y,1,cyclic, Z,l,MPI_DOUBLE, MPI_COMM_WORLD);
+\end{minted}
+  \end{wider}
+\end{onlyenv}
+\end{overlayarea}
+
+\begin{tikzpicture}[scale=0.7, remember picture]
+  \path[use as bounding box] (0.6, 0) rectangle (17, 1.1);
+  
+  \foreach \p in {0, ..., 5} {
+    \begin{scope}[xshift=\p*2.8cm]
+      \pgfmathsetmacro{\tintpercent}{100 - \p*15}
+
+      \foreach \i in {0, 1, 2, 3} {
+        \begin{scope}[xshift=\i*0.1cm]
+          \pgfmathsetmacro{\tintpercent}{100 - (6*\i + \p)*4}
+          \fill[fill=red!\tintpercent]     (0,   0) rectangle  +(0.1, 1);
+          \fill[fill=orange!\tintpercent]  (0.4, 0) rectangle  +(0.1, 1);
+          \fill[fill=yellow!\tintpercent]  (0.8, 0) rectangle  +(0.1, 1);
+          \fill[fill=green!\tintpercent]   (1.2, 0) rectangle  +(0.1, 1);
+          \fill[fill=cyan!\tintpercent]    (1.6, 0) rectangle  +(0.1, 1);
+          \fill[fill=blue!\tintpercent]    (2.0, 0) rectangle  +(0.1, 1);
+        \end{scope}
+      }
+  \draw[thick] (0, 0) rectangle +(2.4, 1);
+  \foreach \i in {0, 0.1, ..., 2.4}
+  \draw (\i, 0) -- +(0, 1);
+  \end{scope}
+}
+
+    \foreach \i in {0, ..., 5} {
+        \draw<2>[overlay] (marker_\i_2) -- +(0, -0.2) -- (2.85 + 0.4*\i, 1.2) -- ++(0, -0.2);    
+        \draw<2>[overlay] (marker_\i_8) -- +(0, -0.2) -- (2.95 + 0.4*\i, 1.2) -- ++(0, -0.2);
+        \draw<2>[overlay] (marker_\i_14) -- +(0, -0.2) -- (3.05 + 0.4*\i, 1.2) -- ++(0, -0.2);    
+        \draw<2>[overlay] (marker_\i_20) -- +(0, -0.2) -- (3.15 + 0.4*\i, 1.2) -- ++(0, -0.2);
+      }
+
+\end{tikzpicture}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Actual transpose}
+
+\begin{frame}[label=conversion,fragile]
+  \frametitle{Finally: Transpose Square Block-Distributed Matrix}
+
+  \begin{tikzpicture}[scale=0.7,remember picture]
+    \path[use as bounding box] (0.6, 0) rectangle (17, 1.1);
+    \foreach \i / \col in {0/red, 1/orange, 2/yellow, 3/green, 4/cyan, 5/blue} {
+      \begin{scope}[xshift=\i*2.8cm]
+        \foreach \j in {0, 0.1, ..., 2.3} {
+          \pgfmathsetmacro{\tintpercent}{100 - \j*40}
+          \fill[thick, fill=\col!\tintpercent]  (\j, 0) rectangle  +(0.1, 1);
+        }
+        \draw[very thick] (0, 0) rectangle +(1.2, 1);
+        \draw[very thick] (1.2, 0) rectangle +(1.2, 1);
+        \foreach \j in {0, ..., 23} {
+          \draw (\j*0.1, 0) -- +(0, 1);
+          \path (\j*0.1, 0) -- node[coordinate,anchor=south] (marker_\i_\j) {} +(0.1, 0);
+        }
+      \end{scope}
+    }
+  \end{tikzpicture}
+
+  \vspace*{-0.25cm}
+
+  \begin{overlayarea}{\textwidth}{6.75cm}
+    \begin{block}<only@1>{Communication pattern}
+      \begin{itemize}
+      \item $n = p^2 k^2$
+      \item $j$-th column: \mintinline{python}{A[j::k*p]}, length $kp$, \alert{k} columns / process
+      \item Each process sends $k^2$ items to each other process
+        \begin{itemize}
+        \item[$\Rightarrow$] \mintinline{C}{MPI_Alltoall} 
+        \end{itemize}
+      \end{itemize}
+    \end{block}
+    
+    \smallskip
+    
+    \begin{block}<only@1>{Data location}
+      \begin{itemize}
+      \item $k$ \textbf{\alert{non-contiguous} blocks} of $k$ items in send buffer
+      \item $k^2$ \textbf{\alert{non-contiguous}} items in reception buffer
+      \end{itemize}
+    \end{block}
+  \end{overlayarea}
+  
+  \begin{tikzpicture}[scale=0.7,remember picture]
+    \path[use as bounding box] (0.6, 0) rectangle (17, 1.1);
+    
+    \foreach \p in {0, ..., 5} {
+      \foreach \i in {0, 1} {
+        \begin{scope}[xshift=\i*1.2cm + \p*2.8cm]
+          \pgfmathsetmacro{\tintA}{100 - (2*\p + \i)*4 }
+          \pgfmathsetmacro{\tintB}{100 - (2*\p + \i + 12)*4 }
+          \filldraw[fill=red!\tintA]       (0,   0) rectangle  +(0.1, 1);
+          \filldraw[fill=red!\tintB]       (0.1, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=orange!\tintA]    (0.2, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=orange!\tintB]    (0.3, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=yellow!\tintA]    (0.4, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=yellow!\tintB]    (0.5, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=green!\tintA]     (0.6, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=green!\tintB]     (0.7, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=cyan!\tintA]      (0.8, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=cyan!\tintB]      (0.9, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=blue!\tintA]      (1.0, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=blue!\tintB]      (1.1, 0) rectangle  +(0.1, 1);
+        \end{scope}
+      }
+      \draw[very thick] (\p*2.8cm, 0) rectangle +(1.2, 1);
+      \draw[very thick] (\p*2.8cm + 1.2cm, 0) rectangle +(1.2, 1);
+    }
+
+    \foreach \i in {0, ..., 5} {
+        \draw<2>[overlay] (marker_\i_2) -- +(0, -0.2) -- (2.85 + 0.2*\i, 1.2) -- ++(0, -0.2);    
+        \draw<2>[overlay] (marker_\i_14) -- +(0, -0.2) -- (2.95 + 0.2*\i, 1.2) -- ++(0, -0.2);
+
+        \draw<2>[overlay] (marker_\i_3) -- +(0, -0.2) -- (4.05 + 0.2*\i, 1.2) -- ++(0, -0.2);    
+        \draw<2>[overlay] (marker_\i_15) -- +(0, -0.2) -- (4.15 + 0.2*\i, 1.2) -- ++(0, -0.2);
+      }
+
+  \end{tikzpicture}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=conversion,fragile]
+\frametitle{More MPI Data Types}
+
+\begin{overlayarea}{12cm}{3.5cm}
+\begin{wider}
+  \begin{onlyenv}<1>
+\begin{minted}[fontsize=\small]{C}
+MPI_Aint extent, lb;
+MPI_Type_get_extent(MPI_DOUBLE, &lb, &extent);
+
+MPI_Datatype strided_in;
+MPI_Type_vector(k, k, k*p, MPI_DOUBLE, &strided_in);
+
+
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<2->
+\begin{minted}[fontsize=\small]{C}
+MPI_Aint extent, lb;
+MPI_Type_get_extent(MPI_DOUBLE, &lb, &extent);
+
+MPI_Datatype strided_in, cyclic_in;
+MPI_Type_vector(k, k, k*p, MPI_DOUBLE, &strided_in);
+MPI_Type_create_resized(strided_in, 0, k*extent, &cyclic_in);
+MPI_Type_commit(&cyclic_in);
+\end{minted}
+\end{onlyenv}
+\end{wider}
+\end{overlayarea}
+
+\begin{itemize}
+\item $\alert{k}$ blocks
+\item Each block = \alert{k} $\times$ \mintinline{C}{double}
+\item $\alert{k}p$ \mintinline{C}{double} between the start of two blocks
+\item<only@1> $(k^2p - kp + k) \times$ \mintinline{C}{double} between two \mintinline{C}{strided_in} types
+\item<only@2-> Only $\alert{k} \times$ \mintinline{C}{double} between two \mintinline{C}{cyclic_in} types
+\end{itemize}
+
+\begin{tikzpicture}[xscale=1.75]
+  \path[use as bounding box] (0, -1.75) rectangle (5, 1);
+
+  \draw[thick] (0, 0) rectangle (6, 1);
+  \foreach \i in {0, 0.1, ..., 6} {
+    \draw (\i, 0) -- +(0, 1);
+  }
+
+  \foreach \i in {0, ..., 4} {
+    \foreach \j in {0, 0.1} {
+      \filldraw[fill=red] (1.2*\i + \j,   0)  rectangle  +(0.1, 1);
+      
+      \filldraw<3>[fill=orange] (1.2*\i + 0.2 + \j, 0)  rectangle  +(0.1, 1);
+      \filldraw<3>[fill=yellow] (1.2*\i + 0.4 + \j, 0)  rectangle  +(0.1, 1);
+      \filldraw<3>[fill=green]  (1.2*\i + 0.6 + \j, 0)  rectangle  +(0.1, 1);
+      \filldraw<3>[fill=cyan]   (1.2*\i + 0.8 + \j, 0)  rectangle  +(0.1, 1);
+      \filldraw<3>[fill=blue]   (1.2*\i + 1.0 + \j, 0)  rectangle  +(0.1, 1);
+    }
+  }
+
+  \draw[dashed] (1.2, 0) -- (1.2, -0.5);
+  \draw[dashed] (1.4, 0) -- (1.4, -0.5);
+  \draw[<->] (1.2, -0.5) -- node[below,font=\small,align=center] {block = $\alert{k}$} (1.4, -0.5);
+  
+  \draw[dashed] (2.4, 0) -- (2.4, -0.5);
+  \draw[dashed] (3.6, 0) -- (3.6, -0.5);
+  \draw[<->] (2.4, -0.5) -- node[below,font=\small,align=center] {stride = $\alert{k}p$} (3.6, -0.5);
+  
+  \draw[dashed] (0, 0) -- (0, -1.2);
+  \draw<1>[dashed] (5, 0) -- (5, -1.2);
+  \draw<1>[<->] (0, -1.25) -- node[below,font=\small] {extent $= k^2 p -\alert{k}p + \alert{k}$} (5, -1.25);
+  \draw<2->[dashed] (0.2, 0) -- (0.2, -1.2);
+  \draw<2->[<->] (0, -1.25) -- node[below,font=\small] {extent $=\alert{k}$} (0.2, -1.25);
+\end{tikzpicture}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{frame}[label=conversion,fragile]
+\frametitle{Even More MPI Data Types}
+
+\begin{overlayarea}{12cm}{3.5cm}
+\begin{wider}
+  \begin{onlyenv}<1>
+\begin{minted}[fontsize=\small]{C}
+MPI_Aint extent, lb;
+MPI_Type_get_extent(MPI_DOUBLE, &lb, &extent);
+
+MPI_Datatype strided_out;
+MPI_Type_vector(k, 1, k*p, MPI_DOUBLE, &strided_out);
+
+
+\end{minted}
+\end{onlyenv}
+
+\begin{onlyenv}<2->
+\begin{minted}[fontsize=\small]{C}
+MPI_Aint extent, lb;
+MPI_Type_get_extent(MPI_DOUBLE, &lb, &extent);
+
+MPI_Datatype strided_out, cyclic_out;
+MPI_Type_vector(k, 1, k*p, MPI_DOUBLE, &strided_out);
+MPI_Type_create_resized(strided_out, 0, extent, &cyclic_out);
+MPI_Type_commit(&cyclic_out);
+\end{minted}
+\end{onlyenv}
+\end{wider}
+\end{overlayarea}
+
+\begin{itemize}
+\item $\alert{k}$ blocks
+\item Each block = 1 $\times$ \mintinline{C}{double}
+\item $\alert{k}p$ \mintinline{C}{double} between the start of two blocks
+\item<only@1> $(k^2p-\alert{k}p+1) \times$ \mintinline{C}{double} between two \mintinline{C}{strided_out} types
+\item<only@2-> Only $1 \times$ \mintinline{C}{double} between two \mintinline{C}{cyclic_out} types
+\end{itemize}
+
+\begin{tikzpicture}[xscale=1.75]
+  \path[use as bounding box] (0, -1.75) rectangle (5, 1);
+
+  \draw[thick] (0, 0) rectangle (6, 1);
+  \foreach \i in {0, 0.1, ..., 6} {
+    \draw (\i, 0) -- +(0, 1);
+  }
+
+  \foreach \i in {0, ..., 4} {
+      \filldraw[fill=red] (1.2*\i,   0)  rectangle  +(0.1, 1);
+      \filldraw<3->[fill=red!25] (1.2*\i + 0.1,   0)  rectangle  +(0.1, 1);
+
+      \filldraw<4>[fill=orange] (1.2*\i + 0.2, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=orange!25] (1.2*\i + 0.3, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=yellow] (1.2*\i + 0.4, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=yellow!25] (1.2*\i + 0.5, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=green]  (1.2*\i + 0.6, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=green!25]  (1.2*\i + 0.7, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=cyan]   (1.2*\i + 0.8, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=cyan!25]   (1.2*\i + 0.9, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=blue]   (1.2*\i + 1.0, 0)  rectangle  +(0.1, 1);
+      \filldraw<4>[fill=blue!25]   (1.2*\i + 1.1, 0)  rectangle  +(0.1, 1);
+
+    }
+
+  \draw[dashed] (1.2, 0) -- (1.2, -0.5);
+  \draw[dashed] (1.3, 0) -- (1.3, -0.5);
+  \draw[<->] (1.2, -0.5) -- node[below,font=\small,align=center] {block = 1} (1.3, -0.5);
+  
+  \draw[dashed] (2.4, 0) -- (2.4, -0.5);
+  \draw[dashed] (3.6, 0) -- (3.6, -0.5);
+  \draw[<->] (2.4, -0.5) -- node[below,font=\small,align=center] {stride = $\alert{k}p$} (3.6, -0.5);
+  
+  \draw[dashed] (0, 0) -- (0, -1.2);
+  \draw<1>[dashed] (4.9, 0) -- (4.9, -1.2);
+  \draw<1>[<->] (0, -1.25) -- node[below,font=\small] {extent $= n -\alert{k}p + \alert{k}$} (4.9, -1.25);
+  \draw<2->[dashed] (0.1, 0) -- (0.1, -1.2);
+  \draw<2->[<->] (0, -1.25) -- node[below,font=\small] {extent $=1$} (0.1, -1.25);
+\end{tikzpicture}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=conversion,fragile=singleslide]
+  \frametitle{Finally: Transpose Square Block-Distributed Matrix}
+
+  \begin{tikzpicture}[scale=0.7,remember picture]
+    \path[use as bounding box] (0.6, 0) rectangle (17, 1.1);
+    \foreach \i / \col in {0/red, 1/orange, 2/yellow, 3/green, 4/cyan, 5/blue} {
+      \begin{scope}[xshift=\i*2.8cm]
+        \foreach \j in {0, 0.1, ..., 2.3} {
+          \pgfmathsetmacro{\tintpercent}{100 - \j*40}
+          \fill[thick, fill=\col!\tintpercent]  (\j, 0) rectangle  +(0.1, 1);
+        }
+        \draw[very thick] (0, 0) rectangle +(1.2, 1);
+        \draw[very thick] (1.2, 0) rectangle +(1.2, 1);
+        \foreach \j in {0, ..., 23} {
+          \draw (\j*0.1, 0) -- +(0, 1);
+          \path (\j*0.1, 0) -- node[coordinate,anchor=south] (marker_\i_\j) {} +(0.1, 0);
+        }
+      \end{scope}
+    }
+  \end{tikzpicture}
+
+  \vspace*{-0.25cm}
+  \begin{wider}
+    \begin{minted}[fontsize=\small]{C}
+MPI_Aint extent, lb;
+MPI_Type_get_extent(MPI_DOUBLE, &lb, &extent);
+
+MPI_Datatype cyclic_in, strided_in;
+MPI_Type_vector(k, k, k*p, MPI_DOUBLE, &strided_in);
+MPI_Type_create_resized(strided_in, 0, k*extent, &cyclic_in);
+MPI_Type_commit(&cyclic_in);
+
+MPI_Datatype cyclic_out, strided_out;
+MPI_Type_vector(k, 1, k*p, MPI_DOUBLE, &strided_out);
+MPI_Type_create_resized(strided_out, 0, extent, &cyclic_out);
+MPI_Type_commit(&cyclic_out);
+
+MPI_Alltoall(Y,1,cyclic_in, Z,k,cyclic_out, MPI_COMM_WORLD);
+\end{minted}
+  \end{wider}
+  
+  \begin{tikzpicture}[scale=0.7,remember picture]
+    \path[use as bounding box] (0.6, 0) rectangle (17, 1.1);
+    
+    \foreach \p in {0, ..., 5} {
+      \foreach \i in {0, 1} {
+        \begin{scope}[xshift=\i*1.2cm + \p*2.8cm]
+          \pgfmathsetmacro{\tintA}{100 - (2*\p + \i)*4 }
+          \pgfmathsetmacro{\tintB}{100 - (2*\p + \i + 12)*4 }
+          \filldraw[fill=red!\tintA]       (0,   0) rectangle  +(0.1, 1);
+          \filldraw[fill=red!\tintB]       (0.1, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=orange!\tintA]    (0.2, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=orange!\tintB]    (0.3, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=yellow!\tintA]    (0.4, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=yellow!\tintB]    (0.5, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=green!\tintA]     (0.6, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=green!\tintB]     (0.7, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=cyan!\tintA]      (0.8, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=cyan!\tintB]      (0.9, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=blue!\tintA]      (1.0, 0) rectangle  +(0.1, 1);
+          \filldraw[fill=blue!\tintB]      (1.1, 0) rectangle  +(0.1, 1);
+        \end{scope}
+      }
+      \draw[very thick] (\p*2.8cm, 0) rectangle +(1.2, 1);
+      \draw[very thick] (\p*2.8cm + 1.2cm, 0) rectangle +(1.2, 1);
+    }
+
+    \foreach \i in {0, ..., 5} {
+        \draw<2>[overlay] (marker_\i_2) -- +(0, -0.2) -- (2.85 + 0.2*\i, 1.2) -- ++(0, -0.2);    
+        \draw<2>[overlay] (marker_\i_14) -- +(0, -0.2) -- (2.95 + 0.2*\i, 1.2) -- ++(0, -0.2);
+
+        \draw<2>[overlay] (marker_\i_3) -- +(0, -0.2) -- (4.05 + 0.2*\i, 1.2) -- ++(0, -0.2);    
+        \draw<2>[overlay] (marker_\i_15) -- +(0, -0.2) -- (4.15 + 0.2*\i, 1.2) -- ++(0, -0.2);
+      }
+
+  \end{tikzpicture}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[label=pack]
+  \frametitle{Packing and Unpacking Redux}
+  
+  \begin{tikzpicture}
+    \node[inner sep=0] at (0, -0.5)   (Pi)    {\includegraphics[width=3cm]{dell1}};
+    \node[inner sep=0] at (7, -0.5)   (Pj)    {\includegraphics[width=3cm]{dell1}};
+
+    \node at (0, -3) (read) {Read $1 \times$ \mintinline{C}{cyclic_in}};
+    \node[red] at (0, -5) (pack) {\textsc{Pack}};
+
+    \node at (3.5, -5) (cable) {\includegraphics[width=2cm]{optical_fiber}};
+    \node at (3.5, -6) {$k^2 \times$ \mintinline{C}{MPI_DOUBLE}};
+
+    \node[red] at (7, -5) (unpack) {\textsc{Unpack}};
+    \node at (7, -3) (write) {Write $k \times$ \mintinline{C}{cyclic_out}};
+    
+    \draw[->, ultra thick] (Pi) edge (read);
+    \draw[->, ultra thick] (read) edge (pack);
+    \draw[->, ultra thick] (pack) edge (cable);
+    \draw[->, ultra thick] (cable) edge (unpack);
+    \draw[->, ultra thick] (unpack) edge (write);
+    \draw[->, ultra thick] (write) edge (Pj);
+    \end{tikzpicture}  
 \end{frame}
 
 
