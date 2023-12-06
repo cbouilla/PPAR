@@ -210,7 +210,8 @@
     \item v5.1 of the spec is much harder to read than v4.5
     \end{itemize}
   \item Version 5.2 (2021) : clean up the spec... 
-\end{itemize}
+  \item Version 6.0 (2024) : ???
+  \end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -243,7 +244,7 @@
 \begin{itemize}
 \item \textbf{Compile-time} directives ({\tt \#pragma} in C)
   \begin{itemize}
-  \item Interpreted by OpenMP-aware the compiler
+  \item Interpreted by OpenMP-aware compilers
   \item \alert{Silently} ignored otherwise
   \item Tell the compiler to generate parallel code
   \item \texttt{gcc}: \texttt{-fopenmp} option
@@ -420,7 +421,7 @@ Hello world, thread 2/4
     \column{0.5\textwidth}
 
     Variables present in the original sequential code can be declared as {\it shared}
-    or {\it private}) with OpenMP.
+    or {\it private} with OpenMP.
 
     \medskip
     
@@ -480,7 +481,7 @@ Hello world, thread 2/4
 \end{framed}
 
 \begin{itemize}
-\item Create a \alert{thread team} (creation/recycling)   
+\item Assemble a \alert{thread team} (creation/recycling)   
 \item \textbf{All} threads run the \textit{structured block}.
 \end{itemize}
 
@@ -674,7 +675,7 @@ a=-1208433038
 a=-22
 a=-22
 a=-22
-Apres a=100
+After a=100
 \end{verbatim}
 \end{block}  
 \end{columns}
@@ -722,7 +723,7 @@ a=110
 a=110
 a=110
 a=110
-Apres a=100
+After a=100
 \end{verbatim}
 \end{block}    
   \end{columns}
@@ -764,7 +765,7 @@ int main()
 \begin{block}{Execution}
 \begin{verbatim}
 $ export OMP_NUM_THREADS=4
-$ test2
+$ ./test2
 10
 11
 12
@@ -814,7 +815,7 @@ int main()
     \begin{minted}{C}
 int main()
 {
-  
+
   #pragma omp parallel
   {
     int a = ...;
@@ -826,7 +827,7 @@ int main()
 
 int main()
 {
-  
+  int a;  
   #pragma omp parallel
   {
     int b = a;
@@ -846,7 +847,7 @@ int main()
 \begin{block}{\bf \texttt{\#pragma omp parallel}}
   \begin{itemize}
   \item A \alert{\textbf{thread team}} is created
-  \item The \textbf{encountered thread} belongs to it (\textbf{master})
+  \item The \textbf{encountering thread} belongs to it (\textbf{master})
   \item All threads of the team execute the \textit{structured block}
   \item Identifiers (``ranks'') 0 (master), 1, 2, \dots, \#threads - 1
     \begin{itemize}
@@ -1730,10 +1731,10 @@ void atomic_append(void *payload)
         new_item->next = list;
         #pragma omp atomic compare capture
         {
-            ok = list == new_item->next;
+            ok = (list == new_item->next);
             if (ok)
                 list = new_item;
-    }
+        }
 }
 \end{minted}
 \end{frame}
@@ -2274,7 +2275,7 @@ Associated clauses:
     \begin{itemize}
     \item Global cariables 
     \item Declared before the parallel section
-    \item Explicitly tagged as\texttt{shared}
+    \item Explicitly tagged as \texttt{shared}
     \end{itemize}
   \end{itemize}
 

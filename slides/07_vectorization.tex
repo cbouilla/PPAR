@@ -1,6 +1,8 @@
 \documentclass[xcolor={x11names,svgnames}]{beamer}
 \setbeamerfont{note page}{size=\tiny}
 
+%\includeonlyframes{robo}
+
 \usecolortheme{rose}
 \setbeamertemplate{footline}{}
 \setbeamertemplate{navigation symbols}{\footnotesize\insertframenumber}
@@ -22,6 +24,7 @@
 \usepackage{tikz}
 \usetikzlibrary{calc}
 \usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{shapes}
 
 \usepackage{fontspec}
 
@@ -282,11 +285,16 @@ In between / besides: GPUs
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
+\begin{frame}[label=robo]
   \frametitle{Vector Processors --- Revival?}
   \centering
-  \includegraphics[height=9cm]{robodino.jpg}
+  \begin{tikzpicture}
+    \path[red, dotted, use as bounding box] (-4, -3.5) rectangle (4, 4.5);
+    \node at (-2, 0) {\includegraphics[height=9cm]{robodino.jpg}};
+    \node<2> at (3.5, 2) {\includegraphics[height=5cm]{fujitsu-a64fx-block-diagram.jpg}};
+    \node<2>[scale=2,rotate=-10,chamfered rectangle, white, align=center, fill=cyan, double=cyan, draw, very thick,font=\bfseries] at (3.5, -2) {Fujitsu A64FX \\ (ARM + SVE)};
 
+  \end{tikzpicture}
 \end{frame}
 
 
@@ -472,7 +480,7 @@ E.g. \texttt{vmaxpd}, \texttt{vmulss}, etc.
     \end{enumerate}
   \end{block}
 
-  (minimise these transfers is an important goal)
+  (minimizing these transfers is an important goal)
   
   \begin{alertblock}{Use cases}
     \begin{itemize}
@@ -678,7 +686,7 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
       \begin{block}{Sequential Algorithm $\mathcal{A}$}
         \begin{itemize}
         \item Applies to an array $X$ 
-        \item "\textit{data-oblivious}": sequence id instructions independent of the values
+        \item "\textit{data-oblivious}": sequence of instructions independent of the values
         \end{itemize}
       \end{block}
 
@@ -775,7 +783,7 @@ double sum = __sum[0] + __sum[1] + __sum[2] + __sum[3];
 
   \begin{itemize}
   \item Introduced by Intel, later adopted by other compilers
-  \item Pseudo-functions that emit \textbf{one} SIMD instructions
+  \item Pseudo-functions that emit \textbf{one} SIMD instruction
   \item Need to know the instruction set(s)
   \end{itemize}
   

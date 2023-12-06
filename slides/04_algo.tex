@@ -4,7 +4,7 @@
 % prefix-sum + dense LA = 2h
 
 %\includeonlyframes{fftdef,6steps,cyclic,pack,conversion}
-%\includeonlyframes{cyclic,pack,conversion}
+%\includeonlyframes{2d}
 
 \usepackage[T1]{fontenc}
 \usepackage{cellspace}
@@ -4683,6 +4683,7 @@ int MPI_Reduce_scatter_block(void* sendbuf, void* recvbuf,
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{2d distribution}
 
 \begin{frame}[label=2d]
   \frametitle{Distributed Matrix-Vector Product}
@@ -4849,9 +4850,9 @@ int MPI_Reduce_scatter_block(void* sendbuf, void* recvbuf,
       % cadre
       \foreach \i in {0, 1, 2, 3} {
         \foreach \j in {0, 1, 2} {
-          \draw[thick] (\i, 6.5*\j) rectangle +(0.5, 6);
+          \draw[thick] (2*\i, 6.5*\j) rectangle +(0.5, 6);
           \foreach \k in {1, 2, ..., 11} {
-            \draw (\i, 6.5*\j) ++(0, 0.5*\k) -- ++(0.5, 0);
+            \draw (2*\i, 6.5*\j) ++(0, 0.5*\k) -- ++(0.5, 0);
           }
         }
       }
@@ -4859,79 +4860,79 @@ int MPI_Reduce_scatter_block(void* sendbuf, void* recvbuf,
       % placement initial
       \foreach \i in {0, 1, 2, 3} {
         \foreach \j in {0, 1, 2} {
-          \filldraw<1-3>[fill=black]  (\i, 3*6 + 0.5 - 1.5*\i - 7*\j)  rectangle +(0.5, 0.5);
+          \filldraw<1-3>[fill=black]  (2*\i, 3*6 + 0.5 - 1.5*\i - 7*\j)  rectangle +(0.5, 0.5);
         }
       }
 
       % Allgather colonnes arrows
       \draw<3>[red, very thick, <->] (0.25, 5.25 + 2*6.5) -- +(0, -6);
       \draw<3>[red, very thick, <->] (0.25, 4.75 + 1*6.5) -- +(0, -6);
-      \draw<3>[red, very thick, <->] (1.25, 3.75 + 2*6.5) -- +(0, -6);
-      \draw<3>[red, very thick, <->] (1.25, 3.25 + 1*6.5) -- +(0, -6);
-      \draw<3>[red, very thick, <->] (2.25, 2.25 + 2*6.5) -- +(0, -6);
-      \draw<3>[red, very thick, <->] (2.25, 1.75 + 1*6.5) -- +(0, -6);
-      \draw<3>[red, very thick, <->] (3.25, 0.75 + 2*6.5) -- +(0, -6);
-      \draw<3>[red, very thick, <->] (3.25, 0.25 + 1*6.5) -- +(0, -6);
+      \draw<3>[red, very thick, <->] (2.25, 3.75 + 2*6.5) -- +(0, -6);
+      \draw<3>[red, very thick, <->] (2.25, 3.25 + 1*6.5) -- +(0, -6);
+      \draw<3>[red, very thick, <->] (4.25, 2.25 + 2*6.5) -- +(0, -6);
+      \draw<3>[red, very thick, <->] (4.25, 1.75 + 1*6.5) -- +(0, -6);
+      \draw<3>[red, very thick, <->] (6.25, 0.75 + 2*6.5) -- +(0, -6);
+      \draw<3>[red, very thick, <->] (6.25, 0.25 + 1*6.5) -- +(0, -6);
 
       % allgather result
       \foreach \i in {0, 1, 2, 3} {
         \foreach \j in {0, 1, 2} {
-          \filldraw<4>[fill=black]  (\i, 3*6 - 0.5 - 1.5*\i - 6.5*\j)  rectangle +(0.5, 1.5);
+          \filldraw<4>[fill=black]  (2*\i, 3*6 - 0.5 - 1.5*\i - 6.5*\j)  rectangle +(0.5, 1.5);
         }
       }
 
       % prepare GEMM
       \filldraw<5>[fill=brown]       (0, 17.5)   rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=orange]      (1, 16) rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=red]         (2, 14.5)   rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=purple]      (3, 13)   rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=orange]      (2, 16) rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=red]         (4, 14.5)   rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=purple]      (6, 13)   rectangle +(0.5, 1.5);
       \filldraw<5>[fill=magenta]     (0, 11)    rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=violet]      (1, 9.5)  rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=blue]        (2, 8)    rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=teal]        (3, 6.5)    rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=violet]      (2, 9.5)  rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=blue]        (4, 8)    rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=teal]        (6, 6.5)    rectangle +(0.5, 1.5);
       \filldraw<5>[fill=cyan]        (0, 4.5)    rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=green]       (1, 3)  rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=lime]        (2, 1.5)    rectangle +(0.5, 1.5);
-      \filldraw<5>[fill=yellow]      (3, 0)    rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=green]       (2, 3)  rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=lime]        (4, 1.5)    rectangle +(0.5, 1.5);
+      \filldraw<5>[fill=yellow]      (6, 0)    rectangle +(0.5, 1.5);
 
 
       % GEMM result
       \foreach \i in {0, 1, 2, 3} {
         \foreach \j in {0, 1, 2} {
-          \filldraw<6-7>[fill=gray]  (\i, 2*\j + 6.5*\j)  rectangle +(0.5, 2);
+          \filldraw<6-7>[fill=gray]  (2*\i, 2*\j + 6.5*\j)  rectangle +(0.5, 2);
         }
       }
 
       % Reduce-scatter arrow
       \foreach \i in {0, 1, 2, 3} {
         \foreach \j in {0, 1, 2} {
-          \draw<7>[red,very thick, <->]  (0, 0.25 + 8.5*\j + 0.5*\i) -- +(3.5, 0);
+          \draw<7>[red,very thick, <->]  (0.5, 0.25 + 8.5*\j + 0.5*\i) -- +(5.5, 0);
         }
       }
 
       % placement après RS
       \foreach \i in {0, 1, 2, 3} {
         \foreach \j in {0, 1, 2} {
-          \filldraw<8-10>[fill=black]  (\i, 1.5 - 0.5*\i +2*\j + 6.5*\j)  rectangle +(0.5, 0.5);
+          \filldraw<8-10>[fill=black]  (2*\i, 1.5 - 0.5*\i +2*\j + 6.5*\j)  rectangle +(0.5, 0.5);
         }
       }
 
       % transposition
-      \draw<10>[red, very thick,->]  (1.25, 5.25 + 2*6.5)  --  (0.25, 5.25 + 1*6.5);
-      \draw<10>[red, very thick,->]  (2.25, 4.75 + 2*6.5)  --  (0.25, 4.75 + 0*6.5);
-      \draw<10>[red, very thick,->]  (3.25, 4.25 + 2*6.5)  --  (1.25, 4.25 + 2*6.5);
-      \draw<10>[red, very thick,->]  (0.25, 3.75 + 1*6.5)  --  (1.25, 3.75 + 1*6.5);
-      \draw<10>[red, very thick,->]  (1.25, 3.25 + 1*6.5)  --  (1.25, 3.25 + 0*6.5);
-      \draw<10>[red, very thick,->]  (2.25, 2.75 + 1*6.5)  --  (2.25, 2.75 + 2*6.5);
-      \draw<10>[red, very thick,->]  (3.25, 2.25 + 1*6.5)  --  (2.25, 2.25 + 1*6.5);
-      \draw<10>[red, very thick,->]  (0.25, 1.75 + 0*6.5)  --  (2.25, 1.75 + 0*6.5);
-      \draw<10>[red, very thick,->]  (1.25, 1.25 + 0*6.5)  --  (3.25, 1.25 + 2*6.5);
-      \draw<10>[red, very thick,->]  (2.25, 0.75 + 0*6.5)  --  (3.25, 0.75 + 1*6.5);
+      \draw<10>[red, very thick]  (2.25, 5.25 + 2*6.5)  edge[->,bend right=15]  (0.25, 5.25 + 1*6.5);
+      \draw<10>[red, very thick]  (4.25, 4.75 + 2*6.5)  edge[->, bend right=10]  (0.25, 4.75 + 0*6.5);
+      \draw<10>[red, very thick]  (6.25, 4.25 + 2*6.5)  edge[->]  (2.25, 4.25 + 2*6.5);
+      \draw<10>[red, very thick]  (0.25, 3.75 + 1*6.5)  edge[->]  (2.25, 3.75 + 1*6.5);
+      \draw<10>[red, very thick]  (2.25, 3.25 + 1*6.5)  edge[->]  (2.25, 3.25 + 0*6.5);
+      \draw<10>[red, very thick]  (4.25, 2.75 + 1*6.5)  edge[->]  (4.25, 2.75 + 2*6.5);
+      \draw<10>[red, very thick]  (6.25, 2.25 + 1*6.5)  edge[->]  (4.25, 2.25 + 1*6.5);
+      \draw<10>[red, very thick]  (0.25, 1.75 + 0*6.5)  edge[->]  (4.25, 1.75 + 0*6.5);
+      \draw<10>[red, very thick]  (2.25, 1.25 + 0*6.5)  edge[->,bend right=10]  (6.25, 1.25 + 2*6.5);
+      \draw<10>[red, very thick]  (4.25, 0.75 + 0*6.5)  edge[->,bend right=15]  (6.25, 0.75 + 1*6.5);
 
       % retour au placement initial
       \foreach \i in {0, 1, 2, 3} {
         \foreach \j in {0, 1, 2} {
-          \filldraw<11>[fill=black]  (\i, 3*6 + 0.5 - 1.5*\i - 7*\j)  rectangle +(0.5, 0.5);
+          \filldraw<11>[fill=black]  (2*\i, 3*6 + 0.5 - 1.5*\i - 7*\j)  rectangle +(0.5, 0.5);
         }
       }
     \end{tikzpicture}
